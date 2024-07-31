@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "kci-dev"
+version = "0.0.1"
+description = "Stand alone tool for Linux Kernel developers and maintainers that can test local Linux Kernel changes on a enabled KernelCI server"
+authors = ["Arisu Tachibana <arisu.tachibana@miraclelinux.com>"]
+license = "LGPL-2.1-or-later"
+readme = "README.md"
+packages = [
+{include = "kci-dev"},
+{include = "subcommands", from="kci-dev"},
+]
+repository = "https://github.com/kernelci/kci-dev"
+classifiers = [
+        'Development Status :: 1 - Planning',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
+        'Topic :: Software Development',
+        'Topic :: Software Development :: Libraries',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy'
+    ]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+click = "^8.1.7"
+requests = "^2.32.3"
+toml = "^0.10.2"
+gitpython = "^3.1.43"
+
+[tool.poetry.scripts]
+kci-dev = 'kci-dev.kci-dev:run'
+
+[tool.poetry.urls]
+"Issue Tracker" = "https://github.com/kernelci/kci-dev/issues"
+
+[tool.poetry.group.ci.dependencies]
+black = "^24.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
