@@ -5,6 +5,7 @@ import click
 import toml
 import requests
 import json
+import sys
 from git import Repo
 
 
@@ -16,6 +17,10 @@ def api_connection(host):
 def find_diff(path, branch, repository):
     repo = Repo(path)
     assert not repo.bare
+    for ref in repo.references:
+        if ref.name != branch:
+            print("Branch name: " + ref.name)
+            sys.exit(0)
     hcommit = repo.iter_commits("origin/master.." + branch)
     commits = []
     for i in hcommit:
@@ -23,7 +28,7 @@ def find_diff(path, branch, repository):
     return commits
 
 
-def send_build(url, patch, branch, treeurl, token):
+def send_build(url, patch, branch, treeurl, commit, token):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": "Bearer {}".format(token),
@@ -31,7 +36,7 @@ def send_build(url, patch, branch, treeurl, token):
     values = {
         "treeurl": treeurl,
         "branch": branch,
-        "commit": "example",
+        "commit": commit,
         "kbuildname": "example",
         "testname": "example",
     }
@@ -69,7 +74,14 @@ def commit(repository, branch, private, path, settings):
     config = load_toml(settings)
     url = api_connection(config["connection"]["host"])
     diff = find_diff(path, branch, repository)
-    send_build(url, diff, branch, repository, config["connection"]["token"])
+    send_build(
+        url,
+        diff,
+        branch,
+        repository,
+        "commit id example",
+        config["connection"]["token"],
+    )
 
 
 if __name__ == "__main__":
