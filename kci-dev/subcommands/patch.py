@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import json
@@ -31,12 +31,6 @@ def send_build(url, patch, branch, treeurl, token):
     click.secho(response.json(), fg="green")
 
 
-def load_toml(settings):
-    with open(settings) as fp:
-        config = toml.load(fp)
-    return config
-
-
 @click.command(help="Test a patch or a mbox file")
 @click.option(
     "--repository",
@@ -51,9 +45,9 @@ def load_toml(settings):
     help="define if the test results will be published",
 )
 @click.option("--patch", required=True, help="mbox or patch file path")
-@click.option("--settings", default=".kci-dev.toml", help="path of toml setting file")
-def patch(repository, branch, private, patch, settings):
-    config = load_toml(settings)
+@click.pass_context
+def patch(ctx, repository, branch, private, patch):
+    config = ctx.obj.get("CFG")
     url = api_connection(config["connection"]["host"])
     patch = open(patch, "rb")
     send_build(url, patch, branch, repository, config["connection"]["token"])

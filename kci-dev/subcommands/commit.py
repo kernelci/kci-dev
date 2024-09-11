@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import json
@@ -41,12 +41,6 @@ def send_build(url, patch, branch, treeurl, token):
     click.secho(response.json(), fg="green")
 
 
-def load_toml(settings):
-    with open(settings) as fp:
-        config = toml.load(fp)
-    return config
-
-
 @click.command(help="Test commits from a local Kernel repository")
 @click.option(
     "--repository",
@@ -65,9 +59,9 @@ def load_toml(settings):
     default=".",
     help="define the directory of the local tree with local changes",
 )
-@click.option("--settings", default=".kci-dev.toml", help="path of toml setting file")
-def commit(repository, branch, private, path, settings):
-    config = load_toml(settings)
+@click.pass_context
+def commit(ctx, repository, branch, private, path):
+    config = ctx.obj.get("CFG")
     url = api_connection(config["connection"]["host"])
     diff = find_diff(path, branch, repository)
     send_build(url, diff, branch, repository, config["connection"]["token"])

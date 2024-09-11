@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import click
+from libs.common import *
 from subcommands import commit, patch
 
 
@@ -9,7 +10,10 @@ from subcommands import commit, patch
     help="Stand alone tool for Linux Kernel developers and maintainers that can test local Linux Kernel changes on a enabled KernelCI server"
 )
 @click.version_option("0.0.1", prog_name="kci-dev")
-def cli():
+@click.option("--settings", default=".kci-dev.toml", help="path of toml setting file")
+@click.pass_context
+def cli(ctx, settings):
+    ctx.obj = {"CFG": load_toml(settings)}
     pass
 
 
