@@ -8,8 +8,6 @@ import requests
 import toml
 from git import Repo
 
-from libs.common import *
-
 
 def api_connection(host):
     click.secho("api connect: " + host, fg="green")
@@ -61,9 +59,9 @@ def send_build(url, patch, branch, treeurl, token):
     default=".",
     help="define the directory of the local tree with local changes",
 )
-@click.option("--settings", default=".kci-dev.toml", help="path of toml setting file")
-def commit(repository, branch, private, path, settings):
-    config = load_toml(settings)
+@click.pass_context
+def commit(ctx, repository, branch, private, path):
+    config = ctx.obj.get("CFG")
     url = api_connection(config["connection"]["host"])
     diff = find_diff(path, branch, repository)
     send_build(url, diff, branch, repository, config["connection"]["token"])

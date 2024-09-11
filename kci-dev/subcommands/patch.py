@@ -8,8 +8,6 @@ import requests
 import toml
 from git import Repo
 
-from libs.common import *
-
 
 def api_connection(host):
     click.secho("api connect: " + host, fg="green")
@@ -47,9 +45,9 @@ def send_build(url, patch, branch, treeurl, token):
     help="define if the test results will be published",
 )
 @click.option("--patch", required=True, help="mbox or patch file path")
-@click.option("--settings", default=".kci-dev.toml", help="path of toml setting file")
-def patch(repository, branch, private, patch, settings):
-    config = load_toml(settings)
+@click.pass_context
+def patch(ctx, repository, branch, private, patch):
+    config = ctx.obj.get("CFG")
     url = api_connection(config["connection"]["host"])
     patch = open(patch, "rb")
     send_build(url, patch, branch, repository, config["connection"]["token"])
