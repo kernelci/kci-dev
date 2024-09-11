@@ -8,6 +8,8 @@ import requests
 import toml
 from git import Repo
 
+from libs.common import *
+
 
 def api_connection(host):
     click.secho("api connect: " + host, fg="green")
@@ -39,12 +41,6 @@ def send_build(url, patch, branch, treeurl, token):
     response = requests.post(url, headers=headers, files={"patch": patch}, data=values)
     click.secho(response.status_code, fg="green")
     click.secho(response.json(), fg="green")
-
-
-def load_toml(settings):
-    with open(settings) as fp:
-        config = toml.load(fp)
-    return config
 
 
 @click.command(help="Test commits from a local Kernel repository")
