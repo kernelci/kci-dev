@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import click
-import toml
-import requests
 import json
+
+import click
+import requests
+import toml
 from git import Repo
 
 

@@ -27,7 +27,7 @@ classifiers = [
     ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
 click = "^8.1.7"
 requests = "^2.32.3"
 toml = "^0.10.2"
@@ -41,6 +41,8 @@ kci-dev = 'kci-dev.kci-dev:run'
 
 [tool.poetry.group.ci.dependencies]
 black = "^24.8.0"
+isort = "^5.13.2"
+pytest = "^8.3.3"
 
 [build-system]
 requires = ["poetry-core"]
