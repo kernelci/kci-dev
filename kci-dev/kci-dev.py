@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import click
-from subcommands import commit
-from subcommands import patch
+from subcommands import commit, patch
 
 
 @click.group(
