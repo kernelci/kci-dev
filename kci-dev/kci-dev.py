@@ -11,9 +11,20 @@ from subcommands import commit, patch
 )
 @click.version_option("0.0.1", prog_name="kci-dev")
 @click.option("--settings", default=".kci-dev.toml", help="path of toml setting file")
+@click.option("--instance", help="API instance to use", required=False)
 @click.pass_context
-def cli(ctx, settings):
+def cli(ctx, settings, instance):
     ctx.obj = {"CFG": load_toml(settings)}
+    if instance:
+        ctx.obj["INSTANCE"] = instance
+    else:
+        ctx.obj["INSTANCE"] = ctx.obj["CFG"].get("default_instance")
+    if not ctx.obj["INSTANCE"]:
+        click.secho("No instance defined in settings or as argument", fg="red")
+        raise click.Abort()
+    if ctx.obj["INSTANCE"] not in ctx.obj["CFG"]:
+        click.secho(f"Instance {ctx.obj['INSTANCE']} not found in {settings}", fg="red")
+        raise click.Abort()
     pass
 
 
