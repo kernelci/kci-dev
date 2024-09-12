@@ -56,6 +56,17 @@ def test_kcidev_results_help():
     assert result.returncode == 0
 
 
+def test_kcidev_testretry_help():
+    command = ["poetry", "run", "kci-dev", "testretry", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
 def test_kcidev_results_tests():
     command = [
         "poetry",
