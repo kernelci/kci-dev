@@ -48,9 +48,10 @@ def send_build(url, patch, branch, treeurl, token):
 @click.pass_context
 def patch(ctx, repository, branch, private, patch):
     config = ctx.obj.get("CFG")
-    url = api_connection(config["connection"]["host"])
+    instance = ctx.obj.get("INSTANCE")
+    url = api_connection(config[instance]["host"])
     patch = open(patch, "rb")
-    send_build(url, patch, branch, repository, config["connection"]["token"])
+    send_build(url, patch, branch, repository, config[instance]["token"])
 
 
 if __name__ == "__main__":

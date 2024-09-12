@@ -1,3 +1,13 @@
-[connection]
+default_instance="local"
+
+[local]
 host="https://127.0.0.1"
+token="example"
+
+[staging]
+host="https://staging.kernelci.org:9100/"
+token="example"
+
+[production]
+host="https://kernelci-pipeline.westus3.cloudapp.azure.com/"
 token="example"

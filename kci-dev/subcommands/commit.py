@@ -62,9 +62,10 @@ def send_build(url, patch, branch, treeurl, token):
 @click.pass_context
 def commit(ctx, repository, branch, private, path):
     config = ctx.obj.get("CFG")
-    url = api_connection(config["connection"]["host"])
+    instance = ctx.obj.get("INSTANCE")
+    url = api_connection(config[instance]["host"])
     diff = find_diff(path, branch, repository)
-    send_build(url, diff, branch, repository, config["connection"]["token"])
+    send_build(url, diff, branch, repository, config[instance]["token"])
 
 
 if __name__ == "__main__":
