@@ -26,3 +26,5 @@ jobs:
         run: poetry run black --check --verbose .
       - name: Isort check
         run: poetry run isort . --check --diff
+      - name: Pytest check
+        run: poetry run pytest -rP
