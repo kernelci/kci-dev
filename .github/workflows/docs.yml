@@ -1,5 +1,9 @@
 ---
-name: Docs publish
+name: Docs
+
+permissions:
+  contents: write
+  actions: write
 
 on:
   push:
@@ -10,9 +14,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.7
+          python-version: 3.11
       - run: pip install mkdocs-material
       - run: mkdocs gh-deploy --force
