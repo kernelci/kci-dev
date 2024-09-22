@@ -14,14 +14,14 @@ def api_connection(host):
     return host
 
 
-def find_diff(path, branch, repository):
+def find_diff(path, branch, origin, repository):
     repo = Repo(path)
     assert not repo.bare
-    hcommit = repo.iter_commits("origin/master.." + branch)
+    hcommit = repo.iter_commits(origin + ".." + branch)
     commits = []
     for i in hcommit:
         commits.append(repo.git.show(i))
-    return commits
+    return commits[0]
 
 
 def send_build(url, patch, branch, treeurl, token):
@@ -48,6 +48,7 @@ def send_build(url, patch, branch, treeurl, token):
     help="define the kernel upstream repository where to test local changes",
 )
 @click.option("--branch", default="master", help="define the repository branch")
+@click.option("--origin", default="master", help="define the origin repository branch")
 @click.option(
     "--private",
     default=False,
@@ -60,11 +61,11 @@ def send_build(url, patch, branch, treeurl, token):
     help="define the directory of the local tree with local changes",
 )
 @click.pass_context
-def commit(ctx, repository, branch, private, path):
+def commit(ctx, repository, branch, origin, private, path):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = api_connection(config[instance]["host"])
-    diff = find_diff(path, branch, repository)
+    diff = find_diff(path, branch, origin, repository)
     send_build(url, diff, branch, repository, config[instance]["token"])
 
 
