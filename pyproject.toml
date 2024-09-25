@@ -43,6 +43,10 @@ kci-dev = 'kci-dev.kci-dev:run'
 black = "^24.8.0"
 isort = "^5.13.2"
 pytest = "^8.3.3"
+poethepoet = "^0.29.0"
+
+[tool.poe.tasks]
+check = "./scripts/check.sh"
 
 [build-system]
 requires = ["poetry-core"]
