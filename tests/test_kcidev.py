@@ -84,6 +84,14 @@ def test_kcidev_commit():
     assert result.returncode == 1
 
 
+def test_main():
+    from subcommands.commit import api_connection
+
+    print(api_connection("test"))
+
+    pass
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")

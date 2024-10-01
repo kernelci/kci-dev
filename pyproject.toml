@@ -48,6 +48,11 @@ poethepoet = "^0.29.0"
 [tool.poe.tasks]
 check = "./scripts/check.sh"
 
+[tool.pytest.ini_options]
+pythonpath = [
+  "kci-dev"
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
