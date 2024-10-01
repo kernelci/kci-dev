@@ -1,4 +1,5 @@
 import os
+import shutil
 from subprocess import PIPE, run
 
 import git
@@ -6,6 +7,7 @@ import pytest
 
 
 def test_prepare():
+    # prepare enviroment
     os.system("cp .kci-dev.toml.example .kci-dev.toml")
     assert os.path.exists(".kci-dev.toml")
 
@@ -80,3 +82,21 @@ def test_kcidev_commit():
     print("#### stderr ####")
     print(result.stderr)
     assert result.returncode == 1
+
+
+def test_main():
+    from subcommands.commit import api_connection
+
+    print(api_connection("test"))
+
+    pass
+
+
+def test_clean():
+    # clean enviroment
+    shutil.rmtree("my-new-repo/")
+
+    if os.path.isfile(".kci-dev.toml"):
+        os.remove(".kci-dev.toml")
+    else:
+        print("File does not exist")
