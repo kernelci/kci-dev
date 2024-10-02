@@ -45,6 +45,36 @@ def test_kcidev_patch_help():
     assert result.returncode == 0
 
 
+def test_kcidev_results_help():
+    command = ["poetry", "run", "kci-dev", "results", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
+def test_kcidev_results_tests():
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "--instance",
+        "staging_api",
+        "results",
+        "--nodeid",
+        "65a1355ee98651d0fe81e41d",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+
+
 def test_create_repo():
     repo_dir = os.path.join("my-new-repo")
     file_name = os.path.join(repo_dir, "new-file")
@@ -65,6 +95,8 @@ def test_kcidev_commit():
         "poetry",
         "run",
         "kci-dev",
+        "--instance",
+        "staging_api",
         "commit",
         "--repository",
         "linux-next",
@@ -81,7 +113,7 @@ def test_kcidev_commit():
     print(result.stdout)
     print("#### stderr ####")
     print(result.stderr)
-    assert result.returncode == 1
+    assert result.returncode == 0
 
 
 def test_main():
