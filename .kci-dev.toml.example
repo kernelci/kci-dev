@@ -8,6 +8,10 @@ token="example"
 host="https://staging.kernelci.org:9100/"
 token="example"
 
+[staging_api]
+host="https://staging.kernelci.org:9000/latest/"
+token="example"
+
 [production]
 host="https://kernelci-pipeline.westus3.cloudapp.azure.com/"
 token="example"

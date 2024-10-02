@@ -36,9 +36,13 @@ def send_build(url, patch, branch, treeurl, token):
         "kbuildname": "example",
         "testname": "example",
     }
-    response = requests.post(url, headers=headers, files={"patch": patch}, data=values)
-    click.secho(response.status_code, fg="green")
-    click.secho(response.json(), fg="green")
+    # temporary disabled as API not working yet
+    click.secho(url, fg="green")
+    click.secho(headers, fg="green")
+    click.secho(values, fg="green")
+    # response = requests.post(url, headers=headers, files={"patch": patch}, data=values)
+    # click.secho(response.status_code, fg="green")
+    # click.secho(response.json(), fg="green")
 
 
 @click.command(help="Test commits from a local Kernel repository")
