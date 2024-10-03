@@ -18,17 +18,26 @@ poetry run kci-dev
 
 kci-dev uses a configuration file .kci-dev.toml in the program directory.
 ```toml
-default_instance="staging"
+default_instance="local"
+
 [local]
 host="https://127.0.0.1"
 token="example"
 
-[staging]
+[staging_pipeline]
 host="https://staging.kernelci.org:9100/"
-token="SOMEVERYSECRETTOKEN"
+token="example"
 
-[production]
+[staging_api]
+host="https://staging.kernelci.org:9000/"
+token="example"
+
+[production_pipeline]
 host="https://kernelci-pipeline.westus3.cloudapp.azure.com/"
+token="example"
+
+[production_api]
+host="https://kernelci-api.westus3.cloudapp.azure.com/"
 token="example"
 ```
 
@@ -45,7 +54,7 @@ You can provide the instance name to use for the command.
 
 Example:
 ```sh
-kci-dev --instance staging
+kci-dev --instance staging_api
 ```
 
 ### settings

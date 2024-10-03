@@ -4,14 +4,18 @@ default_instance="local"
 host="https://127.0.0.1"
 token="example"
 
-[staging]
+[staging_pipeline]
 host="https://staging.kernelci.org:9100/"
 token="example"
 
 [staging_api]
-host="https://staging.kernelci.org:9000/latest/"
+host="https://staging.kernelci.org:9000/"
 token="example"
 
-[production]
+[production_pipeline]
 host="https://kernelci-pipeline.westus3.cloudapp.azure.com/"
+token="example"
+
+[production_api]
+host="https://kernelci-api.westus3.cloudapp.azure.com/"
 token="example"
