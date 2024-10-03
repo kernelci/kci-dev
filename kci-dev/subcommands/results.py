@@ -29,11 +29,11 @@ def get_node(url, nodeid):
         click.secho(pprint.pprint(response.text), fg="green")
 
 
-def get_nodes(url):
+def get_nodes(url, limit, offset):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    url = url + "/nodes"
+    url = url + "/nodes?limit=" + str(limit) + "&offset=" + str(offset)
     click.secho(url)
     response = requests.get(url, headers=headers)
     click.secho(response.status_code, fg="green")
@@ -51,18 +51,31 @@ def get_nodes(url):
 )
 @click.option(
     "--nodes",
+    is_flag=True,
     required=False,
     help="Get last nodes results",
 )
+@click.option(
+    "--limit",
+    default=50,
+    required=False,
+    help="Pagination limit for nodes",
+)
+@click.option(
+    "--offset",
+    default=0,
+    required=False,
+    help="Offset of the pagination",
+)
 @click.pass_context
-def results(ctx, nodeid, nodes):
+def results(ctx, nodeid, nodes, limit, offset):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = api_connection(config[instance]["host"])
     if nodeid:
         get_node(url, nodeid)
     if nodes:
-        get_nodes(url)
+        get_nodes(url, limit, offset)
 
 
 if __name__ == "__main__":
