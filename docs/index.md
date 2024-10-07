@@ -68,6 +68,10 @@ kci-dev --settings /path/to/.kci-dev.toml
 
 ## Commands
 
+### checkout
+
+- [checkout](checkout.md)
+
 ### testretry
 
 - [testretry](testretry.md)

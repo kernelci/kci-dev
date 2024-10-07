@@ -3,7 +3,7 @@
 
 import click
 from libs.common import *
-from subcommands import commit, patch, results, testretry
+from subcommands import checkout, commit, patch, results, testretry
 
 
 @click.group(
@@ -29,6 +29,7 @@ def cli(ctx, settings, instance):
 
 
 def run():
+    cli.add_command(checkout.checkout)
     cli.add_command(commit.commit)
     cli.add_command(patch.patch)
     cli.add_command(results.results)
