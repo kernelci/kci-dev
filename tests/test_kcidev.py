@@ -84,7 +84,7 @@ def test_kcidev_results_tests():
         "run",
         "kci-dev",
         "--instance",
-        "staging_api",
+        "staging",
         "results",
         "--nodeid",
         "65a1355ee98651d0fe81e41d",
