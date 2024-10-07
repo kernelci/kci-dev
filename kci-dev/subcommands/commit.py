@@ -68,7 +68,7 @@ def send_build(url, patch, branch, treeurl, token):
 def commit(ctx, repository, branch, origin, private, path):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(config[instance]["host"])
+    url = api_connection(config[instance]["pipeline"])
     diff = find_diff(path, branch, origin, repository)
     send_build(url, diff, branch, repository, config[instance]["token"])
 

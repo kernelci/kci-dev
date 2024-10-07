@@ -118,7 +118,7 @@ def test_kcidev_commit():
         "run",
         "kci-dev",
         "--instance",
-        "staging_api",
+        "staging",
         "commit",
         "--repository",
         "linux-next",

@@ -19,7 +19,7 @@ def get_node(url, nodeid):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    url = url + "/node/" + nodeid
+    url = url + "latest/node/" + nodeid
     click.secho(url)
     response = requests.get(url, headers=headers)
     click.secho(response.status_code, fg="green")
@@ -33,7 +33,7 @@ def get_nodes(url, limit, offset):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    url = url + "/nodes?limit=" + str(limit) + "&offset=" + str(offset)
+    url = url + "latest/nodes?limit=" + str(limit) + "&offset=" + str(offset)
     click.secho(url)
     response = requests.get(url, headers=headers)
     click.secho(response.status_code, fg="green")
@@ -71,7 +71,7 @@ def get_nodes(url, limit, offset):
 def results(ctx, nodeid, nodes, limit, offset):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(config[instance]["host"])
+    url = api_connection(config[instance]["api"])
     if nodeid:
         get_node(url, nodeid)
     if nodes:

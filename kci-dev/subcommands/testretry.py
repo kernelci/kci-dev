@@ -53,7 +53,7 @@ def send_jobretry(baseurl, jobid, token):
 def testretry(ctx, nodeid):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(cfg[instance]["host"])
+    url = api_connection(cfg[instance]["pipeline"])
     resp = send_jobretry(url, nodeid, cfg[instance]["token"])
     if resp and "message" in resp:
         click.secho(resp["message"], fg="green")
