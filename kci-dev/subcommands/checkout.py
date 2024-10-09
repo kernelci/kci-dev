@@ -95,7 +95,7 @@ def retrieve_tot_commit(repourl, branch):
 def checkout(ctx, giturl, branch, commit, jobfilter, tipoftree):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(cfg[instance]["host"])
+    url = api_connection(cfg[instance]["pipeline"])
     token = cfg[instance]["token"]
     if not jobfilter:
         jobfilter = None

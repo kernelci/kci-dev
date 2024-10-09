@@ -49,7 +49,7 @@ def send_build(url, patch, branch, treeurl, token):
 def patch(ctx, repository, branch, private, patch):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(config[instance]["host"])
+    url = api_connection(config[instance]["pipeline"])
     patch = open(patch, "rb")
     send_build(url, patch, branch, repository, config[instance]["token"])
 
