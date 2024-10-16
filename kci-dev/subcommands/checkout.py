@@ -41,7 +41,10 @@ def send_checkout_full(baseurl, token, **kwargs):
         "commit": kwargs["commit"],
         "jobfilter": kwargs["jobfilter"],
     }
+    if "platformfilter" in kwargs:
+        data["platformfilter"] = kwargs["platformfilter"]
     jdata = json.dumps(data)
+    print(jdata)
     try:
         response = requests.post(url, headers=headers, data=jdata, timeout=30)
     except requests.exceptions.RequestException as e:
@@ -192,8 +195,13 @@ def retrieve_tot_commit(repourl, branch):
     help="Job filter to trigger",
     multiple=True,
 )
+@click.option(
+    "--platformfilter",
+    help="Platform filter to trigger",
+    multiple=True,
+)
 @click.pass_context
-def checkout(ctx, giturl, branch, commit, jobfilter, tipoftree, watch):
+def checkout(ctx, giturl, branch, commit, jobfilter, platformfilter, tipoftree, watch):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = api_connection(cfg[instance]["pipeline"])
@@ -221,6 +229,7 @@ def checkout(ctx, giturl, branch, commit, jobfilter, tipoftree, watch):
         branch=branch,
         commit=commit,
         jobfilter=jobfilter,
+        platformfilter=platformfilter,
         watch=watch,
     )
     if resp and "message" in resp:
