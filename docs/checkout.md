@@ -153,3 +153,20 @@ Node 6707bc75322a7c560a1a38f7 job baseline-nfs-arm64-qualcomm State running Resu
 ```
 
 The command will keep watching the progress of the test until all jobs are done. You can also stop the watching by pressing `Ctrl+C` or command will stop after all jobs are done(or failed).
+
+### --test
+
+Together with --watch option, you can use --test option to wait for particular test results. Return code of kci-dev will depend on the test result:
+
+- `pass` - return code 0 (test passed)
+- `fail` - return code 1 (test failed)
+- `error` - return code 2 (prior steps failed, such as compilation, test setup, etc, or infrastructure error)
+
+For example:
+```sh
+kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --jobfilter baseline-nfs-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --platformfilter sc7180-trogdor-kingoftown --watch --test crit
+```
+
+This command will wait for the test results of the test with the name `crit`. It will follow first jobs, such as `checkout`, `kbuild-gcc-12-arm64-chromeos-qualcomm`, `baseline-nfs-arm64-qualcomm` and when they are complete will wait until timeout for the test `crit` to finish. If the test `crit` will pass, the command will return 0, if it will fail, the command will return 1, if any of the jobs will fail or timeout, the command will return 2.
+
+This command can be used for regression bisection, where you can test if the test `crit` pass or fail on the specific commit.
