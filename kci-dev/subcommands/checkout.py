@@ -5,6 +5,7 @@ import datetime
 import json
 import re
 import subprocess
+import sys
 import time
 
 import click
@@ -105,7 +106,7 @@ def check_node(node):
             return "FAIL"
 
 
-def watch_jobs(baseurl, token, treeid, jobfilter):
+def watch_jobs(baseurl, token, treeid, jobfilter, test):
     # we need to add to jobfilter "checkout" node
     jobfilter = list(jobfilter)
     jobfilter.append("checkout")
@@ -123,7 +124,12 @@ def watch_jobs(baseurl, token, treeid, jobfilter):
 
         # Tricky part in watch is that we might have one item in jobfilter (job, test),
         # but it might spawn multiple nodes with same name
+        test_result = None
+        jobs_done_ts = None
         for node in nodes:
+            if node["name"] == test:
+                test_result = node["result"]
+                break
             if node["name"] in jobfilter:
                 result = check_node(node)
                 if result == "DONE":
@@ -137,13 +143,35 @@ def watch_jobs(baseurl, token, treeid, jobfilter):
                     if isinstance(joblist, list) and node["name"] in joblist:
                         joblist.remove(node["name"])
                     color = "red"
+                    if test:
+                        # if we have a test, and prior job failed, we should indicate that
+                        click.secho(
+                            f"Job {node['name']} failed, test can't be executed",
+                            fg="red",
+                        )
+                        sys.exit(2)
                 click.secho(
                     f"Node {node['_id']} job {node['name']} State {node['state']} Result {node['result']}",
                     fg=color,
                 )
         if len(joblist) == 0 and inprogress == 0:
             click.secho("All jobs completed", fg="green")
-            return
+            if not test:
+                return
+            else:
+                if not jobs_done_ts:
+                    jobs_done_ts = time.time()
+                # if all jobs done, usually test results must be available
+                # max within 60s. Safeguard in case of test node is not available
+                if not test_result and time.time() - jobs_done_ts < 60:
+                    continue
+
+                if test_result == "pass":
+                    click.secho(f"Test {test} passed", fg="green")
+                    sys.exit(0)
+                else:
+                    click.secho(f"Test {test} failed", fg="red")
+                    sys.exit(1)
 
         click.echo(f"\rRefresh in 30s...", nl=False)
         time.sleep(30)
@@ -200,8 +228,14 @@ def retrieve_tot_commit(repourl, branch):
     help="Platform filter to trigger",
     multiple=True,
 )
+@click.option(
+    "--test",
+    help="Return code based on the test result",
+)
 @click.pass_context
-def checkout(ctx, giturl, branch, commit, jobfilter, platformfilter, tipoftree, watch):
+def checkout(
+    ctx, giturl, branch, commit, jobfilter, platformfilter, tipoftree, watch, test
+):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = api_connection(cfg[instance]["pipeline"])
@@ -212,6 +246,9 @@ def checkout(ctx, giturl, branch, commit, jobfilter, platformfilter, tipoftree, 
         click.secho("No job filter defined. All jobs will be triggered!", fg="yellow")
     if watch and not jobfilter:
         click.secho("No job filter defined. Can't watch for a job(s)!", fg="red")
+        return
+    if test and not watch:
+        click.secho("Test option only works with watch option", fg="red")
         return
     if not commit and not tipoftree:
         click.secho("No commit or tree/branch latest commit defined", fg="red")
@@ -242,8 +279,10 @@ def checkout(ctx, giturl, branch, commit, jobfilter, platformfilter, tipoftree, 
             click.secho("No treeid returned. Can't watch for a job(s)!", fg="red")
             return
         click.secho(f"Watching for jobs on treeid: {treeid}", fg="green")
+        if test:
+            click.secho(f"Watching for test result: {test}", fg="green")
         # watch for jobs
-        watch_jobs(apiurl, token, treeid, jobfilter)
+        watch_jobs(apiurl, token, treeid, jobfilter, test)
 
 
 if __name__ == "__main__":
