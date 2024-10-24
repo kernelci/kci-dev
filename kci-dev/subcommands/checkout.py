@@ -150,8 +150,9 @@ def watch_jobs(baseurl, token, treeid, jobfilter, test):
                             fg="red",
                         )
                         sys.exit(2)
+                nodeid = node.get("id")
                 click.secho(
-                    f"Node {node['_id']} job {node['name']} State {node['state']} Result {node['result']}",
+                    f"Node {nodeid} job {node['name']} State {node['state']} Result {node['result']}",
                     fg=color,
                 )
         if len(joblist) == 0 and inprogress == 0:
