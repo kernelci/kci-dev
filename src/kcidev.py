@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import click
+
 from libs.common import *
 from subcommands import checkout, commit, patch, results, testretry
 
@@ -9,7 +10,7 @@ from subcommands import checkout, commit, patch, results, testretry
 @click.group(
     help="Stand alone tool for Linux Kernel developers and maintainers that can test local Linux Kernel changes on a enabled KernelCI server"
 )
-@click.version_option("0.0.1", prog_name="kci-dev")
+@click.version_option("0.1.0", prog_name="kci-dev")
 @click.option("--settings", default=".kci-dev.toml", help="path of toml setting file")
 @click.option("--instance", help="API instance to use", required=False)
 @click.pass_context
