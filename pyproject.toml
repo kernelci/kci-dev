@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kci-dev"
-version = "0.0.1"
+version = "0.1.0"
 description = "Stand alone tool for Linux Kernel developers and maintainers that can test local Linux Kernel changes on a enabled KernelCI server"
 authors = ["Arisu Tachibana <arisu.tachibana@miraclelinux.com>"]
 license = "LGPL-2.1-or-later"
@@ -11,7 +11,7 @@ packages = [
 ]
 repository = "https://github.com/kernelci/kci-dev"
 classifiers = [
-        'Development Status :: 1 - Planning',
+        'Development Status :: 4 - beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
