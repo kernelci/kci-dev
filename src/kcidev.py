@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import click
+
 from libs.common import *
 from subcommands import checkout, commit, patch, results, testretry
 

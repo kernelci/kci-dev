@@ -6,8 +6,8 @@ authors = ["Arisu Tachibana <arisu.tachibana@miraclelinux.com>"]
 license = "LGPL-2.1-or-later"
 readme = "README.md"
 packages = [
-{include = "kci-dev"},
-{include = "subcommands", from="kci-dev"},
+{include = "src"},
+{include = "subcommands", from="src"},
 ]
 repository = "https://github.com/kernelci/kci-dev"
 classifiers = [
@@ -34,7 +34,7 @@ toml = "^0.10.2"
 gitpython = "^3.1.43"
 
 [tool.poetry.scripts]
-kci-dev = 'kci-dev.kci-dev:run'
+kci-dev = 'src.kcidev:run'
 
 [tool.poetry.urls]
 "Issue Tracker" = "https://github.com/kernelci/kci-dev/issues"
@@ -50,7 +50,7 @@ check = "./scripts/check.sh"
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "kci-dev"
+  "src"
 ]
 
 [build-system]
