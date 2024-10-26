@@ -139,7 +139,7 @@ def test_kcidev_commit():
 
 
 def test_main():
-    from subcommands.commit import api_connection
+    from kcidev.subcommands.commit import api_connection
 
     print(api_connection("test"))
 

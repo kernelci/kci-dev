@@ -3,8 +3,8 @@
 
 import click
 
-from libs.common import *
-from subcommands import checkout, commit, patch, results, testretry
+from kcidev.libs.common import *
+from kcidev.subcommands import checkout, commit, patch, results, testretry
 
 
 @click.group(
