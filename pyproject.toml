@@ -12,7 +12,7 @@ packages = [
 ]
 repository = "https://github.com/kernelci/kci-dev"
 classifiers = [
-        'Development Status :: 4 - beta',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
