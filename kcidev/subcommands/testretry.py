@@ -7,7 +7,7 @@ import click
 import requests
 from git import Repo
 
-from libs.common import *
+from kcidev.libs.common import *
 
 
 def api_connection(host):
