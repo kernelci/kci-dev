@@ -23,7 +23,13 @@ poetry run kci-dev
 
 ## Configuration
 
-kci-dev uses a configuration file .kci-dev.toml in the program directory.
+kci-dev searches for and loads a configuration file in the following order of priority:
+1) The global configuration file located at /etc/kci-dev.toml.
+2) The user-specific configuration file at ~/.config/kci-dev/kci-dev.toml
+3) A site-specific configuration file, which is .kci-dev.toml by default, but can be overridden with the --settings option. 
+
+Priority: The configuration files are loaded in the order listed above, with each subsequent file overriding the settings from the previous one. If a user-specific file is present, it will override the global configuration. The site-specific file, whether default or specified by --settings, takes precedence over both the global and user-specific configuration files.
+
 ```toml
 default_instance="local"
 
