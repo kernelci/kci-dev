@@ -5,7 +5,14 @@ Purpose of this tool to provide a easy way to use features of KernelCI Pipeline 
 
 ## Installation
 
-Using poetry and virtualenv
+### Using PyPI and virtualenv
+```sh
+virtualenv .venv
+source .venv/bin/activate
+pip install kci-dev
+```
+
+### Using poetry and virtualenv
 ```sh
 virtualenv .venv
 source .venv/bin/activate
