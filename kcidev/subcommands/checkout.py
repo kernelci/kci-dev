@@ -121,7 +121,9 @@ def watch_jobs(baseurl, token, treeid, jobfilter, test):
             continue
         time_local = time.localtime()
         click.echo(f"Current time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
-        click.secho(f"Total tree nodes {len(nodes)} found.", fg="green")
+        click.secho(
+            f"Total tree nodes {len(nodes)} found. Jobfilter: {jobfilter}", fg="green"
+        )
 
         # Tricky part in watch is that we might have one item in jobfilter (job, test),
         # but it might spawn multiple nodes with same name
@@ -130,7 +132,6 @@ def watch_jobs(baseurl, token, treeid, jobfilter, test):
         for node in nodes:
             if node["name"] == test:
                 test_result = node["result"]
-                break
             if node["name"] in jobfilter:
                 result = check_node(node)
                 if result == "DONE":
@@ -144,7 +145,8 @@ def watch_jobs(baseurl, token, treeid, jobfilter, test):
                     if isinstance(joblist, list) and node["name"] in joblist:
                         joblist.remove(node["name"])
                     color = "red"
-                    if test:
+                    # if test is same as job, dont indicate infra-failure if test job fail
+                    if test and test != node["name"]:
                         # if we have a test, and prior job failed, we should indicate that
                         click.secho(
                             f"Job {node['name']} failed, test can't be executed",
@@ -168,11 +170,12 @@ def watch_jobs(baseurl, token, treeid, jobfilter, test):
                 if not test_result and time.time() - jobs_done_ts < 60:
                     continue
 
-                if test_result == "pass":
+                if test_result and test_result == "pass":
                     click.secho(f"Test {test} passed", fg="green")
                     sys.exit(0)
-                else:
-                    click.secho(f"Test {test} failed", fg="red")
+                elif test_result:
+                    # ignore null, that means result not ready yet
+                    click.secho(f"Test {test} failed: {test_result}", fg="red")
                     sys.exit(1)
 
         click.echo(f"\rRefresh in 30s...", nl=False)
