@@ -7,14 +7,25 @@ import toml
 
 
 def load_toml(settings):
-    if not settings:
-        if os.path.exists(".kci-dev.toml"):
-            settings = ".kci-dev.toml"
-        else:
-            homedir = os.path.expanduser("~")
-            settings = os.path.join(homedir, ".config", "kci-dev.toml")
-    if not os.path.exists(settings):
-        raise FileNotFoundError(f"Settings file {settings} not found")
-    with open(settings) as fp:
-        config = toml.load(fp)
+    fname = "kci-dev.toml"
+    config = None
+
+    global_path = os.path.join("/", "etc", fname)
+    if os.path.exists(global_path):
+        with open(global_path, "r") as f:
+            config = toml.load(f)
+
+    home_dir = os.path.expanduser("~")
+    user_path = os.path.join(home_dir, ".config", "kci-dev", fname)
+    if os.path.exists(user_path):
+        with open(user_path, "r") as f:
+            config = toml.load(f)
+
+    if os.path.exists(settings):
+        with open(settings, "r") as f:
+            config = toml.load(f)
+
+    if not config:
+        raise FileNotFoundError("No configuration file found")
+
     return config
