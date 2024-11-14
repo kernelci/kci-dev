@@ -1,0 +1,602 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="kci-dev is a cmdline tool for interact with a  enabled KernelCI server.">
+      
+      
+        <meta name="author" content="Arisu Tachibana">
+      
+      
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.44">
+    
+    
+      
+        <title>Checkout - kci-dev</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0253249f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#checkout" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="kci-dev" class="md-header__button md-logo" aria-label="kci-dev" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            kci-dev
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Checkout
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kernelci/kci-dev" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kernelci/kci-dev
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  Home
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="kci-dev" class="md-nav__button md-logo" aria-label="kci-dev" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    kci-dev
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kernelci/kci-dev" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kernelci/kci-dev
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Home
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#checkout" class="md-nav__link">
+    <span class="md-ellipsis">
+      checkout
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="checkout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-tipoftree" class="md-nav__link">
+    <span class="md-ellipsis">
+      --tipoftree
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-watch" class="md-nav__link">
+    <span class="md-ellipsis">
+      --watch
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      --test
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  <h1>Checkout</h1>
+
+<h2 id="checkout">checkout</h2>
+<p>This command allow to test arbitary commit on the KernelCI Pipeline instance. This might be useful in several cases:
+- You want to test a specific commit, if it fails or pass test, or introduce any other degradation comparing to the current, or another commit.
+- You want to create snapshot of the test results on specific tags (releases, etc).
+- Use this command for regression bisection</p>
+<p>This command can execute all tests configured for particular tree/branch, or you can provide jobfilter to execute specific tests and builds.</p>
+<p>Example:</p>
+<pre><code class="language-sh">kci-dev checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --commit f06021a18fcf8d8a1e79c5e0a8ec4eb2b038e153 --jobfilter &quot;kbuild-gcc-12-x86&quot;
+</code></pre>
+<p>Where:
+- <code>giturl</code> is the URL of the git repository to test.
+- <code>branch</code> is the branch of the git repository to test.
+- <code>commit</code> is the commit hash to test.
+- <code>jobfilter</code> is the job filter to use for the test (optional parameter)
+- <code>platformfilter</code> is the platform filter (usually it is name of hardware platform for group of devices) to use for the test (optional parameter)</p>
+<p>To figure out correct jobfilter and platformfilter, you need to check test json node. For example:</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;670f0c27493b6b8188c7667c&quot;,
+  &quot;kind&quot;: &quot;job&quot;,
+  &quot;name&quot;: &quot;tast-mm-misc-arm64-qualcomm&quot;,
+  &quot;path&quot;: [
+    &quot;checkout&quot;,
+    &quot;kbuild-gcc-12-arm64-chromeos-qualcomm&quot;,
+    &quot;tast-mm-misc-arm64-qualcomm&quot;
+  ],
+  &quot;group&quot;: &quot;tast-mm-misc-arm64-qualcomm&quot;,
+  &quot;parent&quot;: &quot;670f0782493b6b8188c7621c&quot;,
+  &quot;state&quot;: &quot;done&quot;,
+  &quot;result&quot;: &quot;pass&quot;,
+  &quot;artifacts&quot;: {
+    &quot;lava_log&quot;: &quot;https://kciapistagingstorage1.file.core.windows.net/staging/tast-mm-misc-arm64-qualcomm-670f0c27493b6b8188c7667c/log.txt.gz?sv=2022-11-02&amp;ss=f&amp;srt=sco&amp;sp=r&amp;se=2024-10-17T19:19:12Z&amp;st=2023-10-17T11:19:12Z&amp;spr=https&amp;sig=sLmFlvZHXRrZsSGubsDUIvTiv%2BtzgDq6vALfkrtWnv8%3D&quot;,
+    &quot;callback_data&quot;: &quot;https://kciapistagingstorage1.file.core.windows.net/staging/tast-mm-misc-arm64-qualcomm-670f0c27493b6b8188c7667c/lava_callback.json.gz?sv=2022-11-02&amp;ss=f&amp;srt=sco&amp;sp=r&amp;se=2024-10-17T19:19:12Z&amp;st=2023-10-17T11:19:12Z&amp;spr=https&amp;sig=sLmFlvZHXRrZsSGubsDUIvTiv%2BtzgDq6vALfkrtWnv8%3D&quot;
+  },
+  &quot;data&quot;: {
+    &quot;error_code&quot;: null,
+    &quot;error_msg&quot;: null,
+    &quot;test_source&quot;: null,
+    &quot;test_revision&quot;: null,
+    &quot;platform&quot;: &quot;sc7180-trogdor-lazor-limozeen&quot;,
+    &quot;device&quot;: &quot;sc7180-trogdor-lazor-limozeen-cbg-7&quot;,
+    &quot;runtime&quot;: &quot;lava-collabora&quot;,
+    &quot;job_id&quot;: &quot;16081547&quot;,
+    &quot;job_context&quot;: null,
+    &quot;regression&quot;: null,
+    &quot;kernel_revision&quot;: {
+      &quot;tree&quot;: &quot;kernelci&quot;,
+      &quot;url&quot;: &quot;https://github.com/kernelci/linux.git&quot;,
+      &quot;branch&quot;: &quot;staging-mainline&quot;,
+      &quot;commit&quot;: &quot;c862449c840a37bbe797a0b719881449beac75ca&quot;,
+      &quot;describe&quot;: &quot;staging-mainline-20241016.0&quot;,
+      &quot;version&quot;: {
+        &quot;version&quot;: 6,
+        &quot;patchlevel&quot;: 12,
+        &quot;sublevel&quot;: null,
+        &quot;extra&quot;: &quot;-rc3-45-gc862449c840a3&quot;,
+        &quot;name&quot;: null
+      },
+      &quot;patchset&quot;: null,
+      &quot;commit_tags&quot;: [
+        &quot;staging-mainline-20241016.0&quot;
+      ],
+      &quot;commit_message&quot;: &quot;staging-mainline-20241016.0&quot;,
+      &quot;tip_of_branch&quot;: false
+    },
+    &quot;arch&quot;: &quot;arm64&quot;,
+    &quot;defconfig&quot;: &quot;cros://chromeos-6.6/arm64/chromiumos-qualcomm.flavour.config&quot;,
+    &quot;config_full&quot;: &quot;+lab-setup+arm64-chromebook+CONFIG_MODULE_COMPRESS=n+CONFIG_MODULE_COMPRESS_NONE=y&quot;,
+    &quot;compiler&quot;: &quot;gcc-12&quot;,
+    &quot;kernel_type&quot;: &quot;image&quot;
+  },
+  &quot;debug&quot;: null,
+  &quot;jobfilter&quot;: null,
+  &quot;platform_filter&quot;: null,
+  &quot;created&quot;: &quot;2024-10-16T00:43:19.079000&quot;,
+  &quot;updated&quot;: &quot;2024-10-16T02:22:58.113000&quot;,
+  &quot;timeout&quot;: &quot;2024-10-16T06:43:19.079000&quot;,
+  &quot;holdoff&quot;: null,
+  &quot;owner&quot;: &quot;staging.kernelci.org&quot;,
+  &quot;submitter&quot;: &quot;service:pipeline&quot;,
+  &quot;treeid&quot;: &quot;f53af2a7273aed52629647124c95e8ddc79a317b93bced2ee36837bde03d88af&quot;,
+  &quot;user_groups&quot;: []
+}
+</code></pre>
+<p>In this example, the jobfilter is <code>tast-mm-misc-arm64-qualcomm</code> for test, if you look into path, you can figure out also build job named and the platformfilter is <code>kbuild-gcc-12-arm64-chromeos-qualcomm</code> and in data/platform: <code>sc7180-trogdor-lazor-limozeen</code>. So complete command to test this job would be:</p>
+<pre><code class="language-sh">kci-dev checkout --giturl https://github.com/kernelci/linux.git --branch staging-mainline --commit c862449c840a37bbe797a0b719881449beac75ca --jobfilter tast-mm-misc-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --platformfilter sc7180-trogdor-lazor-limozeen
+</code></pre>
+<p>Other options:</p>
+<h3 id="-tipoftree">--tipoftree</h3>
+<p>You can also set instead of --commit option --tipoftree which will retrieve the latest commit of the tree.</p>
+<h3 id="-watch">--watch</h3>
+<p>Additionally, you can use --watch option to watch the progress of the test.</p>
+<p>After executing the command, you will see the output similar to the following:</p>
+<pre><code class="language-sh">./kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --jobfilter baseline-nfs-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --watch
+api connect: https://staging.kernelci.org:9100/
+Retrieving latest commit on tree: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git branch: master
+Commit to checkout: d3d1556696c1a993eec54ac585fe5bf677e07474
+OK
+Watching for jobs on treeid: ad137d5a009f685d1c9c964897bcc35d552b031c9f542b433908fa1368b95465
+Current time: 2024-10-10 14:20:11
+Total tree nodes 1 found.
+Node 6707b869322a7c560a1a2c69 job checkout State running Result None
+Refresh in 30s...Current time: 2024-10-10 14:20:41
+Total tree nodes 1 found.
+Node 6707b869322a7c560a1a2c69 job checkout State running Result None
+Refresh in 30s...Current time: 2024-10-10 14:21:13
+Total tree nodes 1 found.
+Node 6707b869322a7c560a1a2c69 job checkout State running Result None
+Refresh in 30s...Current time: 2024-10-10 14:21:43
+Total tree nodes 1 found.
+Node 6707b869322a7c560a1a2c69 job checkout State running Result None
+Refresh in 30s...Current time: 2024-10-10 14:22:14
+Total tree nodes 1 found.
+Node 6707b869322a7c560a1a2c69 job checkout State available Result None
+Refresh in 30s...Current time: 2024-10-10 14:22:45
+Total tree nodes 2 found.
+Node 6707b869322a7c560a1a2c69 job checkout State available Result None
+Node 6707b8ed322a7c560a1a2dc2 job kbuild-gcc-12-arm64-chromeos-qualcomm State running Result None
+...
+Refresh in 30s...Current time: 2024-10-10 14:41:22
+Total tree nodes 12 found.
+Node 6707b869322a7c560a1a2c69 job checkout State closing Result None
+Node 6707b8ed322a7c560a1a2dc2 job kbuild-gcc-12-arm64-chromeos-qualcomm State done Result pass
+Node 6707bc74322a7c560a1a38f6 job baseline-nfs-arm64-qualcomm State done Result pass
+Node 6707bc75322a7c560a1a38f7 job baseline-nfs-arm64-qualcomm State running Result None
+Refresh in 30s...Current time: 2024-10-10 14:41:53
+Total tree nodes 12 found.
+Node 6707b869322a7c560a1a2c69 job checkout State closing Result None
+Node 6707b8ed322a7c560a1a2dc2 job kbuild-gcc-12-arm64-chromeos-qualcomm State done Result pass
+Node 6707bc74322a7c560a1a38f6 job baseline-nfs-arm64-qualcomm State done Result pass
+Node 6707bc75322a7c560a1a38f7 job baseline-nfs-arm64-qualcomm State running Result None
+Refresh in 30s...Current time: 2024-10-10 14:42:23
+Total tree nodes 12 found.
+Node 6707b869322a7c560a1a2c69 job checkout State closing Result None
+Node 6707b8ed322a7c560a1a2dc2 job kbuild-gcc-12-arm64-chromeos-qualcomm State done Result pass
+Node 6707bc74322a7c560a1a38f6 job baseline-nfs-arm64-qualcomm State done Result pass
+Node 6707bc75322a7c560a1a38f7 job baseline-nfs-arm64-qualcomm State running Result None
+</code></pre>
+<p>The command will keep watching the progress of the test until all jobs are done. You can also stop the watching by pressing <code>Ctrl+C</code> or command will stop after all jobs are done(or failed).</p>
+<h3 id="-test">--test</h3>
+<p>Together with --watch option, you can use --test option to wait for particular test results. Return code of kci-dev will depend on the test result:</p>
+<ul>
+<li><code>pass</code> - return code 0 (test passed)</li>
+<li><code>fail</code> - return code 1 (test failed)</li>
+<li><code>error</code> - return code 2 (prior steps failed, such as compilation, test setup, etc, or infrastructure error)</li>
+</ul>
+<p>For example:</p>
+<pre><code class="language-sh">kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --jobfilter baseline-nfs-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --platformfilter sc7180-trogdor-kingoftown --watch --test crit
+</code></pre>
+<p>This command will wait for the test results of the test with the name <code>crit</code>. It will follow first jobs, such as <code>checkout</code>, <code>kbuild-gcc-12-arm64-chromeos-qualcomm</code>, <code>baseline-nfs-arm64-qualcomm</code> and when they are complete will wait until timeout for the test <code>crit</code> to finish. If the test <code>crit</code> will pass, the command will return 0, if it will fail, the command will return 1, if any of the jobs will fail or timeout, the command will return 2.</p>
+<p>This command can be used for regression bisection, where you can test if the test <code>crit</code> pass or fail on the specific commit.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/kernelci" target="_blank" rel="noopener" title="kernelci on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tabs"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
