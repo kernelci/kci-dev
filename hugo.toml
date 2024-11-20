@@ -1,0 +1,18 @@
+baseURL = 'https://aliceinwire.github.io/kci-dev/'
+languageCode = 'en-us'
+title = 'kci-dev'
+description = 'kci-dev is a cmdline tool for interact with a enabled KernelCI server.'
+contentDir = "docs/"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+[params.ui]
+sidebar_menu_compact = false
+breadcrumb_disable = false
+sidebar_search_disable = false
+navbar_logo = true
+footer_about_enable = true
+navbar_translucent_over_cover_disable = true
