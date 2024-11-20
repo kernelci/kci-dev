@@ -1,3 +1,13 @@
++++
+title = 'kci-dev'
+date = 2024-01-14T07:07:07+01:00
++++
+
+<br>
+<br>
+<br>
+<br>
+
 # kci-dev
 
 kci-dev is a cmdline tool for interact with a enabled KernelCI server
@@ -78,12 +88,12 @@ kci-dev --settings /path/to/.kci-dev.toml
 
 ### checkout
 
-- [checkout](checkout.md)
+- [checkout](checkout)
 
 ### testretry
 
-- [testretry](testretry.md)
+- [testretry](testretry)
 
 ### results
 
-- [results](results.md)
+- [results](results)
