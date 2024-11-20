@@ -51,6 +51,7 @@ jobs:
           TZ: America/Los_Angeles
         run: |
           git clone --depth 1 --branch v0.11.0 https://github.com/google/docsy.git themes/docsy
+          sed -i 's/fixed/relative/g' themes/docsy/assets/scss/_nav.scss
           git clone --depth 1 --branch 6.7.0 https://github.com/FortAwesome/Font-Awesome.git themes/github.com/FortAwesome/Font-Awesome
           git clone --depth 1 --branch v5.3.3 https://github.com/twbs/bootstrap.git themes/github.com/twbs/bootstrap
           hugo \

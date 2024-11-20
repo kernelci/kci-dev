@@ -17,16 +17,13 @@ pygmentsStyle = "tango"
       style = "tango"
 
 [params.ui]
-sidebar_menu_compact = true
-breadcrumb_disable = true
 sidebar_search_disable = true
 navbar_logo = false
 footer_about_enable = true
-navbar_translucent_over_cover_disable = true
+ul_show = 1
+sidebar_menu_foldable = true
+sidebar_cache_limit = 1000
 
-[params.navbar.stickyNavBar]
-enable = false
-showOnScrollUp = false
 
 [menu]
   [[menu.main]]
@@ -43,7 +40,7 @@ showOnScrollUp = false
     pageRef = "testretry/"
     weight = 20
 
-	[[menu.main]]
+  [[menu.main]]
     name = "results"
     url = "results/"
     weight = 20
