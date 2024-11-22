@@ -4,15 +4,43 @@ title = 'kci-dev'
 description = 'kci-dev is a cmdline tool for interact with a enabled KernelCI server.'
 contentDir = "docs/"
 
+pygmentsCodeFences = true
+pygmentsUseClasses = false
+pygmentsUseClassic = false
+pygmentsStyle = "tango"
+
 [markup]
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true
+  [markup.highlight]
+      style = "tango"
 
 [params.ui]
-sidebar_menu_compact = false
-breadcrumb_disable = false
-sidebar_search_disable = false
-navbar_logo = true
+sidebar_search_disable = true
+navbar_logo = false
 footer_about_enable = true
-navbar_translucent_over_cover_disable = true
+ul_show = 1
+sidebar_menu_foldable = true
+sidebar_cache_limit = 1000
+
+
+[menu]
+  [[menu.main]]
+    name = "Home"
+    pageRef = "/"
+    weight = 10
+
+  [[menu.main]]
+    name = "checkout"
+    pageRef = "checkout/"
+    weight = 20
+  [[menu.main]]
+    name = "testretry"
+    pageRef = "testretry/"
+    weight = 20
+
+  [[menu.main]]
+    name = "results"
+    url = "results/"
+    weight = 20

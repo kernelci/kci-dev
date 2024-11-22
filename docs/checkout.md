@@ -3,11 +3,6 @@ title = 'checkout'
 date = 2024-01-14T07:07:07+01:00
 +++
 
-<br>
-<br>
-<br>
-<br>
-
 ## checkout
 
 This command allow to test arbitary commit on the KernelCI Pipeline instance. This might be useful in several cases:
