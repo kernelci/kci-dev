@@ -1,9 +1,8 @@
 +++
 title = 'results'
 date = 2024-01-14T07:07:07+01:00
+description = 'Command for show test results.'
 +++
-
-### results
 
 This command will show the test result by node id.
 

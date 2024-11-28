@@ -1,9 +1,8 @@
 +++
 title = 'kci-dev'
 date = 2024-01-14T07:07:07+01:00
+description = 'Tool for interact programmatically with KernelCI instances.'
 +++
-
-# kci-dev
 
 kci-dev is a cmdline tool for interact with a enabled KernelCI server
 Purpose of this tool to provide a easy way to use features of KernelCI Pipeline instance.

@@ -1,9 +1,8 @@
 +++
 title = 'checkout'
 date = 2024-01-14T07:07:07+01:00
+description = 'This command allow to test arbitary commit on the KernelCI Pipeline instance.'
 +++
-
-## checkout
 
 This command allow to test arbitary commit on the KernelCI Pipeline instance. This might be useful in several cases:
 - You want to test a specific commit, if it fails or pass test, or introduce any other degradation comparing to the current, or another commit.
