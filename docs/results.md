@@ -74,16 +74,19 @@ Result sample:
  'user_groups': []}
 ```
 
-testnodeid is the node id of the test job, which you can get from the KernelCI dashboard. Usually it is hexadecimal string.
+testnodeid is the node id of the test job, which you can get from the KernelCI dashboard.  
+Usually it is hexadecimal string.  
 
-Additionally, for --nodes you can provide optional parameters --filter to filter the results by the given key and value. For example:
+Additionally, for --nodes you can provide optional parameters --filter to filter the results by the given key and value.  
+For example:
 ```sh
 ./kci-dev.py results --nodes --filter treeid=e25266f77837de335edba3c1b8d2a04edc2bfb195b77c44711d81ebea4494140 --filter kind=test
 ```
-This command will show the nodes of tests in particular tree checkout. But as you might see, there is a lot of fields you might be not
-interested in.
+This command will show the nodes of tests in particular tree checkout.  
+But as you might see, there is a lot of fields you might be not interested in.  
 
-For this we have additional option --field, that will restrict output only to specified fields. For example:
+For this we have additional option --field, that will restrict output only to specified fields.  
+For example:
 ```sh
 ./kci-dev.py results --nodes --filter treeid=e25266f77837de335edba3c1b8d2a04edc2bfb195b77c44711d81ebea4494140 --filter kind=test --field name --field result
 ```
