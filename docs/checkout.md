@@ -4,7 +4,8 @@ date = 2024-01-14T07:07:07+01:00
 description = 'This command allow to test arbitary commit on the KernelCI Pipeline instance.'
 +++
 
-This command allow to test arbitary commit on the KernelCI Pipeline instance. This might be useful in several cases:
+This command allow to test arbitary commit on the KernelCI Pipeline instance.  
+This might be useful in several cases:
 - You want to test a specific commit, if it fails or pass test, or introduce any other degradation comparing to the current, or another commit.
 - You want to create snapshot of the test results on specific tags (releases, etc).
 - Use this command for regression bisection
@@ -156,7 +157,8 @@ Node 6707bc74322a7c560a1a38f6 job baseline-nfs-arm64-qualcomm State done Result 
 Node 6707bc75322a7c560a1a38f7 job baseline-nfs-arm64-qualcomm State running Result None
 ```
 
-The command will keep watching the progress of the test until all jobs are done. You can also stop the watching by pressing `Ctrl+C` or command will stop after all jobs are done(or failed).
+The command will keep watching the progress of the test until all jobs are done.  
+You can also stop the watching by pressing `Ctrl+C` or command will stop after all jobs are done(or failed).
 
 ### --test
 
@@ -171,6 +173,8 @@ For example:
 kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --jobfilter baseline-nfs-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --platformfilter sc7180-trogdor-kingoftown --watch --test crit
 ```
 
-This command will wait for the test results of the test with the name `crit`. It will follow first jobs, such as `checkout`, `kbuild-gcc-12-arm64-chromeos-qualcomm`, `baseline-nfs-arm64-qualcomm` and when they are complete will wait until timeout for the test `crit` to finish. If the test `crit` will pass, the command will return 0, if it will fail, the command will return 1, if any of the jobs will fail or timeout, the command will return 2.
+This command will wait for the test results of the test with the name `crit`.  
+It will follow first jobs, such as `checkout`, `kbuild-gcc-12-arm64-chromeos-qualcomm`, `baseline-nfs-arm64-qualcomm` and when they are complete will wait until timeout for the test `crit` to finish.  
+If the test `crit` will pass, the command will return 0, if it will fail, the command will return 1, if any of the jobs will fail or timeout, the command will return 2.  
 
 This command can be used for regression bisection, where you can test if the test `crit` pass or fail on the specific commit.
