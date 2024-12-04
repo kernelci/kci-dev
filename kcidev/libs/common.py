@@ -3,6 +3,7 @@
 
 import os
 
+import click
 import toml
 
 
@@ -26,6 +27,10 @@ def load_toml(settings):
             config = toml.load(f)
 
     if not config:
-        raise FileNotFoundError("No configuration file found")
+        click.secho(
+            f"No `{fname}` configuration file found at `{global_path}`, `{user_path}` or `{settings}`",
+            fg="red",
+        )
+        raise click.Abort()
 
     return config
