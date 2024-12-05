@@ -20,7 +20,7 @@ pip install kci-dev
 
 ## Configuration
 
-You can see a example configuration file [here](docs/index.md#configuration)  
+You can see a example configuration file [here](docs/_index.md#configuration)  
 Without a auth token kci-dev can be used in results view only mode
 
 ## Contributing to kci-dev
