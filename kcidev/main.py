@@ -8,7 +8,7 @@ from kcidev.subcommands import checkout, commit, patch, results, testretry
 
 
 @click.group(
-    help="Stand alone tool for Linux Kernel developers and maintainers that can test local Linux Kernel changes on a enabled KernelCI server"
+    help="Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI"
 )
 @click.version_option("0.1.0", prog_name="kci-dev")
 @click.option(
