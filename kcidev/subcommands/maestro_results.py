@@ -72,7 +72,7 @@ def get_nodes(url, limit, offset, filter, field):
     print_nodes(nodes, field)
 
 
-@click.command(help="Get results")
+@click.command(help="Get results directly from KernelCI's Maestro")
 @click.option(
     "--nodeid",
     required=False,
@@ -109,7 +109,7 @@ def get_nodes(url, limit, offset, filter, field):
     help="Print only particular field(s) from node data",
 )
 @click.pass_context
-def results(ctx, nodeid, nodes, limit, offset, filter, field):
+def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = api_connection(config[instance]["api"])

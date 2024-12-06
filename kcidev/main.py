@@ -4,11 +4,11 @@
 import click
 
 from kcidev.libs.common import *
-from kcidev.subcommands import checkout, commit, patch, results, testretry
+from kcidev.subcommands import checkout, commit, patch, maestro_results, testretry
 
 
 @click.group(
-    help="Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI"
+    help="Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI."
 )
 @click.version_option("0.1.0", prog_name="kci-dev")
 @click.option(
@@ -38,7 +38,7 @@ def run():
     cli.add_command(checkout.checkout)
     cli.add_command(commit.commit)
     cli.add_command(patch.patch)
-    cli.add_command(results.results)
+    cli.add_command(maestro_results.maestro_results)
     cli.add_command(testretry.testretry)
     cli()
 
