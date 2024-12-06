@@ -1,21 +1,23 @@
 +++
-title = 'results'
+title = 'maestro-results'
 date = 2024-01-14T07:07:07+01:00
-description = 'Command for show test results.'
+description = 'Command for show Maestro test results.'
 +++
 
-This command will show the test result by node id.
+This command is Maestro-specific and will show the test result by node id.
+
+Do not use it, unless you are requesting test on Maestro through `kci-dev`.
 
 Example:
 ```sh
-kci-dev results --nodeid <str: testnodeid>
+kci-dev maestro-results --nodeid <str: testnodeid>
 ```
 
 This command will show the results of tests by page nodes limit and page offset.
 
 Example:
 ```sh
-kci-dev results --nodes --limit <int: page nodes limit> --offset <int: page nodes offset>
+kci-dev maestro-results --nodes --limit <int: page nodes limit> --offset <int: page nodes offset>
 ```
 
 Result sample:
