@@ -263,6 +263,11 @@ def checkout(
             f"Retrieving latest commit on tree: {giturl} branch: {branch}", fg="green"
         )
         commit = retrieve_tot_commit(giturl, branch)
+        if not commit or len(commit) != 40:
+            click.secho(
+                "Unable to retrieve latest commit. Wrong tree/branch?", fg="red"
+            )
+            return
         click.secho(f"Commit to checkout: {commit}", fg="green")
     resp = send_checkout_full(
         url,
