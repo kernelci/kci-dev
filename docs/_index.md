@@ -102,6 +102,12 @@ Example:
 kci-dev --settings /path/to/.kci-dev.toml
 ```
 
+### General Commands
+
+#### results
+
+Pull results from the Dashboard. See detailed [documentation](results).
+
 ### Maestro Commands
 
 #### checkout
