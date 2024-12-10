@@ -4,25 +4,45 @@ date = 2024-01-14T07:07:07+01:00
 description = 'Tool for interact programmatically with KernelCI instances.'
 +++
 
-kci-dev is a cmdline tool for interact with a enabled KernelCI server.  
-Purpose of this tool to provide a easy way to use features of KernelCI Pipeline instance.  
+Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI.
+
+Purpose of this tool to provide an easy-to-use command line tool for developers and maintainers request test from KernelCI, view results, download logs, integrate with scripts, etc.
 
 ## Installation
 
-### Using PyPI and virtualenv
+You may want to use python virtual environment.
+If you are not familiar with it, check [this](https://docs.python.org/3/library/venv.html).
+
+To quickly setup it:
+
 ```sh
 virtualenv .venv
 source .venv/bin/activate
+```
+
+### Using package from PyPI
+
+Simply install it using `pip`:
+
+```sh
 pip install kci-dev
 ```
 
-### Using poetry and virtualenv
+### Development snapshot through poetry
+
+Clone the `kci-dev` repo you want, select the desired branch and run:
+
 ```sh
 virtualenv .venv
 source .venv/bin/activate
 pip install poetry
 poetry install
-poetry run kci-dev
+```
+
+Then, to execute kci-dev:
+
+```sh
+poetry run kci-dev <options>
 ```
 
 ## Configuration
