@@ -27,6 +27,8 @@ poetry run kci-dev
 
 ## Configuration
 
+> Configuration is only necessary if you are using any of the Maestro Commands listed in the Maestro section.
+
 kci-dev searches for and loads a configuration file in the following order of priority:
 1) The global configuration file located at /etc/kci-dev.toml.
 2) The user-specific configuration file at ~/.config/kci-dev/kci-dev.toml
@@ -61,9 +63,9 @@ pipeline is the URL of the KernelCI Pipeline API endpoint, api is the URL of the
 If you are using KernelCI Pipeline instance, you can get the token from the project maintainers.  
 If it is a local instance, you can generate your token using [kernelci-pipeline/tools/jwt_generator.py](https://github.com/kernelci/kernelci-pipeline/blob/main/tools/jwt_generator.py) script.  
 
-## Options
+### Configuration options
 
-### instance
+#### --instance
 You can provide the instance name to use for the command.
 
 Example:
@@ -71,7 +73,7 @@ Example:
 kci-dev --instance staging
 ```
 
-### settings
+#### --settings
 
 You can provide the configuration file path to use for the command.
 
@@ -80,17 +82,17 @@ Example:
 kci-dev --settings /path/to/.kci-dev.toml
 ```
 
-## Commands
+### Maestro Commands
 
-### checkout
+#### checkout
 
 - [checkout](checkout)
 
-### testretry
+#### testretry
 
 - [testretry](testretry)
 
-### results
+#### maestro-results
 
-- [results](results)
+- [maestro-results](maestro-results)
 
