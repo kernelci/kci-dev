@@ -4,7 +4,8 @@
 import click
 
 from kcidev.libs.common import *
-from kcidev.subcommands import checkout, commit, patch, results, testretry
+from kcidev.subcommands import (bisect, checkout, commit, patch, results,
+                                testretry)
 
 
 @click.group(
@@ -35,6 +36,7 @@ def cli(ctx, settings, instance):
 
 
 def run():
+    cli.add_command(bisect.bisect)
     cli.add_command(checkout.checkout)
     cli.add_command(commit.commit)
     cli.add_command(patch.patch)
