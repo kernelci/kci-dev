@@ -7,7 +7,7 @@
 
 > *cmdline tool for interact with KernelCI*
 
-kci-dev is a cmdline tool for interact with a enabled KernelCI server
+Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI services.
 
 ## Quickstart
 

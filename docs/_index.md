@@ -4,28 +4,50 @@ date = 2024-01-14T07:07:07+01:00
 description = 'Tool for interact programmatically with KernelCI instances.'
 +++
 
-kci-dev is a cmdline tool for interact with a enabled KernelCI server.  
-Purpose of this tool to provide a easy way to use features of KernelCI Pipeline instance.  
+Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI.
+
+Purpose of this tool to provide an easy-to-use command line tool for developers and maintainers request test from KernelCI, view results, download logs, integrate with scripts, etc.
 
 ## Installation
 
-### Using PyPI and virtualenv
+You may want to use python virtual environment.
+If you are not familiar with it, check [this](https://docs.python.org/3/library/venv.html).
+
+To quickly setup it:
+
 ```sh
 virtualenv .venv
 source .venv/bin/activate
+```
+
+### Using package from PyPI
+
+Simply install it using `pip`:
+
+```sh
 pip install kci-dev
 ```
 
-### Using poetry and virtualenv
+### Development snapshot through poetry
+
+Clone the `kci-dev` repo you want, select the desired branch and run:
+
 ```sh
 virtualenv .venv
 source .venv/bin/activate
 pip install poetry
 poetry install
-poetry run kci-dev
+```
+
+Then, to execute kci-dev:
+
+```sh
+poetry run kci-dev <options>
 ```
 
 ## Configuration
+
+> Configuration is only necessary if you are using any of the Maestro Commands listed in the Maestro section.
 
 kci-dev searches for and loads a configuration file in the following order of priority:
 1) The global configuration file located at /etc/kci-dev.toml.
@@ -61,9 +83,9 @@ pipeline is the URL of the KernelCI Pipeline API endpoint, api is the URL of the
 If you are using KernelCI Pipeline instance, you can get the token from the project maintainers.  
 If it is a local instance, you can generate your token using [kernelci-pipeline/tools/jwt_generator.py](https://github.com/kernelci/kernelci-pipeline/blob/main/tools/jwt_generator.py) script.  
 
-## Options
+### Configuration options
 
-### instance
+#### --instance
 You can provide the instance name to use for the command.
 
 Example:
@@ -71,7 +93,7 @@ Example:
 kci-dev --instance staging
 ```
 
-### settings
+#### --settings
 
 You can provide the configuration file path to use for the command.
 
@@ -80,17 +102,23 @@ Example:
 kci-dev --settings /path/to/.kci-dev.toml
 ```
 
-## Commands
+### General Commands
 
-### checkout
+#### results
+
+Pull results from the Dashboard. See detailed [documentation](results).
+
+### Maestro Commands
+
+#### checkout
 
 - [checkout](checkout)
 
-### testretry
+#### testretry
 
 - [testretry](testretry)
 
-### results
+#### maestro-results
 
-- [results](results)
+- [maestro-results](maestro-results)
 

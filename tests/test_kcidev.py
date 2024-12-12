@@ -46,7 +46,7 @@ def test_kcidev_patch_help():
 
 
 def test_kcidev_results_help():
-    command = ["poetry", "run", "kci-dev", "results", "--help"]
+    command = ["poetry", "run", "kci-dev", "maestro-results", "--help"]
     result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
     print("returncode: " + str(result.returncode))
     print("#### stdout ####")
@@ -85,7 +85,7 @@ def test_kcidev_results_tests():
         "kci-dev",
         "--instance",
         "staging",
-        "results",
+        "maestro-results",
         "--nodeid",
         "65a1355ee98651d0fe81e41d",
     ]
