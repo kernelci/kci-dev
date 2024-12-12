@@ -25,10 +25,46 @@ def fetch_from_api(endpoint, params):
     return r.json()
 
 
+def print_summary(type, n_pass, n_fail, n_inconclusive):
+    kci_msg_nonl(f"{type}:\t")
+    kci_msg_green_nonl(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}")
+    kci_msg_nonl("/")
+    kci_msg_red_nonl(f"{n_fail}") if n_fail else kci_msg_nonl(f"{n_fail}")
+    kci_msg_nonl("/")
+    (
+        kci_msg_yellow_nonl(f"{n_inconclusive}")
+        if n_inconclusive
+        else kci_msg_nonl(f"{n_inconclusive}")
+    )
+    kci_msg_nonl(f"\n")
+
+
+def sum_inconclusive_results(results):
+    count = 0
+    for status in ["ERROR", "SKIP", "MISS", "DONE", "NULL"]:
+        if status in results.keys():
+            count += results[status]
+
+    return count
+
+
 def cmd_summary(data):
-    kci_print(f"Builds: {data['buildsSummary']['builds']}")
-    kci_print(f"Boots: {data['bootStatusSummary']}")
-    kci_print(f"Tests: {data['testStatusSummary']}")
+    kci_print("pass/fail/inconclusive")
+
+    builds = data["buildsSummary"]["builds"]
+    print_summary("builds", builds["valid"], builds["invalid"], builds["null"])
+
+    boots = data["bootStatusSummary"]
+    inconclusive_boots = sum_inconclusive_results(boots)
+    pass_boots = boots["PASS"] if "PASS" in boots.keys() else 0
+    fail_boots = boots["FAIL"] if "FAIL" in boots.keys() else 0
+    print_summary("boots", pass_boots, fail_boots, inconclusive_boots)
+
+    tests = data["testStatusSummary"]
+    pass_tests = tests["PASS"] if "PASS" in tests.keys() else 0
+    fail_tests = tests["FAIL"] if "FAIL" in tests.keys() else 0
+    inconclusive_tests = sum_inconclusive_results(tests)
+    print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
 
 
 def cmd_failed_builds(data, download_logs):

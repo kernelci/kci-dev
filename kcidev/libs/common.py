@@ -42,3 +42,19 @@ def kci_print(content):
 
 def kci_err(content):
     click.secho(content, fg="red", err=True)
+
+
+def kci_msg_nonl(content):
+    click.echo(content, nl=False)
+
+
+def kci_msg_green_nonl(content):
+    click.secho(content, fg="green", nl=False)
+
+
+def kci_msg_red_nonl(content):
+    click.secho(content, fg="red", nl=False)
+
+
+def kci_msg_yellow_nonl(content):
+    click.secho(content, fg="bright_yellow", nl=False)
