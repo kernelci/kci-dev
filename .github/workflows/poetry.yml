@@ -27,6 +27,6 @@ jobs:
       - name: Lint check with python black
         run: poetry run black --check --verbose .
       - name: Isort check
-        run: poetry run isort . --check --diff
+        run: poetry run isort . --profile black --check --diff
       - name: Pytest check
         run: poetry run pytest -rP
