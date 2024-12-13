@@ -122,10 +122,14 @@ def cmd_failed_builds(data, download_logs):
                     kci_err(f"Failed to fetch log {log_file}).")
                     pass
 
-            kci_print(
-                f"- config: {build['config_name']}; arch: {build['architecture']}"
-            )
-            kci_print(f"  compiler: {build['compiler']}")
+            kci_msg_nonl("- config:")
+            kci_msg_cyan_nonl(build["config_name"])
+            kci_msg_nonl(" arch: ")
+            kci_msg_cyan_nonl(build["architecture"])
+            kci_msg_nonl(" compiler: ")
+            kci_msg_cyan_nonl(build['compiler'])
+            kci_print("")
+
             kci_print(f"  config_url: {build['config_url']}")
             kci_print(f"  log: {log_path}")
             kci_print(f"  id: {build['id']}")
