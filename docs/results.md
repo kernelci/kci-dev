@@ -31,6 +31,16 @@ Unfortunately the Dashboard API doesn't support git tags as parameters yet.
 
 ## Results actions
 
+### --action=trees
+
+List all available trees for a given origin.
+
+Example:
+
+```sh
+kci-dev results --action=trees
+```
+
 ### --action=summary
 
 Shows a numeric summary of the build, boot and test results.

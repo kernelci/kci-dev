@@ -37,6 +37,13 @@ def fetch_full_results(origin, giturl, branch, commit):
     return fetch_from_api(endpoint, params)
 
 
+def fetch_tree_fast(origin):
+    params = {
+        "origin": origin,
+    }
+    return fetch_from_api("tree-fast", params)
+
+
 def print_summary(type, n_pass, n_fail, n_inconclusive):
     kci_msg_nonl(f"{type}:\t")
     kci_msg_green_nonl(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}")
@@ -77,6 +84,15 @@ def cmd_summary(data):
     fail_tests = tests["FAIL"] if "FAIL" in tests.keys() else 0
     inconclusive_tests = sum_inconclusive_results(tests)
     print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
+
+
+def cmd_list_trees(origin):
+    trees = fetch_tree_fast(origin)
+    for t in trees:
+        kci_msg_green_nonl(f"- {t['tree_name']}/{t['git_repository_branch']}:\n")
+        kci_print(f"  giturl: {t['git_repository_url']}")
+        kci_print(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
+        kci_print(f"  latest: {t['start_time']}")
 
 
 def cmd_failed_builds(data, download_logs):
@@ -140,6 +156,8 @@ def results(ctx, origin, giturl, branch, commit, action, download_logs):
             raise click.Abort()
         data = fetch_full_results(origin, giturl, branch, commit)
         cmd_summary(data)
+    elif action == "trees":
+        cmd_list_trees(origin)
     elif action == "failed-builds":
         if not giturl or not branch or not commit:
             kci_err("--giturl AND --branch AND commit are required")
