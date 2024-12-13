@@ -3,6 +3,7 @@
 <p align="center">
   <a href="https://pypi.org/project/kci-dev"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/kci-dev.svg?maxAge=86400" /></a>
   <a href="https://pypi.org/project/kci-dev"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/kci-dev.svg?maxAge=86400" /></a>
+  <a href="https://www.bestpractices.dev/projects/9829"><img src="https://www.bestpractices.dev/projects/9829/badge"></a>
 </p>
 
 > *cmdline tool for interact with KernelCI*
