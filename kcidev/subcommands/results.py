@@ -25,6 +25,18 @@ def fetch_from_api(endpoint, params):
     return r.json()
 
 
+def fetch_full_results(origin, giturl, branch, commit):
+    endpoint = f"tree/{commit}/full"
+    params = {
+        "origin": origin,
+        "git_url": giturl,
+        "git_branch": branch,
+        "commit": commit,
+    }
+
+    return fetch_from_api(endpoint, params)
+
+
 def print_summary(type, n_pass, n_fail, n_inconclusive):
     kci_msg_nonl(f"{type}:\t")
     kci_msg_green_nonl(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}")
@@ -91,18 +103,6 @@ def cmd_failed_builds(data, download_logs):
             kci_print(f"  config_url: {build['config_url']}")
             kci_print(f"  log: {log_path}")
             kci_print(f"  id: {build['id']}")
-
-
-def fetch_full_results(origin, giturl, branch, commit):
-    endpoint = f"tree/{commit}/full"
-    params = {
-        "origin": origin,
-        "git_url": giturl,
-        "git_branch": branch,
-        "commit": commit,
-    }
-
-    return fetch_from_api(endpoint, params)
 
 
 @click.command(help=" [Experimental] Get results from the dashboard")
