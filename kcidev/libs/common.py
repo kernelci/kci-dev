@@ -34,3 +34,11 @@ def load_toml(settings):
         raise click.Abort()
 
     return config
+
+
+def kci_print(content):
+    click.echo(content)
+
+
+def kci_err(content):
+    click.secho(content, fg="red", err=True)

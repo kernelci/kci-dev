@@ -1,122 +1,115 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import gzip
 import json
-import pprint
+import urllib
 
 import click
 import requests
-import toml
-from git import Repo
+
+from kcidev.libs.common import *
+
+DASHBOARD_API = "https://dashboard.kernelci.org/api/"
 
 
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
-
-
-def print_nodes(nodes, field):
-    if not isinstance(nodes, list):
-        nodes = [nodes]
-    for node in nodes:
-        if field:
-            data = {}
-            for f in field:
-                data[f] = node.get(f)
-            click.secho(pprint.pprint(data), fg="green", nl=False)
-        else:
-            click.secho(pprint.pprint(node), fg="green", nl=False)
-
-
-def get_node(url, nodeid, field):
-    headers = {
-        "Content-Type": "application/json; charset=utf-8",
-    }
-    url = url + "latest/node/" + nodeid
-    click.secho(url)
-    response = requests.get(url, headers=headers)
+def fetch_from_api(endpoint, params):
+    base_url = urllib.parse.urljoin(DASHBOARD_API, endpoint)
     try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as ex:
-        click.secho(ex.response.json().get("detail"), fg="red")
-        return None
-    except Exception as ex:
-        click.secho(ex, fg="red")
-        return None
-    print_nodes(response.json(), field)
+        url = "{}?{}".format(base_url, urllib.parse.urlencode(params))
+        r = requests.get(url)
+    except:
+        click.secho(f"Failed to fetch from {DASHBOARD_API}.")
+        raise click.Abort()
+
+    return r.json()
 
 
-def get_nodes(url, limit, offset, filter, field):
-    headers = {
-        "Content-Type": "application/json; charset=utf-8",
+def cmd_summary(data):
+    kci_print(f"Builds: {data['buildsSummary']['builds']}")
+    kci_print(f"Boots: {data['bootStatusSummary']}")
+    kci_print(f"Tests: {data['testStatusSummary']}")
+
+
+def cmd_failed_builds(data, download_logs):
+    kci_print("Failed builds:")
+    for build in data["builds"]:
+        if not build["valid"]:
+            log_path = build["log_url"]
+            if download_logs:
+                try:
+                    log_gz = requests.get(build["log_url"])
+                    log = gzip.decompress(log_gz.content)
+                    log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}.log"
+                    with open(log_file, mode="wb") as file:
+                        file.write(log)
+                    log_path = os.path.join(os.getcwd(), log_file)
+                except:
+                    kci_err(f"Failed to fetch log {log_file}).")
+                    pass
+
+            kci_print(
+                f"- config: {build['config_name']}; arch: {build['architecture']}"
+            )
+            kci_print(f"  compiler: {build['compiler']}")
+            kci_print(f"  config_url: {build['config_url']}")
+            kci_print(f"  log: {log_path}")
+            kci_print(f"  id: {build['id']}")
+
+
+def process_action(action, data, download_logs):
+    if action == None or action == "summary":
+        cmd_summary(data)
+    elif action == "failed-builds":
+        cmd_failed_builds(data, download_logs)
+
+
+def fetch_full_results(origin, giturl, branch, commit):
+    endpoint = f"tree/{commit}/full"
+    params = {
+        "origin": origin,
+        "git_url": giturl,
+        "git_branch": branch,
+        "commit": commit,
     }
-    url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
-    if filter:
-        for f in filter:
-            # TBD: We need to add translate filter to API
-            # if we need anything more complex than eq(=)
-            url = url + "&" + f
 
-    click.secho(url)
-    response = requests.get(url, headers=headers)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as ex:
-        click.secho(ex.response.json().get("detail"), fg="red")
-        return None
-    except Exception as ex:
-        click.secho(ex, fg="red")
-        return None
-
-    nodes = response.json()
-    print_nodes(nodes, field)
+    return fetch_from_api(endpoint, params)
 
 
-@click.command(help="Get results")
+@click.command(help=" [Experimental] Get results from the dashboard")
 @click.option(
-    "--nodeid",
-    required=False,
-    help="select node_id",
+    "--origin",
+    help="Select KCIDB origin",
+    default="maestro",
 )
 @click.option(
-    "--nodes",
+    "--giturl",
+    help="Git URL of kernel tree ",
+    required=True,
+)
+@click.option(
+    "--branch",
+    help="Branch to get results for",
+    required=True,
+)
+@click.option(
+    "--commit",
+    help="Commit or tag to get results for",
+    required=True,
+)
+@click.option(
+    "--action",
+    help="Select desired results action",
+)
+@click.option(
+    "--download-logs",
     is_flag=True,
-    required=False,
-    help="Get last nodes results",
-)
-@click.option(
-    "--limit",
-    default=50,
-    required=False,
-    help="Pagination limit for nodes",
-)
-@click.option(
-    "--offset",
-    default=0,
-    required=False,
-    help="Offset of the pagination",
-)
-@click.option(
-    "--filter",
-    required=False,
-    multiple=True,
-    help="Filter nodes by conditions",
-)
-@click.option(
-    "--field",
-    required=False,
-    multiple=True,
-    help="Print only particular field(s) from node data",
+    help="Select desired results action",
 )
 @click.pass_context
-def results(ctx, nodeid, nodes, limit, offset, filter, field):
-    config = ctx.obj.get("CFG")
-    instance = ctx.obj.get("INSTANCE")
-    url = api_connection(config[instance]["api"])
-    if nodeid:
-        get_node(url, nodeid, field)
-    if nodes:
-        get_nodes(url, limit, offset, filter, field)
+def results(ctx, origin, giturl, branch, commit, action, download_logs):
+    data = fetch_full_results(origin, giturl, branch, commit)
+    process_action(action, data, download_logs)
 
 
 if __name__ == "__main__":
