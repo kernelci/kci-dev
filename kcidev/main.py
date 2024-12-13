@@ -34,12 +34,10 @@ def cli(ctx, settings, instance):
         else:
             ctx.obj["INSTANCE"] = ctx.obj["CFG"].get("default_instance")
         if not ctx.obj["INSTANCE"]:
-            click.secho("No instance defined in settings or as argument", fg="red")
+            kci_err("No instance defined in settings or as argument")
             raise click.Abort()
         if ctx.obj["INSTANCE"] not in ctx.obj["CFG"]:
-            click.secho(
-                f"Instance {ctx.obj['INSTANCE']} not found in {settings}", fg="red"
-            )
+            kci_err(f"Instance {ctx.obj['INSTANCE']} not found in {settings}")
             raise click.Abort()
         pass
 

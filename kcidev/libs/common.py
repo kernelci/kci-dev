@@ -27,9 +27,8 @@ def load_toml(settings):
             config = toml.load(f)
 
     if not config:
-        click.secho(
-            f"No `{fname}` configuration file found at `{global_path}`, `{user_path}` or `{settings}`",
-            fg="red",
+        kci_err(
+            f"No `{fname}` configuration file found at `{global_path}`, `{user_path}` or `{settings}`"
         )
         raise click.Abort()
 
