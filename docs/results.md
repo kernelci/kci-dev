@@ -29,6 +29,10 @@ The tip of tree commit being tested. It needs to be the full commit hash.
 
 Unfortunately the Dashboard API doesn't support git tags as parameters yet.
 
+### --latest
+
+Return results for the latest commit for the tree.
+
 ## Results actions
 
 ### --action=trees

@@ -44,6 +44,16 @@ def fetch_tree_fast(origin):
     return fetch_from_api("tree-fast", params)
 
 
+def get_latest_commit(origin, giturl, branch):
+    trees = fetch_tree_fast(origin)
+    for t in trees:
+        if t["git_repository_url"] == giturl and t["git_repository_branch"] == branch:
+            return t["git_commit_hash"]
+
+    kci_err("Tree and branch not found.")
+    raise click.Abort()
+
+
 def print_summary(type, n_pass, n_fail, n_inconclusive):
     kci_msg_nonl(f"{type}:\t")
     kci_msg_green_nonl(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}")
@@ -148,20 +158,29 @@ def cmd_failed_builds(data, download_logs):
     is_flag=True,
     help="Select desired results action",
 )
+@click.option(
+    "--latest",
+    is_flag=True,
+    help="Select latest results available",
+)
 @click.pass_context
-def results(ctx, origin, giturl, branch, commit, action, download_logs):
+def results(ctx, origin, giturl, branch, commit, action, download_logs, latest):
     if action == None or action == "summary":
-        if not giturl or not branch or not commit:
-            kci_err("--giturl AND --branch AND --commit are required")
+        if not giturl or not branch or not ((commit != None) ^ latest):
+            kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
             raise click.Abort()
+        if latest:
+            commit = get_latest_commit(origin, giturl, branch)
         data = fetch_full_results(origin, giturl, branch, commit)
         cmd_summary(data)
     elif action == "trees":
         cmd_list_trees(origin)
     elif action == "failed-builds":
-        if not giturl or not branch or not commit:
-            kci_err("--giturl AND --branch AND commit are required")
+        if not giturl or not branch or not ((commit != None) ^ latest):
+            kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
             raise click.Abort()
+        if latest:
+            commit = get_latest_commit(origin, giturl, branch)
         data = fetch_full_results(origin, giturl, branch, commit)
         cmd_failed_builds(data, download_logs)
 
