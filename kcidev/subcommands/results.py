@@ -114,17 +114,14 @@ def fetch_full_results(origin, giturl, branch, commit):
 @click.option(
     "--giturl",
     help="Git URL of kernel tree ",
-    required=True,
 )
 @click.option(
     "--branch",
     help="Branch to get results for",
-    required=True,
 )
 @click.option(
     "--commit",
     help="Commit or tag to get results for",
-    required=True,
 )
 @click.option(
     "--action",
@@ -137,10 +134,17 @@ def fetch_full_results(origin, giturl, branch, commit):
 )
 @click.pass_context
 def results(ctx, origin, giturl, branch, commit, action, download_logs):
-    data = fetch_full_results(origin, giturl, branch, commit)
     if action == None or action == "summary":
+        if not giturl or not branch or not commit:
+            kci_err("--giturl AND --branch AND --commit are required")
+            raise click.Abort()
+        data = fetch_full_results(origin, giturl, branch, commit)
         cmd_summary(data)
     elif action == "failed-builds":
+        if not giturl or not branch or not commit:
+            kci_err("--giturl AND --branch AND commit are required")
+            raise click.Abort()
+        data = fetch_full_results(origin, giturl, branch, commit)
         cmd_failed_builds(data, download_logs)
 
 
