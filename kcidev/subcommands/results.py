@@ -93,13 +93,6 @@ def cmd_failed_builds(data, download_logs):
             kci_print(f"  id: {build['id']}")
 
 
-def process_action(action, data, download_logs):
-    if action == None or action == "summary":
-        cmd_summary(data)
-    elif action == "failed-builds":
-        cmd_failed_builds(data, download_logs)
-
-
 def fetch_full_results(origin, giturl, branch, commit):
     endpoint = f"tree/{commit}/full"
     params = {
@@ -145,7 +138,10 @@ def fetch_full_results(origin, giturl, branch, commit):
 @click.pass_context
 def results(ctx, origin, giturl, branch, commit, action, download_logs):
     data = fetch_full_results(origin, giturl, branch, commit)
-    process_action(action, data, download_logs)
+    if action == None or action == "summary":
+        cmd_summary(data)
+    elif action == "failed-builds":
+        cmd_failed_builds(data, download_logs)
 
 
 if __name__ == "__main__":
