@@ -117,7 +117,7 @@ def cmd_failed_builds(data, commit, download_logs):
                     log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{commit}.log"
                     with open(log_file, mode="wb") as file:
                         file.write(log)
-                    log_path = os.path.join(os.getcwd(), log_file)
+                    log_path = "file://" + os.path.join(os.getcwd(), log_file)
                 except:
                     kci_err(f"Failed to fetch log {log_file}).")
                     pass
