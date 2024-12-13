@@ -105,7 +105,7 @@ def cmd_list_trees(origin):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_failed_builds(data, download_logs):
+def cmd_failed_builds(data, commit, download_logs):
     kci_msg("Failed builds:")
     for build in data["builds"]:
         if not build["valid"]:
@@ -114,7 +114,7 @@ def cmd_failed_builds(data, download_logs):
                 try:
                     log_gz = requests.get(build["log_url"])
                     log = gzip.decompress(log_gz.content)
-                    log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}.log"
+                    log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{commit}.log"
                     with open(log_file, mode="wb") as file:
                         file.write(log)
                     log_path = os.path.join(os.getcwd(), log_file)
@@ -186,7 +186,7 @@ def results(ctx, origin, giturl, branch, commit, action, download_logs, latest):
         if latest:
             commit = get_latest_commit(origin, giturl, branch)
         data = fetch_full_results(origin, giturl, branch, commit)
-        cmd_failed_builds(data, download_logs)
+        cmd_failed_builds(data, commit, download_logs)
 
 
 if __name__ == "__main__":
