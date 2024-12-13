@@ -36,7 +36,7 @@ def load_toml(settings):
     return config
 
 
-def kci_print(content):
+def kci_msg(content):
     click.echo(content)
 
 

@@ -78,7 +78,7 @@ def sum_inconclusive_results(results):
 
 
 def cmd_summary(data):
-    kci_print("pass/fail/inconclusive")
+    kci_msg("pass/fail/inconclusive")
 
     builds = data["buildsSummary"]["builds"]
     print_summary("builds", builds["valid"], builds["invalid"], builds["null"])
@@ -100,13 +100,13 @@ def cmd_list_trees(origin):
     trees = fetch_tree_fast(origin)
     for t in trees:
         kci_msg_green_nonl(f"- {t['tree_name']}/{t['git_repository_branch']}:\n")
-        kci_print(f"  giturl: {t['git_repository_url']}")
-        kci_print(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
-        kci_print(f"  latest: {t['start_time']}")
+        kci_msg(f"  giturl: {t['git_repository_url']}")
+        kci_msg(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
+        kci_msg(f"  latest: {t['start_time']}")
 
 
 def cmd_failed_builds(data, download_logs):
-    kci_print("Failed builds:")
+    kci_msg("Failed builds:")
     for build in data["builds"]:
         if not build["valid"]:
             log_path = build["log_url"]
@@ -128,11 +128,11 @@ def cmd_failed_builds(data, download_logs):
             kci_msg_cyan_nonl(build["architecture"])
             kci_msg_nonl(" compiler: ")
             kci_msg_cyan_nonl(build['compiler'])
-            kci_print("")
+            kci_msg("")
 
-            kci_print(f"  config_url: {build['config_url']}")
-            kci_print(f"  log: {log_path}")
-            kci_print(f"  id: {build['id']}")
+            kci_msg(f"  config_url: {build['config_url']}")
+            kci_msg(f"  log: {log_path}")
+            kci_msg(f"  id: {build['id']}")
 
 
 @click.command(help=" [Experimental] Get results from the dashboard")
