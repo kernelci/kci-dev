@@ -33,6 +33,10 @@ Unfortunately the Dashboard API doesn't support git tags as parameters yet.
 
 Return results for the latest commit for the tree.
 
+### --status
+
+Filter results by the status: "all", "pass", "fail" or "inconclusive"
+
 ## Results actions
 
 ### --action=trees
@@ -56,14 +60,14 @@ Example:
 kci-dev results --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --action=summary
 ```
 
-### --action=failed-builds
+### --action=builds
 
-List failed builds.
+List builds.
 
 Example:
 
 ```sh
-kci-dev results --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --action failed-builds
+kci-dev results --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --action builds
 ```
 
 ## Downloading logs

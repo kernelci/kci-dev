@@ -105,34 +105,54 @@ def cmd_list_trees(origin):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_failed_builds(data, commit, download_logs):
-    kci_msg("Failed builds:")
+def cmd_builds(data, commit, download_logs, status):
+    if status == "inconclusive":
+        kci_msg("No information about inconclusive builds.")
+        return
+
     for build in data["builds"]:
-        if not build["valid"]:
-            log_path = build["log_url"]
-            if download_logs:
-                try:
-                    log_gz = requests.get(build["log_url"])
-                    log = gzip.decompress(log_gz.content)
-                    log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{commit}.log"
-                    with open(log_file, mode="wb") as file:
-                        file.write(log)
-                    log_path = "file://" + os.path.join(os.getcwd(), log_file)
-                except:
-                    kci_err(f"Failed to fetch log {log_file}).")
-                    pass
+        if build["valid"] == None:
+            continue
 
-            kci_msg_nonl("- config:")
-            kci_msg_cyan_nonl(build["config_name"])
-            kci_msg_nonl(" arch: ")
-            kci_msg_cyan_nonl(build["architecture"])
-            kci_msg_nonl(" compiler: ")
-            kci_msg_cyan_nonl(build['compiler'])
-            kci_msg("")
+        if not status == "all":
+            if build["valid"] == (status == "fail"):
+                continue
 
-            kci_msg(f"  config_url: {build['config_url']}")
-            kci_msg(f"  log: {log_path}")
-            kci_msg(f"  id: {build['id']}")
+            if not build["valid"] == (status == "pass"):
+                continue
+
+        log_path = build["log_url"]
+        if download_logs:
+            try:
+                log_gz = requests.get(build["log_url"])
+                log = gzip.decompress(log_gz.content)
+                log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{commit}.log"
+                with open(log_file, mode="wb") as file:
+                    file.write(log)
+                log_path = "file://" + os.path.join(os.getcwd(), log_file)
+            except:
+                kci_err(f"Failed to fetch log {log_file}).")
+                pass
+
+        kci_msg_nonl("- config:")
+        kci_msg_cyan_nonl(build["config_name"])
+        kci_msg_nonl(" arch: ")
+        kci_msg_cyan_nonl(build["architecture"])
+        kci_msg_nonl(" compiler: ")
+        kci_msg_cyan_nonl(build["compiler"])
+        kci_msg("")
+
+        kci_msg_nonl("  status:")
+        if build["valid"]:
+            kci_msg_green_nonl("PASS")
+        else:
+            kci_msg_red_nonl("FAIL")
+        kci_msg("")
+
+        kci_msg(f"  config_url: {build['config_url']}")
+        kci_msg(f"  log: {log_path}")
+        kci_msg(f"  id: {build['id']}")
+        kci_msg("")
 
 
 @click.command(help=" [Experimental] Get results from the dashboard")
@@ -167,8 +187,13 @@ def cmd_failed_builds(data, commit, download_logs):
     is_flag=True,
     help="Select latest results available",
 )
+@click.option(
+    "--status",
+    help="Status of test result: all, pass, fail, inconclusive",
+    default="all",
+)
 @click.pass_context
-def results(ctx, origin, giturl, branch, commit, action, download_logs, latest):
+def results(ctx, origin, giturl, branch, commit, action, download_logs, latest, status):
     if action == None or action == "summary":
         if not giturl or not branch or not ((commit != None) ^ latest):
             kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
@@ -179,14 +204,17 @@ def results(ctx, origin, giturl, branch, commit, action, download_logs, latest):
         cmd_summary(data)
     elif action == "trees":
         cmd_list_trees(origin)
-    elif action == "failed-builds":
+    elif action == "builds":
         if not giturl or not branch or not ((commit != None) ^ latest):
             kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
             raise click.Abort()
         if latest:
             commit = get_latest_commit(origin, giturl, branch)
         data = fetch_full_results(origin, giturl, branch, commit)
-        cmd_failed_builds(data, commit, download_logs)
+        cmd_builds(data, commit, download_logs, status)
+    else:
+        kci_err(f"action '{action}' does not exist.")
+        raise click.Abort()
 
 
 if __name__ == "__main__":
