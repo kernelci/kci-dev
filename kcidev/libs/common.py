@@ -36,7 +36,7 @@ def load_toml(settings):
     return config
 
 
-def kci_print(content):
+def kci_msg(content):
     click.echo(content)
 
 
@@ -58,3 +58,7 @@ def kci_msg_red_nonl(content):
 
 def kci_msg_yellow_nonl(content):
     click.secho(content, fg="bright_yellow", nl=False)
+
+
+def kci_msg_cyan_nonl(content):
+    click.secho(content, fg="cyan", nl=False)
