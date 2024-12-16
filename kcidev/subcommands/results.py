@@ -25,6 +25,35 @@ def fetch_from_api(endpoint, params):
     return r.json()
 
 
+def fetch_full_results(origin, giturl, branch, commit):
+    endpoint = f"tree/{commit}/full"
+    params = {
+        "origin": origin,
+        "git_url": giturl,
+        "git_branch": branch,
+        "commit": commit,
+    }
+
+    return fetch_from_api(endpoint, params)
+
+
+def fetch_tree_fast(origin):
+    params = {
+        "origin": origin,
+    }
+    return fetch_from_api("tree-fast", params)
+
+
+def get_latest_commit(origin, giturl, branch):
+    trees = fetch_tree_fast(origin)
+    for t in trees:
+        if t["git_repository_url"] == giturl and t["git_repository_branch"] == branch:
+            return t["git_commit_hash"]
+
+    kci_err("Tree and branch not found.")
+    raise click.Abort()
+
+
 def print_summary(type, n_pass, n_fail, n_inconclusive):
     kci_msg_nonl(f"{type}:\t")
     kci_msg_green_nonl(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}")
@@ -67,6 +96,15 @@ def cmd_summary(data):
     print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
 
 
+def cmd_list_trees(origin):
+    trees = fetch_tree_fast(origin)
+    for t in trees:
+        kci_msg_green_nonl(f"- {t['tree_name']}/{t['git_repository_branch']}:\n")
+        kci_print(f"  giturl: {t['git_repository_url']}")
+        kci_print(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
+        kci_print(f"  latest: {t['start_time']}")
+
+
 def cmd_failed_builds(data, download_logs):
     kci_print("Failed builds:")
     for build in data["builds"]:
@@ -93,25 +131,6 @@ def cmd_failed_builds(data, download_logs):
             kci_print(f"  id: {build['id']}")
 
 
-def process_action(action, data, download_logs):
-    if action == None or action == "summary":
-        cmd_summary(data)
-    elif action == "failed-builds":
-        cmd_failed_builds(data, download_logs)
-
-
-def fetch_full_results(origin, giturl, branch, commit):
-    endpoint = f"tree/{commit}/full"
-    params = {
-        "origin": origin,
-        "git_url": giturl,
-        "git_branch": branch,
-        "commit": commit,
-    }
-
-    return fetch_from_api(endpoint, params)
-
-
 @click.command(help=" [Experimental] Get results from the dashboard")
 @click.option(
     "--origin",
@@ -121,17 +140,14 @@ def fetch_full_results(origin, giturl, branch, commit):
 @click.option(
     "--giturl",
     help="Git URL of kernel tree ",
-    required=True,
 )
 @click.option(
     "--branch",
     help="Branch to get results for",
-    required=True,
 )
 @click.option(
     "--commit",
     help="Commit or tag to get results for",
-    required=True,
 )
 @click.option(
     "--action",
@@ -142,10 +158,31 @@ def fetch_full_results(origin, giturl, branch, commit):
     is_flag=True,
     help="Select desired results action",
 )
+@click.option(
+    "--latest",
+    is_flag=True,
+    help="Select latest results available",
+)
 @click.pass_context
-def results(ctx, origin, giturl, branch, commit, action, download_logs):
-    data = fetch_full_results(origin, giturl, branch, commit)
-    process_action(action, data, download_logs)
+def results(ctx, origin, giturl, branch, commit, action, download_logs, latest):
+    if action == None or action == "summary":
+        if not giturl or not branch or not ((commit != None) ^ latest):
+            kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
+            raise click.Abort()
+        if latest:
+            commit = get_latest_commit(origin, giturl, branch)
+        data = fetch_full_results(origin, giturl, branch, commit)
+        cmd_summary(data)
+    elif action == "trees":
+        cmd_list_trees(origin)
+    elif action == "failed-builds":
+        if not giturl or not branch or not ((commit != None) ^ latest):
+            kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
+            raise click.Abort()
+        if latest:
+            commit = get_latest_commit(origin, giturl, branch)
+        data = fetch_full_results(origin, giturl, branch, commit)
+        cmd_failed_builds(data, download_logs)
 
 
 if __name__ == "__main__":
