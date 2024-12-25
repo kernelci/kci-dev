@@ -11,20 +11,47 @@ def load_toml(settings):
     fname = "kci-dev.toml"
     config = None
 
-    global_path = os.path.join("/", "etc", fname)
-    if os.path.exists(global_path):
-        with open(global_path, "r") as f:
+    if os.path.exists(settings):
+        with open(settings, "r") as f:
             config = toml.load(f)
+        return config
 
     home_dir = os.path.expanduser("~")
     user_path = os.path.join(home_dir, ".config", "kci-dev", fname)
     if os.path.exists(user_path):
         with open(user_path, "r") as f:
             config = toml.load(f)
+        return config
 
-    if os.path.exists(settings):
-        with open(settings, "r") as f:
+    global_path = os.path.join("/", "etc", fname)
+    if os.path.exists(global_path):
+        with open(global_path, "r") as f:
             config = toml.load(f)
+        return config
+
+    example_configuration = ".kci-dev.toml.example"
+    # Installed with Poetry
+    poetry_example_configuration = os.path.join(
+        os.path.dirname(__file__), "../..", example_configuration
+    )
+    if os.path.exists(poetry_example_configuration):
+        kci_err(
+            f"Using Poetry example configuration in: " + poetry_example_configuration
+        )
+        with open(poetry_example_configuration, "r") as f:
+            config = toml.load(f)
+        return config
+
+    # Installed with PyPI
+    kci_err(f"Configuration not found")
+    pypi_example_configuration = os.path.join(
+        os.path.dirname(__file__), "..", example_configuration
+    )
+    if os.path.exists(pypi_example_configuration):
+        kci_err(f"Using PyPI example configuration in: " + pypi_example_configuration)
+        with open(pypi_example_configuration, "r") as f:
+            config = toml.load(f)
+        return config
 
     if not config:
         kci_err(
