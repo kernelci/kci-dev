@@ -12,7 +12,7 @@ Stand alone tool for Linux Kernel developers and maintainers to interact with Ke
 
 ## Quickstart
 
-Using PyPI and virtualenv
+Using [PyPI](https://pypi.org/project/kci-dev/) and virtualenv
 ```sh
 virtualenv .venv
 source .venv/bin/activate
@@ -21,12 +21,14 @@ pip install kci-dev
 
 ## Configuration
 
-You can see a example configuration file [here](docs/_index.md#configuration)  
-Without a auth token kci-dev can be used in results view only mode
+You can see a example configuration file [here](docs/_index.md#configuration).  
+Without a auth token kci-dev can be used in results view only mode.
 
 ## Contributing to kci-dev
 
-The kci-dev project welcomes, and depends on, contribution from developers and users in the open source community.
+The kci-dev project welcomes, and depends on, contribution from developers and users in the open source community.  
+The [Contributor Guide](CONTRIBUTING.md) should guide you on how to contribute to kci-dev project.
+
 
 ## License
 
