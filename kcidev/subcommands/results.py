@@ -175,6 +175,7 @@ def cmd_builds(data, commit, download_logs, status):
 )
 @click.option(
     "--action",
+    type=click.Choice(["summary", "trees", "builds"], case_sensitive=True),
     help="Select desired results action",
 )
 @click.option(
@@ -189,7 +190,8 @@ def cmd_builds(data, commit, download_logs, status):
 )
 @click.option(
     "--status",
-    help="Status of test result: all, pass, fail, inconclusive",
+    type=click.Choice(["all", "pass", "fail", "inconclusive"], case_sensitive=True),
+    help="Status of test result",
     default="all",
 )
 @click.pass_context
