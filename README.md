@@ -21,13 +21,13 @@ pip install kci-dev
 
 ## Configuration
 
-You can see a example configuration file [here](docs/_index.md#configuration).  
+You can see a example configuration file [here](https://github.com/kernelci/kci-dev/blob/v0.1.1/docs/_index.md#configuration).  
 Without a auth token kci-dev can be used in results view only mode.
 
 ## Contributing to kci-dev
 
 The kci-dev project welcomes, and depends on, contribution from developers and users in the open source community.  
-The [Contributor Guide](CONTRIBUTING.md) should guide you on how to contribute to kci-dev project.
+The [Contributor Guide](https://github.com/kernelci/kci-dev/blob/v0.1.1/CONTRIBUTING.md) should guide you on how to contribute to kci-dev project.
 
 
 ## License
