@@ -6,10 +6,10 @@ authors = ["Arisu Tachibana <arisu.tachibana@miraclelinux.com>"]
 license = "LGPL-2.1-or-later"
 readme = "README.md"
 packages = [
-{include = "kcidev"},
-{include = "subcommands", from="kcidev"},
-{include = "libs", from="kcidev"},
-{include = ".kci-dev.toml.example", to="kcidev"},
+{include = "kcidev", format = ["sdist", "wheel"]},
+{include = "subcommands", from="kcidev", format = ["sdist", "wheel"]},
+{include = "libs", from="kcidev", format = ["sdist", "wheel"]},
+{include = ".kci-dev.toml.example", to="kcidev", format = ["sdist", "wheel"]},
 ]
 repository = "https://github.com/kernelci/kci-dev"
 classifiers = [
