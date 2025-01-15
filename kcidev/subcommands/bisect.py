@@ -76,7 +76,9 @@ def git_exec_getcommit(cmd):
     click.secho("Executing git command: " + " ".join(cmd), fg="green")
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
-        click.secho("git command return failed", fg="red")
+        click.secho("git command return failed. Error:", fg="red")
+        click.secho(result.stderr, fg="red")
+        click.secho(result.stdout, fg="red")
         sys.exit(1)
     lines = result.stdout.split(b"\n")
     if len(lines) < 2:
