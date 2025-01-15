@@ -16,9 +16,9 @@ def api_connection(host):
 
 
 def display_api_error(response):
-    click.secho(f"API response error code: {response.status_code}", fg="red")
+    kci_err(f"API response error code: {response.status_code}")
     try:
-        click.secho(response.json(), fg="red")
+        kci_err(response.json())
     except json.decoder.JSONDecodeError:
         click.secho(f"No JSON response. Plain text: {response.text}", fg="yellow")
     return
@@ -35,7 +35,7 @@ def send_jobretry(baseurl, jobid, token):
     try:
         response = requests.post(url, headers=headers, data=jdata)
     except requests.exceptions.RequestException as e:
-        click.secho(f"API connection error: {e}", fg="red")
+        kci_err(f"API connection error: {e}")
         return
 
     if response.status_code != 200:

@@ -9,6 +9,8 @@ import requests
 import toml
 from git import Repo
 
+from kcidev.libs.common import *
+
 
 def api_connection(host):
     click.secho("api connect: " + host, fg="green")
@@ -38,10 +40,10 @@ def get_node(url, nodeid, field):
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
-        click.secho(ex.response.json().get("detail"), fg="red")
+        kci_err(ex.response.json().get("detail"))
         return None
     except Exception as ex:
-        click.secho(ex, fg="red")
+        kci_err(ex)
         return None
     print_nodes(response.json(), field)
 
@@ -62,10 +64,10 @@ def get_nodes(url, limit, offset, filter, field):
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
-        click.secho(ex.response.json().get("detail"), fg="red")
+        kci_err(ex.response.json().get("detail"))
         return None
     except Exception as ex:
-        click.secho(ex, fg="red")
+        kci_err(ex)
         return None
 
     nodes = response.json()
