@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import configparser
 import gzip
 import json
+import os
+import re
+import subprocess
 import urllib
 
 import click
@@ -37,11 +41,89 @@ def fetch_full_results(origin, giturl, branch, commit):
     return fetch_from_api(endpoint, params)
 
 
+def repository_url_cleaner(url):
+    # standardize protocol to https
+    parsed = urllib.parse.urlsplit(url)
+    scheme = "https"
+
+    # remove auth from url
+    authority = parsed.hostname
+    if parsed.port:
+        authority += f":{parsed.port}"
+
+    url_cleaned = urllib.parse.urlunsplit((scheme, authority, *parsed[2:]))
+    return url_cleaned
+
+
 def fetch_tree_fast(origin):
     params = {
         "origin": origin,
     }
     return fetch_from_api("tree-fast", params)
+
+
+def is_inside_work_tree(git_folder):
+    process = subprocess.Popen(
+        ["git", "rev-parse", "--is-inside-work-tree"], stdout=subprocess.PIPE, text=True
+    )
+    std_out, std_error = process.communicate()
+    is_inside_work_tree = std_out.strip()
+    if is_inside_work_tree:
+        return True
+    return False
+
+
+def get_folder_repository(git_folder):
+    kci_msg("git folder: " + str(git_folder))
+    if git_folder:
+        current_folder = git_folder
+    else:
+        current_folder = os.getcwd()
+
+    previous_folder = os.getcwd()
+    if os.path.isdir(current_folder):
+        os.chdir(current_folder)
+    else:
+        os.chdir(previous_folder)
+        kci_err("Not a folder")
+        raise click.Abort()
+    dot_git_folder = os.path.join(current_folder, ".git")
+    if is_inside_work_tree(current_folder):
+        while not os.path.exists(dot_git_folder):
+            current_folder = os.path.join(current_folder, "..")
+            dot_git_folder = os.path.join(current_folder, ".git")
+
+    # Check if we are in a git repository
+    if os.path.exists(dot_git_folder):
+        # Get remote origin url
+        git_config_path = os.path.join(dot_git_folder, "config")
+        git_config = configparser.ConfigParser()
+        git_config.read(git_config_path)
+        git_url = git_config.get('remote "origin"', "url")
+        # A way of standardize git url for API call
+        git_url = repository_url_cleaner(git_url)
+        # Get current branch name
+        process = subprocess.Popen(
+            ["git", "branch", "--show-current"], stdout=subprocess.PIPE, text=True
+        )
+        branch_name, branch_error = process.communicate()
+        branch_name = branch_name.strip()
+
+        # Get last commit hash
+        last_commit_hash_path = os.path.join(
+            dot_git_folder, "refs", "heads", branch_name
+        )
+        last_commit_hash = open(last_commit_hash_path, "r").read()
+
+        os.chdir(previous_folder)
+        kci_msg("tree: " + git_url)
+        kci_msg("branch: " + branch_name)
+        kci_msg("commit: " + last_commit_hash)
+        return git_url, branch_name, last_commit_hash
+    else:
+        os.chdir(previous_folder)
+        kci_err("Not a GIT folder")
+        raise click.Abort()
 
 
 def get_latest_commit(origin, giturl, branch):
@@ -170,6 +252,10 @@ def cmd_builds(data, commit, download_logs, status):
     help="Branch to get results for",
 )
 @click.option(
+    "--git-folder",
+    help="Path of git repository folder",
+)
+@click.option(
     "--commit",
     help="Commit or tag to get results for",
 )
@@ -195,11 +281,21 @@ def cmd_builds(data, commit, download_logs, status):
     default="all",
 )
 @click.pass_context
-def results(ctx, origin, giturl, branch, commit, action, download_logs, latest, status):
+def results(
+    ctx,
+    origin,
+    git_folder,
+    giturl,
+    branch,
+    commit,
+    action,
+    download_logs,
+    latest,
+    status,
+):
     if action == None or action == "summary":
         if not giturl or not branch or not ((commit != None) ^ latest):
-            kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
-            raise click.Abort()
+            giturl, branch, commit = get_folder_repository(git_folder)
         if latest:
             commit = get_latest_commit(origin, giturl, branch)
         data = fetch_full_results(origin, giturl, branch, commit)
@@ -208,8 +304,7 @@ def results(ctx, origin, giturl, branch, commit, action, download_logs, latest, 
         cmd_list_trees(origin)
     elif action == "builds":
         if not giturl or not branch or not ((commit != None) ^ latest):
-            kci_err("--giturl AND --branch AND (--commit XOR --latest) are required")
-            raise click.Abort()
+            giturl, branch, commit = get_folder_repository(git_folder)
         if latest:
             commit = get_latest_commit(origin, giturl, branch)
         data = fetch_full_results(origin, giturl, branch, commit)
