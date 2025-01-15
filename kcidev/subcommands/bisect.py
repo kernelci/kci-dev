@@ -133,6 +133,20 @@ def init_bisect(state):
     return commitid
 
 
+def update_tree(workdir, branch, giturl):
+    if not os.path.exists(workdir):
+        click.secho(
+            "Cloning repository (this might take significant time!)", fg="green"
+        )
+        repo = Repo.clone_from(giturl, workdir)
+        repo.git.checkout(branch)
+    else:
+        click.secho("Pulling repository", fg="green")
+        repo = Repo(workdir)
+        repo.git.checkout(branch)
+        repo.git.pull()
+
+
 def bisection_loop(state):
     olddir = os.getcwd()
     os.chdir(state["workdir"])
@@ -258,20 +272,11 @@ def bisect(
         state["platformfilter"] = platformfilter
         state["test"] = test
         state["workdir"] = workdir
+        update_tree(workdir, branch, giturl)
         save_state(state, state_file)
     else:
         print_state(state)
-
-    # if workdir doesnt exist, clone the repository
-    if not os.path.exists(workdir):
-        click.secho("Cloning repository", fg="green")
-        repo = Repo.clone_from(giturl, workdir)
-        repo.git.checkout(branch)
-    else:
-        click.secho("Pulling repository", fg="green")
-        repo = Repo(workdir)
-        repo.git.checkout(branch)
-        repo.git.pull()
+        update_tree(workdir, branch, giturl)
 
     if not state["bisect_init"]:
         state["next_commit"] = init_bisect(state)
