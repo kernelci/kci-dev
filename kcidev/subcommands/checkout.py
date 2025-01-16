@@ -13,11 +13,7 @@ import requests
 from git import Repo
 
 from kcidev.libs.common import *
-
-
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
+from kcidev.libs.maestro_common import *
 
 
 def display_api_error(response):
@@ -46,7 +42,7 @@ def send_checkout_full(baseurl, token, **kwargs):
     if "platform_filter" in kwargs:
         data["platformfilter"] = kwargs["platform_filter"]
     jdata = json.dumps(data)
-    print(jdata)
+    maestro_print_api_call(url, data)
     try:
         response = requests.post(url, headers=headers, data=jdata, timeout=30)
     except requests.exceptions.RequestException as e:
@@ -247,7 +243,7 @@ def checkout(
 ):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(cfg[instance]["pipeline"])
+    url = cfg[instance]["pipeline"]
     apiurl = cfg[instance]["api"]
     token = cfg[instance]["token"]
     if not job_filter:

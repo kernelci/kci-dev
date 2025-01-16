@@ -8,11 +8,7 @@ import requests
 from git import Repo
 
 from kcidev.libs.common import *
-
-
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
+from kcidev.libs.maestro_common import *
 
 
 def display_api_error(response):
@@ -32,6 +28,7 @@ def send_jobretry(baseurl, jobid, token):
     }
     data = {"nodeid": jobid}
     jdata = json.dumps(data)
+    maestro_print_api_call(url, data)
     try:
         response = requests.post(url, headers=headers, data=jdata)
     except requests.exceptions.RequestException as e:
@@ -54,7 +51,7 @@ def send_jobretry(baseurl, jobid, token):
 def testretry(ctx, nodeid):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(cfg[instance]["pipeline"])
+    url = cfg[instance]["pipeline"]
     resp = send_jobretry(url, nodeid, cfg[instance]["token"])
     if resp and "message" in resp:
         click.secho(resp["message"], fg="green")

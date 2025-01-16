@@ -10,11 +10,7 @@ import toml
 from git import Repo
 
 from kcidev.libs.common import *
-
-
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
+from kcidev.libs.maestro_common import *
 
 
 def print_nodes(nodes, field):
@@ -35,7 +31,7 @@ def get_node(url, nodeid, field):
         "Content-Type": "application/json; charset=utf-8",
     }
     url = url + "latest/node/" + nodeid
-    click.secho(url)
+    maestro_print_api_call(url)
     response = requests.get(url, headers=headers)
     try:
         response.raise_for_status()
@@ -59,7 +55,7 @@ def get_nodes(url, limit, offset, filter, field):
             # if we need anything more complex than eq(=)
             url = url + "&" + f
 
-    click.secho(url)
+    maestro_print_api_call(url)
     response = requests.get(url, headers=headers)
     try:
         response.raise_for_status()
@@ -114,7 +110,7 @@ def get_nodes(url, limit, offset, filter, field):
 def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(config[instance]["api"])
+    url = config[instance]["api"]
     if nodeid:
         get_node(url, nodeid, field)
     if nodes:
