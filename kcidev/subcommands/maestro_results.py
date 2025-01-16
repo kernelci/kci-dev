@@ -14,6 +14,7 @@ from kcidev.libs.maestro_common import *
 
 
 def print_nodes(nodes, field):
+    res = []
     if not isinstance(nodes, list):
         nodes = [nodes]
     for node in nodes:
@@ -21,9 +22,10 @@ def print_nodes(nodes, field):
             data = {}
             for f in field:
                 data[f] = node.get(f)
-            click.secho(pprint.pprint(data), fg="green", nl=False)
+            res.append(data)
         else:
-            click.secho(pprint.pprint(node), fg="green", nl=False)
+            res.append(node)
+        kci_msg(json.dumps(res, sort_keys=True, indent=4))
 
 
 def get_node(url, nodeid, field):
@@ -49,13 +51,13 @@ def get_nodes(url, limit, offset, filter, field):
         "Content-Type": "application/json; charset=utf-8",
     }
     url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
+    maestro_print_api_call(url)
     if filter:
         for f in filter:
             # TBD: We need to add translate filter to API
             # if we need anything more complex than eq(=)
             url = url + "&" + f
 
-    maestro_print_api_call(url)
     response = requests.get(url, headers=headers)
     try:
         response.raise_for_status()
