@@ -11,15 +11,6 @@ from kcidev.libs.common import *
 from kcidev.libs.maestro_common import *
 
 
-def display_api_error(response):
-    kci_err(f"API response error code: {response.status_code}")
-    try:
-        kci_err(response.json())
-    except json.decoder.JSONDecodeError:
-        click.secho(f"No JSON response. Plain text: {response.text}", fg="yellow")
-    return
-
-
 def send_jobretry(baseurl, jobid, token):
     url = baseurl + "api/jobretry"
     headers = {
@@ -36,7 +27,7 @@ def send_jobretry(baseurl, jobid, token):
         return
 
     if response.status_code != 200:
-        display_api_error(response)
+        maestro_api_error(response)
         return None
     return response.json()
 

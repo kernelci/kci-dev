@@ -16,17 +16,6 @@ from kcidev.libs.common import *
 from kcidev.libs.maestro_common import *
 
 
-def display_api_error(response):
-    kci_err(f"API response error code: {response.status_code}")
-    try:
-        kci_err(response.json())
-    except json.decoder.JSONDecodeError:
-        click.secho(f"No JSON response. Plain text: {response.text}", fg="yellow")
-    except Exception as e:
-        kci_err(f"API response error: {e}: {response.text}")
-    return
-
-
 def send_checkout_full(baseurl, token, **kwargs):
     url = baseurl + "api/checkout"
     headers = {
@@ -50,7 +39,7 @@ def send_checkout_full(baseurl, token, **kwargs):
         return
 
     if response.status_code != 200:
-        display_api_error(response)
+        maestro_api_error(response)
         return None
     return response.json()
 
@@ -71,7 +60,7 @@ def retrieve_treeid_nodes(baseurl, token, treeid):
         return None
 
     if response.status_code >= 400:
-        display_api_error(response)
+        maestro_api_error(response)
         return None
 
     return response.json()
