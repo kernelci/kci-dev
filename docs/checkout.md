@@ -10,21 +10,21 @@ This might be useful in several cases:
 - You want to create snapshot of the test results on specific tags (releases, etc).
 - Use this command for regression bisection
 
-This command can execute all tests configured for particular tree/branch, or you can provide jobfilter to execute specific tests and builds.
+This command can execute all tests configured for particular tree/branch, or you can provide job-filter to execute specific tests and builds.
 
 Example:
 ```sh
-kci-dev checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --commit f06021a18fcf8d8a1e79c5e0a8ec4eb2b038e153 --jobfilter "kbuild-gcc-12-x86"
+kci-dev checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --commit f06021a18fcf8d8a1e79c5e0a8ec4eb2b038e153 --job-filter "kbuild-gcc-12-x86"
 ```
 
 Where:
 - `giturl` is the URL of the git repository to test.
 - `branch` is the branch of the git repository to test.
 - `commit` is the commit hash to test.
-- `jobfilter` is the job filter to use for the test (optional parameter)
-- `platformfilter` is the platform filter (usually it is name of hardware platform for group of devices) to use for the test (optional parameter)
+- `job-filter` is the job filter to use for the test (optional parameter)
+- `platform-filter` is the platform filter (usually it is name of hardware platform for group of devices) to use for the test (optional parameter)
 
-To figure out correct jobfilter and platformfilter, you need to check test json node. For example:
+To figure out correct job-filter and platform-filter, you need to check test json node. For example:
 ```json
 {
   "id": "670f0c27493b6b8188c7667c",
@@ -81,7 +81,7 @@ To figure out correct jobfilter and platformfilter, you need to check test json 
     "kernel_type": "image"
   },
   "debug": null,
-  "jobfilter": null,
+  "job-filter": null,
   "platform_filter": null,
   "created": "2024-10-16T00:43:19.079000",
   "updated": "2024-10-16T02:22:58.113000",
@@ -94,9 +94,9 @@ To figure out correct jobfilter and platformfilter, you need to check test json 
 }
 ```
 
-In this example, the jobfilter is `tast-mm-misc-arm64-qualcomm` for test, if you look into path, you can figure out also build job named and the platformfilter is `kbuild-gcc-12-arm64-chromeos-qualcomm` and in data/platform: `sc7180-trogdor-lazor-limozeen`. So complete command to test this job would be:
+In this example, the job-filter is `tast-mm-misc-arm64-qualcomm` for test, if you look into path, you can figure out also build job named and the platform-filter is `kbuild-gcc-12-arm64-chromeos-qualcomm` and in data/platform: `sc7180-trogdor-lazor-limozeen`. So complete command to test this job would be:
 ```sh
-kci-dev checkout --giturl https://github.com/kernelci/linux.git --branch staging-mainline --commit c862449c840a37bbe797a0b719881449beac75ca --jobfilter tast-mm-misc-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --platformfilter sc7180-trogdor-lazor-limozeen
+kci-dev checkout --giturl https://github.com/kernelci/linux.git --branch staging-mainline --commit c862449c840a37bbe797a0b719881449beac75ca --job-filter tast-mm-misc-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm --platform-filter sc7180-trogdor-lazor-limozeen
 ```
 
 Other options:
@@ -111,7 +111,7 @@ Additionally, you can use --watch option to watch the progress of the test.
 
 After executing the command, you will see the output similar to the following:
 ```sh
-./kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --jobfilter baseline-nfs-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --watch
+./kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --job-filter baseline-nfs-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm --watch
 api connect: https://staging.kernelci.org:9100/
 Retrieving latest commit on tree: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git branch: master
 Commit to checkout: d3d1556696c1a993eec54ac585fe5bf677e07474
@@ -170,7 +170,7 @@ Together with --watch option, you can use --test option to wait for particular t
 
 For example:
 ```sh
-kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --jobfilter baseline-nfs-arm64-qualcomm --jobfilter kbuild-gcc-12-arm64-chromeos-qualcomm --platformfilter sc7180-trogdor-kingoftown --watch --test crit
+kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --job-filter baseline-nfs-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm --platform-filter sc7180-trogdor-kingoftown --watch --test crit
 ```
 
 This command will wait for the test results of the test with the name `crit`.  
