@@ -111,6 +111,7 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
     # we need to add to job_filter "checkout" node
     job_filter = list(job_filter)
     job_filter.append("checkout")
+    previous_nodes = None
     while True:
         inprogress = 0
         joblist = job_filter.copy()
@@ -119,8 +120,13 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
             click.secho("No nodes found. Retrying...", fg="yellow")
             time.sleep(5)
             continue
+        if previous_nodes == nodes:
+            kci_msg_nonl(".")
+            time.sleep(30)
+            continue
+
         time_local = time.localtime()
-        click.echo(f"Current time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
+        click.echo(f"\nCurrent time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
         click.secho(
             f"Total tree nodes {len(nodes)} found. job_filter: {job_filter}", fg="green"
         )
@@ -175,7 +181,8 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
                     kci_err(f"Test {test} failed: {test_result}")
                     sys.exit(1)
 
-        click.echo(f"\rRefresh in 30s...", nl=False)
+        kci_msg_nonl(f"\rRefresh every 30s...")
+        previous_nodes = nodes
         time.sleep(30)
 
 
