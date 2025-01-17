@@ -9,7 +9,36 @@ description = 'Fetch results from the KernelCI ecosystem.'
 > KNOWN ISSUE: The Dashboard endpoint we are using returns a file of a few megabytes in size, so download may take
 a few seconds, slowing down your usage of `kci-dev results`. We are working on [it](https://github.com/kernelci/dashboard/issues/661).
 
-## Base parameters
+
+## Commands
+
+### trees
+
+```sh
+kci-dev results trees
+```
+
+### summary
+
+Shows a numeric summary of the build, boot and test results.
+
+Example:
+
+```sh
+kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
+```
+
+### builds
+
+List builds.
+
+Example:
+
+```sh
+kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
+```
+
+## Common parameters
 
 ### --origin
 
@@ -37,25 +66,41 @@ Unfortunately the Dashboard API doesn't support git tags as parameters yet.
 
 Return results for the latest commit for the tree.
 
+Example:
+```sh
+kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master  --latest
+```
+
 ### --status
 
-Filter results by the status: "all", "pass", "fail" or "inconclusive"
-
-## Results actions
-
-
-List all available trees for a given origin.
+Filter results by the status: "all", "pass", "fail" or "inconclusive".
+(available for subcommand `build`)
 
 Example:
+```sh
+kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master  --latest --status=fail
+```
+
+## --download-logs
+
+Automatically download logs for results listed.
+(available for subcommand `build`)
+
+Example:
+```sh
+kci-dev results build --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --download-logs
+```
+
 
 ### without arguments
 
-If used without arguments, `kci-dev results` will get KernelCI status of local checked out git repository
+If used without arguments, `kci-dev results` subcommands will get KernelCI status
+of local checked out git repository for commands that require a giturl and branch.
 In the following example, kci-dev is used on a local linux repository folder
 This command work with every linux repository supported by KernelCI
 
 ```sh
-linux git:(master)$ kci-dev results
+linux git:(master)$ kci-dev results summary
 git folder: None
 tree: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 branch: master
@@ -69,7 +114,7 @@ tests:  7858/6903/654
 
 ### --git-folder=\<local repository path\>
 
-Get results automatically from a folder with a local linux repository 
+Get results automatically from a folder with a local linux repository.
 
 ```sh
 kci-dev git:(master)$ kci-dev results --git-folder ../linux
@@ -83,43 +128,3 @@ builds: 46/0/0
 boots:  580/48/8
 tests:  7858/6903/654
 ```
-
-### --action=trees
-
-```sh
-kci-dev results --action=trees
-```
-
-### --action=summary
-
-Shows a numeric summary of the build, boot and test results.
-If `--action` is omitted, it will show the summary by default.
-
-Example:
-
-```sh
-kci-dev results --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --action=summary
-```
-
-### --action=builds
-
-List builds.
-
-Example:
-
-```sh
-kci-dev results --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --action builds
-```
-
-## Downloading logs
-
-`--download-logs` Download failed logs when used with `--action=failed-*` commands.
-
-Example:
-```sh
-kci-dev results --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --action failed-builds --download-logs
-```
-
-
-
-
