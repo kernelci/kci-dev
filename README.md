@@ -6,9 +6,7 @@
   <a href="https://www.bestpractices.dev/projects/9829"><img src="https://www.bestpractices.dev/projects/9829/badge"></a>
 </p>
 
-> *cmdline tool for interact with KernelCI*
-
-Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI services.
+> *Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI services.*
 
 ## Quickstart
 
@@ -19,15 +17,24 @@ source .venv/bin/activate
 pip install kci-dev
 ```
 
-## Configuration
+## Config file
 
-You can see a example configuration file [here](https://github.com/kernelci/kci-dev/blob/v0.1.1/docs/_index.md#configuration).  
-Without a auth token kci-dev can be used in results view only mode.
+> `kci-dev results` can be used without a config file or KernelCI authorization token.  
+
+For other subcommands (like `kci-dev bisect`) is possible to create a default config file at  
+`~/.config/kci-dev/kci-dev.toml` with the following command:  
+```sh
+kci-dev config
+```
+
+## KernelCI authorization tokens
+
+Authorizaton tokens can be requested [here](https://github.com/kernelci/kernelci-core/issues/new?template=kernelci-api-tokens.md)
 
 ## Contributing to kci-dev
 
 The kci-dev project welcomes, and depends on, contribution from developers and users in the open source community.  
-The [Contributor Guide](https://github.com/kernelci/kci-dev/blob/v0.1.1/CONTRIBUTING.md) should guide you on how to contribute to kci-dev project.
+The [Contributor Guide](https://github.com/kernelci/kci-dev/blob/main/CONTRIBUTING.md) should guide you on how to contribute to kci-dev project.
 
 
 ## License
