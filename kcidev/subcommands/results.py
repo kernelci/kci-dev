@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import urllib
+from functools import wraps
 
 import click
 import requests
@@ -245,79 +246,111 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
     return giturl, branch, commit
 
 
-@click.command(help=" [Experimental] Get results from the dashboard")
-@click.option(
-    "--origin",
-    help="Select KCIDB origin",
-    default="maestro",
-)
-@click.option(
-    "--giturl",
-    help="Git URL of kernel tree ",
-)
-@click.option(
-    "--branch",
-    help="Branch to get results for",
-)
-@click.option(
-    "--git-folder",
-    help="Path of git repository folder",
-)
-@click.option(
-    "--commit",
-    help="Commit or tag to get results for",
-)
-@click.option(
-    "--action",
-    type=click.Choice(["summary", "trees", "builds"], case_sensitive=True),
-    help="Select desired results action",
-)
-@click.option(
-    "--download-logs",
-    is_flag=True,
-    help="Select desired results action",
-)
-@click.option(
-    "--latest",
-    is_flag=True,
-    help="Select latest results available",
-)
-@click.option(
-    "--status",
-    type=click.Choice(["all", "pass", "fail", "inconclusive"], case_sensitive=True),
-    help="Status of test result",
-    default="all",
-)
+def common_options(func):
+    @click.option(
+        "--origin",
+        help="Select KCIDB origin",
+        default="maestro",
+    )
+    @click.option(
+        "--giturl",
+        help="Git URL of kernel tree ",
+    )
+    @click.option(
+        "--branch",
+        help="Branch to get results for",
+    )
+    @click.option(
+        "--git-folder",
+        help="Path of git repository folder",
+    )
+    @click.option(
+        "--commit",
+        help="Commit or tag to get results for",
+    )
+    @click.option(
+        "--latest",
+        is_flag=True,
+        help="Select latest results available",
+    )
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def build_options(func):
+    @click.option(
+        "--download-logs",
+        is_flag=True,
+        help="Select desired results action",
+    )
+    @click.option(
+        "--status",
+        type=click.Choice(["all", "pass", "fail", "inconclusive"], case_sensitive=True),
+        help="Status of test result",
+        default="all",
+    )
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@click.group(help="[Experimental] Get results from the dashboard")
 @click.pass_context
-def results(
+def results(ctx):
+    """Commands related to results."""
+    pass
+
+
+@results.command()
+@common_options
+@click.pass_context
+def summary(
     ctx,
     origin,
     git_folder,
     giturl,
     branch,
     commit,
-    action,
-    download_logs,
     latest,
-    status,
 ):
-    if action == None or action == "summary":
-        giturl, branch, commit = set_giturl_branch_commit(
-                origin, giturl, branch, commit, latest, git_folder
-            )
-        data = fetch_full_results(origin, giturl, branch, commit)
-        cmd_summary(data)
-    elif action == "trees":
-        cmd_list_trees(origin)
-    elif action == "builds":
-        giturl, branch, commit = set_giturl_branch_commit(
-                origin, giturl, branch, commit, latest, git_folder
-            )
-        data = fetch_full_results(origin, giturl, branch, commit)
-        cmd_builds(data, commit, download_logs, status)
-    else:
-        kci_err(f"action '{action}' does not exist.")
-        raise click.Abort()
+    """Display a summary of results."""
+    giturl, branch, commit = set_giturl_branch_commit(
+        origin, giturl, branch, commit, latest, git_folder
+    )
+    data = fetch_full_results(origin, giturl, branch, commit)
+    cmd_summary(data)
+
+
+@results.command()
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+    default="maestro",
+)
+@click.pass_context
+def trees(ctx, origin):
+    """List trees from a give origin."""
+    cmd_list_trees(origin)
+
+
+@results.command()
+@common_options
+@build_options
+@click.pass_context
+def builds(
+    ctx, origin, git_folder, giturl, branch, commit, latest, download_logs, status
+):
+    """Display build results."""
+    giturl, branch, commit = set_giturl_branch_commit(
+        origin, giturl, branch, commit, latest, git_folder
+    )
+    data = fetch_full_results(origin, giturl, branch, commit)
+    cmd_builds(data, commit, download_logs, status)
 
 
 if __name__ == "__main__":
