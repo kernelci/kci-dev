@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "kci-dev"
 version = "0.1.1"
-description = "Stand alone tool for Linux Kernel developers and maintainers that can test local Linux Kernel changes on a enabled KernelCI server"
+description = "Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI"
 authors = ["Arisu Tachibana <arisu.tachibana@miraclelinux.com>"]
 license = "LGPL-2.1-or-later"
 readme = "README.md"
