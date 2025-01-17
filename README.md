@@ -6,9 +6,7 @@
   <a href="https://www.bestpractices.dev/projects/9829"><img src="https://www.bestpractices.dev/projects/9829/badge"></a>
 </p>
 
-> *cmdline tool for interact with KernelCI*
-
-Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI services.
+*Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI*
 
 ## Quickstart
 
