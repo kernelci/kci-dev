@@ -40,11 +40,6 @@ default_state = {
 }
 
 
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
-
-
 def load_state(file="state.json"):
     if os.path.exists(file):
         with open(file, "r") as f:
@@ -239,7 +234,6 @@ def bisect(
 ):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    p_url = api_connection(config[instance]["pipeline"])
 
     state_file = os.path.join(workdir, statefile)
     state = load_state(state_file)
