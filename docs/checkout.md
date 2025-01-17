@@ -105,7 +105,7 @@ Other options:
 
 You can also set instead of --commit option --tipoftree which will retrieve the latest commit of the tree.
 
-### --watch
+### --watch, -w
 
 Additionally, you can use --watch option to watch the progress of the test.
 

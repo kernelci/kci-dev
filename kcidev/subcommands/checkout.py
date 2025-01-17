@@ -208,6 +208,7 @@ def retrieve_tot_commit(repourl, branch):
 )
 @click.option(
     "--watch",
+    "-w",
     help="Interactively watch for a tasks in job-filter",
     is_flag=True,
 )
