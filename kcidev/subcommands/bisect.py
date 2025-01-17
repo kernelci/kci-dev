@@ -29,8 +29,8 @@ default_state = {
     "good": "",
     "bad": "",
     "history": [],
-    "jobfilter": [],
-    "platformfilter": [],
+    "job_filter": [],
+    "platform_filter": [],
     "test": "",
     "workdir": "",
     "bisect_init": False,
@@ -59,8 +59,8 @@ def print_state(state):
     click.secho("bad: " + state["bad"], fg="green")
     click.secho("retryfail: " + str(state["retryfail"]), fg="green")
     click.secho("history: " + str(state["history"]), fg="green")
-    click.secho("jobfilter: " + str(state["jobfilter"]), fg="green")
-    click.secho("platformfilter: " + str(state["platformfilter"]), fg="green")
+    click.secho("job_filter: " + str(state["job_filter"]), fg="green")
+    click.secho("platform_filter: " + str(state["platform_filter"]), fg="green")
     click.secho("test: " + state["test"], fg="green")
     click.secho("workdir: " + state["workdir"], fg="green")
     click.secho("bisect_init: " + str(state["bisect_init"]), fg="green")
@@ -76,7 +76,9 @@ def git_exec_getcommit(cmd):
     click.secho("Executing git command: " + " ".join(cmd), fg="green")
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
-        click.secho("git command return failed", fg="red")
+        click.secho("git command return failed. Error:", fg="red")
+        click.secho(result.stderr, fg="red")
+        click.secho(result.stdout, fg="red")
         sys.exit(1)
     lines = result.stdout.split(b"\n")
     if len(lines) < 2:
@@ -133,6 +135,20 @@ def init_bisect(state):
     return commitid
 
 
+def update_tree(workdir, branch, giturl):
+    if not os.path.exists(workdir):
+        click.secho(
+            "Cloning repository (this might take significant time!)", fg="green"
+        )
+        repo = Repo.clone_from(giturl, workdir)
+        repo.git.checkout(branch)
+    else:
+        click.secho("Pulling repository", fg="green")
+        repo = Repo(workdir)
+        repo.git.checkout(branch)
+        repo.git.pull()
+
+
 def bisection_loop(state):
     olddir = os.getcwd()
     os.chdir(state["workdir"])
@@ -154,12 +170,12 @@ def bisection_loop(state):
         commit,
         "--watch",
     ]
-    # jobfilter is array, so we need to add each element as a separate argument
-    for job in state["jobfilter"]:
-        cmd.append("--jobfilter")
+    # job_filter is array, so we need to add each element as a separate argument
+    for job in state["job_filter"]:
+        cmd.append("--job_filter")
         cmd.append(job)
-    for platform in state["platformfilter"]:
-        cmd.append("--platformfilter")
+    for platform in state["platform_filter"]:
+        cmd.append("--platform_filter")
         cmd.append(platform)
     result = kcidev_exec(cmd)
     try:
@@ -199,8 +215,8 @@ def bisection_loop(state):
 @click.option("--workdir", help="define the repository origin", default="kcidev-src")
 @click.option("--ignorestate", help="ignore save state", is_flag=True)
 @click.option("--statefile", help="state file", default="state.json")
-@click.option("--jobfilter", help="filter the job", multiple=True)
-@click.option("--platformfilter", help="filter the platform", multiple=True)
+@click.option("--job-filter", help="filter the job", multiple=True)
+@click.option("--platform-filter", help="filter the platform", multiple=True)
 @click.option("--test", help="Test expected to fail")
 
 # test
@@ -215,8 +231,8 @@ def bisect(
     workdir,
     ignorestate,
     statefile,
-    jobfilter,
-    platformfilter,
+    job_filter,
+    platform_filter,
     test,
 ):
     config = ctx.obj.get("CFG")
@@ -239,11 +255,11 @@ def bisect(
         if not bad:
             click.secho("--bad is required", fg="red")
             return
-        if not jobfilter:
-            click.secho("--jobfilter is required", fg="red")
+        if not job_filter:
+            click.secho("--job_filter is required", fg="red")
             return
-        if not platformfilter:
-            click.secho("--platformfilter is required", fg="red")
+        if not platform_filter:
+            click.secho("--platform_filter is required", fg="red")
             return
         if not test:
             click.secho("--test is required", fg="red")
@@ -254,24 +270,15 @@ def bisect(
         state["good"] = good
         state["bad"] = bad
         state["retryfail"] = retryfail
-        state["jobfilter"] = jobfilter
-        state["platformfilter"] = platformfilter
+        state["job_filter"] = job_filter
+        state["platform_filter"] = platform_filter
         state["test"] = test
         state["workdir"] = workdir
+        update_tree(workdir, branch, giturl)
         save_state(state, state_file)
     else:
         print_state(state)
-
-    # if workdir doesnt exist, clone the repository
-    if not os.path.exists(workdir):
-        click.secho("Cloning repository", fg="green")
-        repo = Repo.clone_from(giturl, workdir)
-        repo.git.checkout(branch)
-    else:
-        click.secho("Pulling repository", fg="green")
-        repo = Repo(workdir)
-        repo.git.checkout(branch)
-        repo.git.pull()
+        update_tree(workdir, branch, giturl)
 
     if not state["bisect_init"]:
         state["next_commit"] = init_bisect(state)

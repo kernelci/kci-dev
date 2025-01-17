@@ -41,10 +41,10 @@ def send_checkout_full(baseurl, token, **kwargs):
         "url": kwargs["giturl"],
         "branch": kwargs["branch"],
         "commit": kwargs["commit"],
-        "jobfilter": kwargs["jobfilter"],
+        "jobfilter": kwargs["job_filter"],
     }
-    if "platformfilter" in kwargs:
-        data["platformfilter"] = kwargs["platformfilter"]
+    if "platform_filter" in kwargs:
+        data["platformfilter"] = kwargs["platform_filter"]
     jdata = json.dumps(data)
     print(jdata)
     try:
@@ -107,13 +107,13 @@ def check_node(node):
             return "FAIL"
 
 
-def watch_jobs(baseurl, token, treeid, jobfilter, test):
-    # we need to add to jobfilter "checkout" node
-    jobfilter = list(jobfilter)
-    jobfilter.append("checkout")
+def watch_jobs(baseurl, token, treeid, job_filter, test):
+    # we need to add to job_filter "checkout" node
+    job_filter = list(job_filter)
+    job_filter.append("checkout")
     while True:
         inprogress = 0
-        joblist = jobfilter.copy()
+        joblist = job_filter.copy()
         nodes = retrieve_treeid_nodes(baseurl, token, treeid)
         if not nodes:
             click.secho("No nodes found. Retrying...", fg="yellow")
@@ -122,17 +122,17 @@ def watch_jobs(baseurl, token, treeid, jobfilter, test):
         time_local = time.localtime()
         click.echo(f"Current time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
         click.secho(
-            f"Total tree nodes {len(nodes)} found. Jobfilter: {jobfilter}", fg="green"
+            f"Total tree nodes {len(nodes)} found. job_filter: {job_filter}", fg="green"
         )
 
-        # Tricky part in watch is that we might have one item in jobfilter (job, test),
+        # Tricky part in watch is that we might have one item in job_filter (job, test),
         # but it might spawn multiple nodes with same name
         test_result = None
         jobs_done_ts = None
         for node in nodes:
             if node["name"] == test:
                 test_result = node["result"]
-            if node["name"] in jobfilter:
+            if node["name"] in job_filter:
                 result = check_node(node)
                 if result == "DONE":
                     if isinstance(joblist, list) and node["name"] in joblist:
@@ -219,17 +219,17 @@ def retrieve_tot_commit(repourl, branch):
 )
 @click.option(
     "--watch",
-    help="Interactively watch for a tasks in jobfilter",
+    help="Interactively watch for a tasks in job-filter",
     is_flag=True,
 )
-# jobfilter is a list, might be one or more jobs
+# job_filter is a list, might be one or more jobs
 @click.option(
-    "--jobfilter",
+    "--job-filter",
     help="Job filter to trigger",
     multiple=True,
 )
 @click.option(
-    "--platformfilter",
+    "--platform-filter",
     help="Platform filter to trigger",
     multiple=True,
 )
@@ -239,17 +239,17 @@ def retrieve_tot_commit(repourl, branch):
 )
 @click.pass_context
 def checkout(
-    ctx, giturl, branch, commit, jobfilter, platformfilter, tipoftree, watch, test
+    ctx, giturl, branch, commit, job_filter, platform_filter, tipoftree, watch, test
 ):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = api_connection(cfg[instance]["pipeline"])
     apiurl = cfg[instance]["api"]
     token = cfg[instance]["token"]
-    if not jobfilter:
-        jobfilter = None
+    if not job_filter:
+        job_filter = None
         click.secho("No job filter defined. All jobs will be triggered!", fg="yellow")
-    if watch and not jobfilter:
+    if watch and not job_filter:
         click.secho("No job filter defined. Can't watch for a job(s)!", fg="red")
         return
     if test and not watch:
@@ -275,8 +275,8 @@ def checkout(
         giturl=giturl,
         branch=branch,
         commit=commit,
-        jobfilter=jobfilter,
-        platformfilter=platformfilter,
+        job_filter=job_filter,
+        platform_filter=platform_filter,
         watch=watch,
     )
     if resp and "message" in resp:
@@ -292,7 +292,7 @@ def checkout(
         if test:
             click.secho(f"Watching for test result: {test}", fg="green")
         # watch for jobs
-        watch_jobs(apiurl, token, treeid, jobfilter, test)
+        watch_jobs(apiurl, token, treeid, job_filter, test)
 
 
 if __name__ == "__main__":
