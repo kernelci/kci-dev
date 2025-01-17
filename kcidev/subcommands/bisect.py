@@ -12,6 +12,8 @@ import requests
 import toml
 from git import Repo
 
+from kcidev.libs.common import *
+
 """
 To not lose the state of the bisection, we need to store the state in a file
 The state file is a json file that contains the following keys:
@@ -76,13 +78,13 @@ def git_exec_getcommit(cmd):
     click.secho("Executing git command: " + " ".join(cmd), fg="green")
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
-        click.secho("git command return failed. Error:", fg="red")
-        click.secho(result.stderr, fg="red")
-        click.secho(result.stdout, fg="red")
+        kci_err("git command return failed. Error:")
+        kci_err(result.stderr)
+        kci_err(result.stdout)
         sys.exit(1)
     lines = result.stdout.split(b"\n")
     if len(lines) < 2:
-        click.secho(f"git command answer length failed: {lines}", fg="red")
+        kci_err(f"git command answer length failed: {lines}")
         sys.exit(1)
     # is it last bisect?: "is the first bad commit"
     if "is the first bad commit" in str(lines[1]):
@@ -91,7 +93,7 @@ def git_exec_getcommit(cmd):
         sys.exit(0)
     re_commit = re.search(r"\[([a-f0-9]+)\]", str(lines[1]))
     if not re_commit:
-        click.secho(f"git command regex failed: {lines}", fg="red")
+        kci_err(f"git command regex failed: {lines}")
         sys.exit(1)
     return re_commit.group(1)
 
@@ -110,7 +112,7 @@ def kcidev_exec(cmd):
                 click.echo(line, nl=False)
             process.wait()
         except Exception as e:
-            click.secho(f"Error executing kci-dev: {e}", fg="red")
+            kci_err(f"Error executing kci-dev: {e}")
             sys.exit(1)
 
     return process
@@ -122,11 +124,11 @@ def init_bisect(state):
     click.secho("init bisect", fg="green")
     r = os.system("git bisect start")
     if r != 0:
-        click.secho("git bisect start failed", fg="red")
+        kci_err("git bisect start failed")
         sys.exit(1)
     r = os.system("git bisect good " + state["good"])
     if r != 0:
-        click.secho("git bisect good failed", fg="red")
+        kci_err("git bisect good failed")
         sys.exit(1)
     # result = subprocess.run(['ls', '-l'], stdout=subprocess.PIPE)
     cmd = ["git", "bisect", "bad", state["bad"]]
@@ -181,7 +183,7 @@ def bisection_loop(state):
     try:
         testret = result.returncode
     except Exception as e:
-        click.secho(f"Error executing kci-dev, no returncode: {e}", fg="red")
+        kci_err(f"Error executing kci-dev, no returncode: {e}")
         sys.exit
     if testret == 0:
         bisect_result = "good"
@@ -192,13 +194,13 @@ def bisection_loop(state):
         # TBD: Retry failed test to make sure it is not a flaky test
         bisect_result = "skip"
     else:
-        click.secho("Maestro failed to execute the test", fg="red")
+        kci_err("Maestro failed to execute the test")
         # Internal maestro error, retry procesure
         return None
     cmd = ["git", "bisect", bisect_result]
     commitid = git_exec_getcommit(cmd)
     if not commitid:
-        click.secho("git bisect failed, commit return is empty", fg="red")
+        kci_err("git bisect failed, commit return is empty")
         sys.exit(1)
     state["history"].append({commit: bisect_result})
     state["next_commit"] = commitid
@@ -244,25 +246,25 @@ def bisect(
     if state is None or ignorestate:
         state = default_state
         if not giturl:
-            click.secho("--giturl is required", fg="red")
+            kci_err("--giturl is required")
             return
         if not branch:
-            click.secho("--branch is required", fg="red")
+            kci_err("--branch is required")
             return
         if not good:
-            click.secho("--good is required", fg="red")
+            kci_err("--good is required")
             return
         if not bad:
-            click.secho("--bad is required", fg="red")
+            kci_err("--bad is required")
             return
         if not job_filter:
-            click.secho("--job_filter is required", fg="red")
+            kci_err("--job-filter is required")
             return
         if not platform_filter:
-            click.secho("--platform_filter is required", fg="red")
+            kci_err("--platform-filter is required")
             return
         if not test:
-            click.secho("--test is required", fg="red")
+            kci_err("--test is required")
             return
 
         state["giturl"] = giturl

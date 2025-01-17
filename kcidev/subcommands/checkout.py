@@ -21,13 +21,13 @@ def api_connection(host):
 
 
 def display_api_error(response):
-    click.secho(f"API response error code: {response.status_code}", fg="red")
+    kci_err(f"API response error code: {response.status_code}")
     try:
-        click.secho(response.json(), fg="red")
+        kci_err(response.json())
     except json.decoder.JSONDecodeError:
         click.secho(f"No JSON response. Plain text: {response.text}", fg="yellow")
     except Exception as e:
-        click.secho(f"API response error: {e}: {response.text}", fg="red")
+        kci_err(f"API response error: {e}: {response.text}")
     return
 
 
@@ -50,7 +50,7 @@ def send_checkout_full(baseurl, token, **kwargs):
     try:
         response = requests.post(url, headers=headers, data=jdata, timeout=30)
     except requests.exceptions.RequestException as e:
-        click.secho(f"API connection error: {e}", fg="red")
+        kci_err(f"API connection error: {e}")
         return
 
     if response.status_code != 200:
@@ -148,10 +148,7 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
                     # if test is same as job, dont indicate infra-failure if test job fail
                     if test and test != node["name"]:
                         # if we have a test, and prior job failed, we should indicate that
-                        click.secho(
-                            f"Job {node['name']} failed, test can't be executed",
-                            fg="red",
-                        )
+                        kci_err(f"Job {node['name']} failed, test can't be executed")
                         sys.exit(2)
                 nodeid = node.get("id")
                 click.secho(
@@ -175,7 +172,7 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
                     sys.exit(0)
                 elif test_result:
                     # ignore null, that means result not ready yet
-                    click.secho(f"Test {test} failed: {test_result}", fg="red")
+                    kci_err(f"Test {test} failed: {test_result}")
                     sys.exit(1)
 
         click.echo(f"\rRefresh in 30s...", nl=False)
@@ -250,13 +247,13 @@ def checkout(
         job_filter = None
         click.secho("No job filter defined. All jobs will be triggered!", fg="yellow")
     if watch and not job_filter:
-        click.secho("No job filter defined. Can't watch for a job(s)!", fg="red")
+        kci_err("No job filter defined. Can't watch for a job(s)!")
         return
     if test and not watch:
-        click.secho("Test option only works with watch option", fg="red")
+        kci_err("Test option only works with watch option")
         return
     if not commit and not tipoftree:
-        click.secho("No commit or tree/branch latest commit defined", fg="red")
+        kci_err("No commit or tree/branch latest commit defined")
         return
     if tipoftree:
         click.secho(
@@ -264,9 +261,7 @@ def checkout(
         )
         commit = retrieve_tot_commit(giturl, branch)
         if not commit or len(commit) != 40:
-            click.secho(
-                "Unable to retrieve latest commit. Wrong tree/branch?", fg="red"
-            )
+            kci_err("Unable to retrieve latest commit. Wrong tree/branch?")
             return
         click.secho(f"Commit to checkout: {commit}", fg="green")
     resp = send_checkout_full(
@@ -286,7 +281,7 @@ def checkout(
         node = resp.get("node")
         treeid = node.get("treeid")
         if not treeid:
-            click.secho("No treeid returned. Can't watch for a job(s)!", fg="red")
+            kci_err("No treeid returned. Can't watch for a job(s)!")
             return
         click.secho(f"Watching for jobs on treeid: {treeid}", fg="green")
         if test:
