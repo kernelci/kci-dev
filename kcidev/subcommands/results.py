@@ -237,6 +237,14 @@ def cmd_builds(data, commit, download_logs, status):
         kci_msg("")
 
 
+def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder):
+    if not giturl or not branch or not ((commit != None) ^ latest):
+        giturl, branch, commit = get_folder_repository(git_folder)
+    if latest:
+        commit = get_latest_commit(origin, giturl, branch)
+    return giturl, branch, commit
+
+
 @click.command(help=" [Experimental] Get results from the dashboard")
 @click.option(
     "--origin",
@@ -294,19 +302,17 @@ def results(
     status,
 ):
     if action == None or action == "summary":
-        if not giturl or not branch or not ((commit != None) ^ latest):
-            giturl, branch, commit = get_folder_repository(git_folder)
-        if latest:
-            commit = get_latest_commit(origin, giturl, branch)
+        giturl, branch, commit = set_giturl_branch_commit(
+                origin, giturl, branch, commit, latest, git_folder
+            )
         data = fetch_full_results(origin, giturl, branch, commit)
         cmd_summary(data)
     elif action == "trees":
         cmd_list_trees(origin)
     elif action == "builds":
-        if not giturl or not branch or not ((commit != None) ^ latest):
-            giturl, branch, commit = get_folder_repository(git_folder)
-        if latest:
-            commit = get_latest_commit(origin, giturl, branch)
+        giturl, branch, commit = set_giturl_branch_commit(
+                origin, giturl, branch, commit, latest, git_folder
+            )
         data = fetch_full_results(origin, giturl, branch, commit)
         cmd_builds(data, commit, download_logs, status)
     else:
