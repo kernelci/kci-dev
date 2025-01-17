@@ -7,13 +7,17 @@ import click
 import toml
 
 
-def load_toml(settings):
+def load_toml(settings, subcommand):
     fname = "kci-dev.toml"
     config = None
 
     if os.path.exists(settings):
-        with open(settings, "r") as f:
-            config = toml.load(f)
+        if os.path.isfile(settings):
+            with open(settings, "r") as f:
+                config = toml.load(f)
+        else:
+            kci_err("The --settings location is not a kci-dev config file")
+            raise click.Abort()
         return config
 
     home_dir = os.path.expanduser("~")
@@ -35,9 +39,8 @@ def load_toml(settings):
         os.path.dirname(__file__), "../..", example_configuration
     )
     if os.path.exists(poetry_example_configuration):
-        kci_err(
-            f"Using Poetry example configuration in: " + poetry_example_configuration
-        )
+        if subcommand != "config":
+            kci_err(f"Please use `kci-dev config` to create a config file")
         with open(poetry_example_configuration, "r") as f:
             config = toml.load(f)
         return config
@@ -48,7 +51,8 @@ def load_toml(settings):
         os.path.dirname(__file__), "..", example_configuration
     )
     if os.path.exists(pypi_example_configuration):
-        kci_err(f"Using PyPI example configuration in: " + pypi_example_configuration)
+        if subcommand != "config":
+            kci_err(f"Please use `kci-dev config` to create a config file")
         with open(pypi_example_configuration, "r") as f:
             config = toml.load(f)
         return config
@@ -60,6 +64,22 @@ def load_toml(settings):
         raise click.Abort()
 
     return config
+
+
+def config_path(settings):
+    fname = "kci-dev.toml"
+
+    if os.path.exists(settings):
+        return settings
+
+    home_dir = os.path.expanduser("~")
+    user_path = os.path.join(home_dir, ".config", "kci-dev", fname)
+    if os.path.exists(user_path):
+        return user_path
+
+    global_path = os.path.join("/", "etc", fname)
+    if os.path.exists(global_path):
+        return global_path
 
 
 def kci_msg(content):
