@@ -10,14 +10,11 @@ import toml
 from git import Repo
 
 from kcidev.libs.common import *
-
-
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
+from kcidev.libs.maestro_common import *
 
 
 def print_nodes(nodes, field):
+    res = []
     if not isinstance(nodes, list):
         nodes = [nodes]
     for node in nodes:
@@ -25,9 +22,10 @@ def print_nodes(nodes, field):
             data = {}
             for f in field:
                 data[f] = node.get(f)
-            click.secho(pprint.pprint(data), fg="green", nl=False)
+            res.append(data)
         else:
-            click.secho(pprint.pprint(node), fg="green", nl=False)
+            res.append(node)
+        kci_msg(json.dumps(res, sort_keys=True, indent=4))
 
 
 def get_node(url, nodeid, field):
@@ -35,7 +33,7 @@ def get_node(url, nodeid, field):
         "Content-Type": "application/json; charset=utf-8",
     }
     url = url + "latest/node/" + nodeid
-    click.secho(url)
+    maestro_print_api_call(url)
     response = requests.get(url, headers=headers)
     try:
         response.raise_for_status()
@@ -53,13 +51,13 @@ def get_nodes(url, limit, offset, filter, field):
         "Content-Type": "application/json; charset=utf-8",
     }
     url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
+    maestro_print_api_call(url)
     if filter:
         for f in filter:
             # TBD: We need to add translate filter to API
             # if we need anything more complex than eq(=)
             url = url + "&" + f
 
-    click.secho(url)
     response = requests.get(url, headers=headers)
     try:
         response.raise_for_status()
@@ -114,7 +112,7 @@ def get_nodes(url, limit, offset, filter, field):
 def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(config[instance]["api"])
+    url = config[instance]["api"]
     if nodeid:
         get_node(url, nodeid, field)
     if nodes:

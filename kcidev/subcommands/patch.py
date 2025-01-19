@@ -8,10 +8,7 @@ import requests
 import toml
 from git import Repo
 
-
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
+from kcidev.libs.maestro_common import *
 
 
 def send_build(url, patch, branch, treeurl, token):
@@ -26,6 +23,7 @@ def send_build(url, patch, branch, treeurl, token):
         "kbuildname": "example",
         "testname": "example",
     }
+    maestro_print_api_call(url, values)
     response = requests.post(url, headers=headers, files={"patch": patch}, data=values)
     click.secho(response.status_code, fg="green")
     click.secho(response.json(), fg="green")
@@ -49,7 +47,7 @@ def send_build(url, patch, branch, treeurl, token):
 def patch(ctx, repository, branch, private, patch):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(config[instance]["pipeline"])
+    url = config[instance]["pipeline"]
     patch = open(patch, "rb")
     send_build(url, patch, branch, repository, config[instance]["token"])
 

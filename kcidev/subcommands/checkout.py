@@ -13,22 +13,7 @@ import requests
 from git import Repo
 
 from kcidev.libs.common import *
-
-
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
-
-
-def display_api_error(response):
-    kci_err(f"API response error code: {response.status_code}")
-    try:
-        kci_err(response.json())
-    except json.decoder.JSONDecodeError:
-        click.secho(f"No JSON response. Plain text: {response.text}", fg="yellow")
-    except Exception as e:
-        kci_err(f"API response error: {e}: {response.text}")
-    return
+from kcidev.libs.maestro_common import *
 
 
 def send_checkout_full(baseurl, token, **kwargs):
@@ -46,7 +31,7 @@ def send_checkout_full(baseurl, token, **kwargs):
     if "platform_filter" in kwargs:
         data["platformfilter"] = kwargs["platform_filter"]
     jdata = json.dumps(data)
-    print(jdata)
+    maestro_print_api_call(url, data)
     try:
         response = requests.post(url, headers=headers, data=jdata, timeout=30)
     except requests.exceptions.RequestException as e:
@@ -54,7 +39,7 @@ def send_checkout_full(baseurl, token, **kwargs):
         return
 
     if response.status_code != 200:
-        display_api_error(response)
+        maestro_api_error(response)
         return None
     return response.json()
 
@@ -75,7 +60,7 @@ def retrieve_treeid_nodes(baseurl, token, treeid):
         return None
 
     if response.status_code >= 400:
-        display_api_error(response)
+        maestro_api_error(response)
         return None
 
     return response.json()
@@ -111,6 +96,7 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
     # we need to add to job_filter "checkout" node
     job_filter = list(job_filter)
     job_filter.append("checkout")
+    previous_nodes = None
     while True:
         inprogress = 0
         joblist = job_filter.copy()
@@ -119,8 +105,13 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
             click.secho("No nodes found. Retrying...", fg="yellow")
             time.sleep(5)
             continue
+        if previous_nodes == nodes:
+            kci_msg_nonl(".")
+            time.sleep(30)
+            continue
+
         time_local = time.localtime()
-        click.echo(f"Current time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
+        click.echo(f"\nCurrent time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
         click.secho(
             f"Total tree nodes {len(nodes)} found. job_filter: {job_filter}", fg="green"
         )
@@ -152,7 +143,7 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
                         sys.exit(2)
                 nodeid = node.get("id")
                 click.secho(
-                    f"Node {nodeid} job {node['name']} State {node['state']} Result {node['result']}",
+                    f"Node: {nodeid} job: {node['name']} State: {node['state']} Result: {node['result']}",
                     fg=color,
                 )
         if len(joblist) == 0 and inprogress == 0:
@@ -175,7 +166,8 @@ def watch_jobs(baseurl, token, treeid, job_filter, test):
                     kci_err(f"Test {test} failed: {test_result}")
                     sys.exit(1)
 
-        click.echo(f"\rRefresh in 30s...", nl=False)
+        kci_msg_nonl(f"\rRefresh every 30s...")
+        previous_nodes = nodes
         time.sleep(30)
 
 
@@ -216,6 +208,7 @@ def retrieve_tot_commit(repourl, branch):
 )
 @click.option(
     "--watch",
+    "-w",
     help="Interactively watch for a tasks in job-filter",
     is_flag=True,
 )
@@ -240,7 +233,7 @@ def checkout(
 ):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(cfg[instance]["pipeline"])
+    url = cfg[instance]["pipeline"]
     apiurl = cfg[instance]["api"]
     token = cfg[instance]["token"]
     if not job_filter:

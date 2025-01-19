@@ -86,6 +86,14 @@ def kci_msg(content):
     click.echo(content)
 
 
+def kci_log(content):
+    click.secho(content, err=True)
+
+
+def kci_warning(content):
+    click.secho(content, fg="yellow", err=True)
+
+
 def kci_err(content):
     click.secho(content, fg="red", err=True)
 

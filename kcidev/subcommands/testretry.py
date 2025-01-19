@@ -8,20 +8,7 @@ import requests
 from git import Repo
 
 from kcidev.libs.common import *
-
-
-def api_connection(host):
-    click.secho("api connect: " + host, fg="green")
-    return host
-
-
-def display_api_error(response):
-    kci_err(f"API response error code: {response.status_code}")
-    try:
-        kci_err(response.json())
-    except json.decoder.JSONDecodeError:
-        click.secho(f"No JSON response. Plain text: {response.text}", fg="yellow")
-    return
+from kcidev.libs.maestro_common import *
 
 
 def send_jobretry(baseurl, jobid, token):
@@ -32,6 +19,7 @@ def send_jobretry(baseurl, jobid, token):
     }
     data = {"nodeid": jobid}
     jdata = json.dumps(data)
+    maestro_print_api_call(url, data)
     try:
         response = requests.post(url, headers=headers, data=jdata)
     except requests.exceptions.RequestException as e:
@@ -39,7 +27,7 @@ def send_jobretry(baseurl, jobid, token):
         return
 
     if response.status_code != 200:
-        display_api_error(response)
+        maestro_api_error(response)
         return None
     return response.json()
 
@@ -54,7 +42,7 @@ def send_jobretry(baseurl, jobid, token):
 def testretry(ctx, nodeid):
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = api_connection(cfg[instance]["pipeline"])
+    url = cfg[instance]["pipeline"]
     resp = send_jobretry(url, nodeid, cfg[instance]["token"])
     if resp and "message" in resp:
         click.secho(resp["message"], fg="green")
