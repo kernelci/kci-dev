@@ -18,7 +18,7 @@ from kcidev.libs.common import *
 DASHBOARD_API = "https://dashboard.kernelci.org/api/"
 
 
-def fetch_from_api(endpoint, params):
+def dashboard_api_fetch(endpoint, params):
     base_url = urllib.parse.urljoin(DASHBOARD_API, endpoint)
     try:
         url = "{}?{}".format(base_url, urllib.parse.urlencode(params))
@@ -30,16 +30,26 @@ def fetch_from_api(endpoint, params):
     return r.json()
 
 
-def fetch_full_results(origin, giturl, branch, commit):
-    endpoint = f"tree/{commit}/full"
+def dashboard_fetch_summary(origin, giturl, branch, commit):
+    endpoint = f"tree/{commit}/summary"
     params = {
         "origin": origin,
         "git_url": giturl,
         "git_branch": branch,
-        "commit": commit,
     }
 
-    return fetch_from_api(endpoint, params)
+    return dashboard_api_fetch(endpoint, params)
+
+
+def dashboard_fetch_builds(origin, giturl, branch, commit):
+    endpoint = f"tree/{commit}/builds"
+    params = {
+        "origin": origin,
+        "git_url": giturl,
+        "git_branch": branch,
+    }
+
+    return dashboard_api_fetch(endpoint, params)
 
 
 def repository_url_cleaner(url):
@@ -60,7 +70,7 @@ def fetch_tree_fast(origin):
     params = {
         "origin": origin,
     }
-    return fetch_from_api("tree-fast", params)
+    return dashboard_api_fetch("tree-fast", params)
 
 
 def is_inside_work_tree(git_folder):
@@ -165,17 +175,17 @@ def sum_inconclusive_results(results):
 
 def cmd_summary(data):
     kci_msg("pass/fail/inconclusive")
-
-    builds = data["buildsSummary"]["builds"]
+    summary = data["summary"]
+    builds = summary["builds"]["status"]
     print_summary("builds", builds["valid"], builds["invalid"], builds["null"])
 
-    boots = data["bootStatusSummary"]
+    boots = summary["boots"]["status"]
     inconclusive_boots = sum_inconclusive_results(boots)
     pass_boots = boots["PASS"] if "PASS" in boots.keys() else 0
     fail_boots = boots["FAIL"] if "FAIL" in boots.keys() else 0
     print_summary("boots", pass_boots, fail_boots, inconclusive_boots)
 
-    tests = data["testStatusSummary"]
+    tests = summary["tests"]["status"]
     pass_tests = tests["PASS"] if "PASS" in tests.keys() else 0
     fail_tests = tests["FAIL"] if "FAIL" in tests.keys() else 0
     inconclusive_tests = sum_inconclusive_results(tests)
@@ -325,7 +335,7 @@ def summary(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = fetch_full_results(origin, giturl, branch, commit)
+    data = dashboard_fetch_summary(origin, giturl, branch, commit)
     cmd_summary(data)
 
 
@@ -352,7 +362,7 @@ def builds(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = fetch_full_results(origin, giturl, branch, commit)
+    data = dashboard_fetch_builds(origin, giturl, branch, commit)
     cmd_builds(data, commit, download_logs, status)
 
 
