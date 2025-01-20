@@ -1,7 +1,7 @@
-baseURL = 'https://aliceinwire.github.io/kci-dev/'
+baseURL = 'https://kernelci.github.io/kci-dev/'
 languageCode = 'en-us'
 title = 'kci-dev'
-description = 'kci-dev is a cmdline tool for interact with a enabled KernelCI server.'
+description = 'Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI'
 contentDir = "docs/"
 
 pygmentsCodeFences = true
