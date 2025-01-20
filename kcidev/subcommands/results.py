@@ -66,7 +66,7 @@ def repository_url_cleaner(url):
     return url_cleaned
 
 
-def fetch_tree_fast(origin):
+def dashboard_fetch_tree_list(origin):
     params = {
         "origin": origin,
     }
@@ -141,7 +141,7 @@ def get_folder_repository(git_folder, branch):
 
 
 def get_latest_commit(origin, giturl, branch):
-    trees = fetch_tree_fast(origin)
+    trees = dashboard_fetch_tree_list(origin)
     for t in trees:
         if t["git_repository_url"] == giturl and t["git_repository_branch"] == branch:
             return t["git_commit_hash"]
@@ -193,7 +193,7 @@ def cmd_summary(data):
 
 
 def cmd_list_trees(origin):
-    trees = fetch_tree_fast(origin)
+    trees = dashboard_fetch_tree_list(origin)
     for t in trees:
         kci_msg_green_nonl(f"- {t['tree_name']}/{t['git_repository_branch']}:\n")
         kci_msg(f"  giturl: {t['git_repository_url']}")
