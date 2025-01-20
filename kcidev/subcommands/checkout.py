@@ -36,7 +36,7 @@ def send_checkout_full(baseurl, token, **kwargs):
         response = requests.post(url, headers=headers, data=jdata, timeout=30)
     except requests.exceptions.RequestException as e:
         kci_err(f"API connection error: {e}")
-        return
+        return None
 
     if response.status_code != 200:
         maestro_api_error(response)
@@ -267,6 +267,10 @@ def checkout(
         platform_filter=platform_filter,
         watch=watch,
     )
+    if not resp:
+        kci_err("Failed to trigger checkout")
+        sys.exit(64)
+
     if resp and "message" in resp:
         click.secho(resp["message"], fg="green")
 

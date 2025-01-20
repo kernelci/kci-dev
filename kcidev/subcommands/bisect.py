@@ -168,10 +168,10 @@ def bisection_loop(state):
     ]
     # job_filter is array, so we need to add each element as a separate argument
     for job in state["job_filter"]:
-        cmd.append("--job_filter")
+        cmd.append("--job-filter")
         cmd.append(job)
     for platform in state["platform_filter"]:
-        cmd.append("--platform_filter")
+        cmd.append("--platform-filter")
         cmd.append(platform)
     result = kcidev_exec(cmd)
     try:
@@ -187,10 +187,16 @@ def bisection_loop(state):
     elif testret == 2:
         # TBD: Retry failed test to make sure it is not a flaky test
         bisect_result = "skip"
-    else:
-        kci_err("Maestro failed to execute the test")
+    elif testret == 3:
+        kci_err(f"Maestro failed to execute the test.")
         # Internal maestro error, retry procesure
         return None
+    else:
+        kci_err(
+            f"Unknown or critical return code from kci-dev: {testret}. Try to run last command manually and inspect the output:"
+        )
+        kci_err(f"{' '.join(cmd)}")
+        sys.exit(1)
     cmd = ["git", "bisect", bisect_result]
     commitid = git_exec_getcommit(cmd)
     if not commitid:
