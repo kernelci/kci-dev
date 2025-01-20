@@ -38,11 +38,13 @@ def load_toml(settings, subcommand):
             config = tomllib.load(f)
         return config
 
-    if not config:
-        kci_err(
-            f"No config file found, please use `kci-dev config` to create a config file"
-        )
-        raise click.Abort()
+    # config and results subcommand work without a config file
+    if subcommand != "config" and subcommand != "results":
+        if not config:
+            kci_err(
+                f"No config file found, please use `kci-dev config` to create a config file"
+            )
+            raise click.Abort()
 
     return config
 

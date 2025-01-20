@@ -30,9 +30,9 @@ from kcidev.subcommands import (
 @click.pass_context
 def cli(ctx, settings, instance):
     subcommand = ctx.invoked_subcommand
-    if subcommand != "results":
-        ctx.obj = {"CFG": load_toml(settings, subcommand)}
-        ctx.obj["SETTINGS"] = settings
+    ctx.obj = {"CFG": load_toml(settings, subcommand)}
+    ctx.obj["SETTINGS"] = settings
+    if subcommand != "results" and subcommand != "config":
         if instance:
             ctx.obj["INSTANCE"] = instance
         else:
