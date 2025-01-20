@@ -6,7 +6,7 @@
   <a href="https://www.bestpractices.dev/projects/9829"><img src="https://www.bestpractices.dev/projects/9829/badge"></a>
 </p>
 
-> *Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI services.*
+> *Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI*
 
 ## Quickstart
 
@@ -36,6 +36,9 @@ Authorizaton tokens can be requested [here](https://github.com/kernelci/kernelci
 The kci-dev project welcomes, and depends on, contribution from developers and users in the open source community.  
 The [Contributor Guide](https://github.com/kernelci/kci-dev/blob/main/CONTRIBUTING.md) should guide you on how to contribute to kci-dev project.
 
+## Documentation
+
+For latest informations check out the documentation [here](https://kernelci.github.io/kci-dev/)  
 
 ## License
 
