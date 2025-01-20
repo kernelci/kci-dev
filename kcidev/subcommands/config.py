@@ -51,7 +51,7 @@ def add_config(fpath):
     )
     if os.path.exists(poetry_example_configuration):
         config = True
-        if not os.path.exists(dpath):
+        if not os.path.exists(dpath) and dpath != "":
             # copy config
             os.makedirs(dpath)
         shutil.copyfile(poetry_example_configuration, fpath)
@@ -62,7 +62,7 @@ def add_config(fpath):
     )
     if os.path.exists(pypi_example_configuration):
         config = True
-        if not os.path.exists(dpath):
+        if not os.path.exists(dpath) and dpath != "":
             # copy config
             os.makedirs(dpath)
         shutil.copyfile(poetry_example_configuration, fpath)

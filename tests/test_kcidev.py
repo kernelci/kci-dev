@@ -5,11 +5,16 @@ from subprocess import PIPE, run
 import git
 import pytest
 
+from kcidev.subcommands.config import add_config
 
-def test_prepare():
+
+@pytest.fixture(scope="session")
+def kcidev_config(tmpdir_factory):
+    file = tmpdir_factory.mktemp("config").join(".kci-dev.toml")
     # prepare enviroment
-    os.system("cp .kci-dev.toml.example .kci-dev.toml")
-    assert os.path.exists(".kci-dev.toml")
+    command = ["poetry", "run", "kci-dev", "config", "--file-path", file]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    return file
 
 
 def test_kcidev_help():
@@ -23,66 +28,108 @@ def test_kcidev_help():
     assert result.returncode == 0
 
 
-def test_kcidev_commit_help():
-    command = ["poetry", "run", "kci-dev", "commit", "--help"]
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
-    assert result.returncode == 0
-
-
-def test_kcidev_patch_help():
-    command = ["poetry", "run", "kci-dev", "patch", "--help"]
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
-    assert result.returncode == 0
-
-
-def test_kcidev_results_help():
-    command = ["poetry", "run", "kci-dev", "maestro-results", "--help"]
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
-    assert result.returncode == 0
-
-
-def test_kcidev_testretry_help():
-    command = ["poetry", "run", "kci-dev", "testretry", "--help"]
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
-    assert result.returncode == 0
-
-
-def test_kcidev_checkout_help():
-    command = ["poetry", "run", "kci-dev", "checkout", "--help"]
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
-    assert result.returncode == 0
-
-
-def test_kcidev_results_tests():
+def test_kcidev_commit_help(kcidev_config):
     command = [
         "poetry",
         "run",
         "kci-dev",
+        "--settings",
+        kcidev_config,
+        "commit",
+        "--help",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
+def test_kcidev_patch_help(kcidev_config):
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "--settings",
+        kcidev_config,
+        "patch",
+        "--help",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
+def test_kcidev_results_help(kcidev_config):
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "--settings",
+        kcidev_config,
+        "maestro-results",
+        "--help",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
+def test_kcidev_testretry_help(kcidev_config):
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "--settings",
+        kcidev_config,
+        "testretry",
+        "--help",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
+def test_kcidev_checkout_help(kcidev_config):
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "--settings",
+        kcidev_config,
+        "checkout",
+        "--help",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
+def test_kcidev_results_tests(kcidev_config):
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "--settings",
+        kcidev_config,
         "--instance",
         "staging",
         "maestro-results",
@@ -112,11 +159,13 @@ def test_create_repo():
     r.index.commit("test")
 
 
-def test_kcidev_commit():
+def test_kcidev_commit(kcidev_config):
     command = [
         "poetry",
         "run",
         "kci-dev",
+        "--settings",
+        kcidev_config,
         "--instance",
         "staging",
         "commit",
@@ -149,8 +198,3 @@ def test_main():
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
-
-    if os.path.isfile(".kci-dev.toml"):
-        os.remove(".kci-dev.toml")
-    else:
-        print("File does not exist")
