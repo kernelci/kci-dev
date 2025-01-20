@@ -6,7 +6,6 @@ import pprint
 
 import click
 import requests
-import toml
 from git import Repo
 
 from kcidev.libs.common import *
