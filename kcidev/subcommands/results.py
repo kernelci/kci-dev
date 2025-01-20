@@ -63,6 +63,17 @@ def dashboard_fetch_boots(origin, giturl, branch, commit):
     return dashboard_api_fetch(endpoint, params)
 
 
+def dashboard_fetch_tests(origin, giturl, branch, commit):
+    endpoint = f"tree/{commit}/tests"
+    params = {
+        "origin": origin,
+        "git_url": giturl,
+        "git_branch": branch,
+    }
+
+    return dashboard_api_fetch(endpoint, params)
+
+
 def repository_url_cleaner(url):
     # standardize protocol to https
     parsed = urllib.parse.urlsplit(url)
@@ -281,17 +292,17 @@ def filter_out_by_status(status, filter):
     return True
 
 
-def cmd_boots(data, commit, download_logs, status_filter):
-    for boot in data["boots"]:
-        if filter_out_by_status(boot["status"], status_filter):
+def cmd_tests(data, commit, download_logs, status_filter):
+    for test in data:
+        if filter_out_by_status(test["status"], status_filter):
             continue
 
-        log_path = boot["log_url"]
+        log_path = test["log_url"]
         if download_logs:
             try:
                 log_gz = requests.get(boots["log_url"])
                 log = gzip.decompress(log_gz.content)
-                log_file = f"{boot['config']}-{boot['architecture']}-{boot['compiler']}-{commit}.log"
+                log_file = f"{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
                 with open(log_file, mode="wb") as file:
                     file.write(log)
                 log_path = "file://" + os.path.join(os.getcwd(), log_file)
@@ -300,37 +311,38 @@ def cmd_boots(data, commit, download_logs, status_filter):
                 pass
 
         kci_msg_nonl("- test path: ")
-        kci_msg_cyan_nonl(boot["path"])
+        kci_msg_cyan_nonl(test["path"])
         kci_msg("")
 
-        kci_msg_nonl("  platform: ")
-        kci_msg_cyan_nonl(boot["misc"]["platform"])
+        kci_msg_nonl("  hardware: ")
+        kci_msg_cyan_nonl(test["misc"]["platform"])
         kci_msg("")
 
-        if boot["environment_compatible"]:
+        if test["environment_compatible"]:
             kci_msg_nonl("  compatibles: ")
-            kci_msg_cyan_nonl(" | ".join(boot["environment_compatible"]))
+            kci_msg_cyan_nonl(" | ".join(test["environment_compatible"]))
             kci_msg("")
 
         kci_msg_nonl("  config: ")
-        kci_msg_cyan_nonl(boot["config"])
+        kci_msg_cyan_nonl(test["config"])
         kci_msg_nonl(" arch: ")
-        kci_msg_cyan_nonl(boot["architecture"])
+        kci_msg_cyan_nonl(test["architecture"])
         kci_msg_nonl(" compiler: ")
-        kci_msg_cyan_nonl(boot["compiler"])
+        kci_msg_cyan_nonl(test["compiler"])
         kci_msg("")
 
         kci_msg_nonl("  status:")
-        if boot["status"] == "PASS":
+        if test["status"] == "PASS":
             kci_msg_green_nonl("PASS")
-        elif boot["status"] == "FAIL":
+        elif test["status"] == "FAIL":
             kci_msg_red_nonl("FAIL")
         else:
-            kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {boot["status"]})")
+            kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test["status"]})")
         kci_msg("")
 
         kci_msg(f"  log: {log_path}")
-        kci_msg(f"  id: {boot['id']}")
+        kci_msg(f"  start time: {test['start_time']}")
+        kci_msg(f"  id: {test['id']}")
         kci_msg("")
 
 
@@ -461,7 +473,22 @@ def boots(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_boots(origin, giturl, branch, commit)
-    cmd_boots(data, commit, download_logs, status)
+    cmd_tests(data["boots"], commit, download_logs, status)
+
+
+@results.command()
+@common_options
+@build_and_test_options
+@click.pass_context
+def tests(
+    ctx, origin, git_folder, giturl, branch, commit, latest, download_logs, status
+):
+    """Display test results."""
+    giturl, branch, commit = set_giturl_branch_commit(
+        origin, giturl, branch, commit, latest, git_folder
+    )
+    data = dashboard_fetch_tests(origin, giturl, branch, commit)
+    cmd_tests(data["tests"], commit, download_logs, status)
 
 
 if __name__ == "__main__":
