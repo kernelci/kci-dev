@@ -2,9 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 
 import click
-import toml
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 
 def load_toml(settings, subcommand):
@@ -13,8 +18,8 @@ def load_toml(settings, subcommand):
 
     if os.path.exists(settings):
         if os.path.isfile(settings):
-            with open(settings, "r") as f:
-                config = toml.load(f)
+            with open(settings, "rb") as f:
+                config = tomllib.load(f)
         else:
             kci_err("The --settings location is not a kci-dev config file")
             raise click.Abort()
@@ -23,43 +28,19 @@ def load_toml(settings, subcommand):
     home_dir = os.path.expanduser("~")
     user_path = os.path.join(home_dir, ".config", "kci-dev", fname)
     if os.path.exists(user_path):
-        with open(user_path, "r") as f:
-            config = toml.load(f)
+        with open(user_path, "rb") as f:
+            config = tomllib.load(f)
         return config
 
     global_path = os.path.join("/", "etc", fname)
     if os.path.exists(global_path):
-        with open(global_path, "r") as f:
-            config = toml.load(f)
-        return config
-
-    example_configuration = ".kci-dev.toml.example"
-    # Installed with Poetry
-    poetry_example_configuration = os.path.join(
-        os.path.dirname(__file__), "../..", example_configuration
-    )
-    if os.path.exists(poetry_example_configuration):
-        if subcommand != "config":
-            kci_err(f"Please use `kci-dev config` to create a config file")
-        with open(poetry_example_configuration, "r") as f:
-            config = toml.load(f)
-        return config
-
-    # Installed with PyPI
-    kci_err(f"Configuration not found")
-    pypi_example_configuration = os.path.join(
-        os.path.dirname(__file__), "..", example_configuration
-    )
-    if os.path.exists(pypi_example_configuration):
-        if subcommand != "config":
-            kci_err(f"Please use `kci-dev config` to create a config file")
-        with open(pypi_example_configuration, "r") as f:
-            config = toml.load(f)
+        with open(global_path, "rb") as f:
+            config = tomllib.load(f)
         return config
 
     if not config:
         kci_err(
-            f"No `{fname}` configuration file found at `{global_path}`, `{user_path}` or `{settings}`"
+            f"No config file found, please use `kci-dev config` to create a config file"
         )
         raise click.Abort()
 

@@ -5,7 +5,6 @@ import json
 
 import click
 import requests
-import toml
 from git import Repo
 
 
