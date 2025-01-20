@@ -35,6 +35,17 @@ sidebar_cache_limit = 1000
     name = "checkout"
     pageRef = "checkout/"
     weight = 20
+  
+  [[menu.main]]
+    name = "config"
+    pageRef = "config/"
+    weight = 20
+  
+  [[menu.main]]
+    name = "config_file"
+    pageRef = "config_file/"
+    weight = 20
+
   [[menu.main]]
     name = "testretry"
     pageRef = "testretry/"
@@ -43,4 +54,9 @@ sidebar_cache_limit = 1000
   [[menu.main]]
     name = "results"
     url = "results/"
+    weight = 20
+  
+  [[menu.main]]
+    name = "maestro-results"
+    url = "maestro-results/"
     weight = 20
