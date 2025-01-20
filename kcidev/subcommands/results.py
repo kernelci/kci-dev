@@ -98,7 +98,7 @@ def get_folder_repository(git_folder):
     if os.path.exists(dot_git_folder):
         # Get remote origin url
         git_config_path = os.path.join(dot_git_folder, "config")
-        git_config = configparser.ConfigParser()
+        git_config = configparser.ConfigParser(strict=False)
         git_config.read(git_config_path)
         git_url = git_config.get('remote "origin"', "url")
         # A way of standardize git url for API call
