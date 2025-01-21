@@ -12,6 +12,7 @@ from functools import wraps
 
 import click
 import requests
+import yaml
 
 from kcidev.libs.common import *
 
@@ -292,9 +293,28 @@ def filter_out_by_status(status, filter):
     return True
 
 
-def cmd_tests(data, commit, download_logs, status_filter):
+def filter_out_by_hardware(test, filter_data):
+    # Check if the hardware name is in the list
+    hardware_list = filter_data["hardware"]
+    if test["misc"]["platform"] in hardware_list:
+        return False
+
+    if test["environment_compatible"]:
+        for compatible in test["environment_compatible"]:
+            if compatible in hardware_list:
+                return False
+
+    return True
+
+
+def cmd_tests(data, commit, download_logs, status_filter, filter):
+    filter_data = yaml.safe_load(filter) if filter else None
+
     for test in data:
         if filter_out_by_status(test["status"], status_filter):
+            continue
+
+        if filter_data and filter_out_by_hardware(test, filter_data):
             continue
 
         log_path = test["log_url"]
@@ -400,6 +420,11 @@ def build_and_test_options(func):
         help="Status of test result",
         default="all",
     )
+    @click.option(
+        "--filter",
+        type=click.File("r"),
+        help="Pass filter file for builds, boot and tests results.",
+    )
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -451,7 +476,16 @@ def trees(ctx, origin):
 @build_and_test_options
 @click.pass_context
 def builds(
-    ctx, origin, git_folder, giturl, branch, commit, latest, download_logs, status
+    ctx,
+    origin,
+    git_folder,
+    giturl,
+    branch,
+    commit,
+    latest,
+    download_logs,
+    status,
+    filter,
 ):
     """Display build results."""
     giturl, branch, commit = set_giturl_branch_commit(
@@ -466,14 +500,23 @@ def builds(
 @build_and_test_options
 @click.pass_context
 def boots(
-    ctx, origin, git_folder, giturl, branch, commit, latest, download_logs, status
+    ctx,
+    origin,
+    git_folder,
+    giturl,
+    branch,
+    commit,
+    latest,
+    download_logs,
+    status,
+    filter,
 ):
     """Display boot results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_boots(origin, giturl, branch, commit)
-    cmd_tests(data["boots"], commit, download_logs, status)
+    cmd_tests(data["boots"], commit, download_logs, status, filter)
 
 
 @results.command()
@@ -481,14 +524,23 @@ def boots(
 @build_and_test_options
 @click.pass_context
 def tests(
-    ctx, origin, git_folder, giturl, branch, commit, latest, download_logs, status
+    ctx,
+    origin,
+    git_folder,
+    giturl,
+    branch,
+    commit,
+    latest,
+    download_logs,
+    status,
+    filter,
 ):
     """Display test results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_tests(origin, giturl, branch, commit)
-    cmd_tests(data["tests"], commit, download_logs, status)
+    cmd_tests(data["tests"], commit, download_logs, status, filter)
 
 
 if __name__ == "__main__":
