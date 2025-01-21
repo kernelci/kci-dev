@@ -49,7 +49,9 @@ def add_config(fpath):
     poetry_example_configuration = os.path.join(
         os.path.dirname(__file__), "../..", example_configuration
     )
-    if os.path.exists(poetry_example_configuration):
+    poetry_example_configuration = os.path.normpath(poetry_example_configuration)
+    if os.path.isfile(poetry_example_configuration):
+        kci_msg("here1")
         config = True
         if not os.path.exists(dpath) and dpath != "":
             # copy config
@@ -60,12 +62,14 @@ def add_config(fpath):
     pypi_example_configuration = os.path.join(
         os.path.dirname(__file__), "..", example_configuration
     )
-    if os.path.exists(pypi_example_configuration):
+    pypi_example_configuration = os.path.normpath(pypi_example_configuration)
+    if os.path.isfile(pypi_example_configuration):
+        kci_msg("here2")
         config = True
         if not os.path.exists(dpath) and dpath != "":
             # copy config
             os.makedirs(dpath)
-        shutil.copyfile(poetry_example_configuration, fpath)
+        shutil.copyfile(pypi_example_configuration, fpath)
 
     if not config:
         kci_err(f"No template configfile found at:")
