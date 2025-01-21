@@ -74,7 +74,7 @@ def is_inside_work_tree(git_folder):
     return False
 
 
-def get_folder_repository(git_folder):
+def get_folder_repository(git_folder, branch):
     kci_msg("git folder: " + str(git_folder))
     if git_folder:
         current_folder = git_folder
@@ -109,12 +109,15 @@ def get_folder_repository(git_folder):
         )
         branch_name, branch_error = process.communicate()
         branch_name = branch_name.strip()
+        if branch:
+            branch_name = branch
 
         # Get last commit hash
-        last_commit_hash_path = os.path.join(
-            dot_git_folder, "refs", "heads", branch_name
+        process = subprocess.Popen(
+            ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text=True
         )
-        last_commit_hash = open(last_commit_hash_path, "r").read()
+        last_commit_hash, last_commit_hash_error = process.communicate()
+        last_commit_hash = last_commit_hash.strip()
 
         os.chdir(previous_folder)
         kci_msg("tree: " + git_url)
@@ -240,7 +243,7 @@ def cmd_builds(data, commit, download_logs, status):
 
 def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder):
     if not giturl or not branch or not ((commit != None) ^ latest):
-        giturl, branch, commit = get_folder_repository(git_folder)
+        giturl, branch, commit = get_folder_repository(git_folder, branch)
     if latest:
         commit = get_latest_commit(origin, giturl, branch)
     return giturl, branch, commit
