@@ -96,7 +96,7 @@ kci-dev results build --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/
 
 If used without arguments, `kci-dev results` subcommands will get KernelCI status
 of local checked out git repository for commands that require a giturl and branch.
-In the following example, kci-dev is used on a local linux repository folder
+In the following example, kci-dev is used on a local linux repository folder.
 This command work with every linux repository supported by KernelCI
 
 ```sh
@@ -105,7 +105,6 @@ git folder: None
 tree: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 branch: master
 commit: fbfd64d25c7af3b8695201ebc85efe90be28c5a3
-
 pass/fail/inconclusive
 builds: 46/0/0
 boots:  580/48/8
@@ -117,14 +116,31 @@ tests:  7858/6903/654
 Get results automatically from a folder with a local linux repository.
 
 ```sh
-kci-dev git:(master)$ kci-dev results --git-folder ../linux
+kci-dev git:(master)$ kci-dev results summary --git-folder ../linux
 git folder: ../linux
 tree: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 branch: master
 commit: fbfd64d25c7af3b8695201ebc85efe90be28c5a3
-
 pass/fail/inconclusive
 builds: 46/0/0
 boots:  580/48/8
 tests:  7858/6903/654
+```
+
+## --branch
+
+In the case of the script not been able to get the current branch information,  
+like in the case of a detached HEAD, it is possible to specify a branch.  
+Like in the following case:  
+
+```sh
+linux-cip git:(6077b17f20b1) kci-dev results summary --branch linux-5.10.y-cip
+git folder: None
+tree: https://git.kernel.org/pub/scm/linux/kernel/git/cip/linux-cip.git
+branch: linux-5.10.y-cip
+commit: 6077b17f20b1bcfeccaa23bc05573b938c47679d
+pass/fail/inconclusive
+builds: 21/0/0
+boots:  440/36/18
+tests:  1190/184/100
 ```
