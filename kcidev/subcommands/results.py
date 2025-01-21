@@ -271,6 +271,7 @@ def cmd_builds(data, commit, download_logs, status):
         kci_msg(f"  config_url: {build['config_url']}")
         kci_msg(f"  log: {log_path}")
         kci_msg(f"  id: {build['id']}")
+        kci_msg(f"  dashboard: https://dashboard.kernelci.org/build/{build['id']}")
         kci_msg("")
 
 
@@ -363,6 +364,7 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
         kci_msg(f"  log: {log_path}")
         kci_msg(f"  start time: {test['start_time']}")
         kci_msg(f"  id: {test['id']}")
+        kci_msg(f"  dashboard: https://dashboard.kernelci.org/test/{test['id']}")
         kci_msg("")
 
 
