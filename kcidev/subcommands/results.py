@@ -320,9 +320,9 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
         log_path = test["log_url"]
         if download_logs:
             try:
-                log_gz = requests.get(boots["log_url"])
+                log_gz = requests.get(test["log_url"])
                 log = gzip.decompress(log_gz.content)
-                log_file = f"{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
+                log_file = f"{test["misc"]["platform"]}__{test["path"]}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
                 with open(log_file, mode="wb") as file:
                     file.write(log)
                 log_path = "file://" + os.path.join(os.getcwd(), log_file)
