@@ -167,6 +167,7 @@ Together with --watch option, you can use --test option to wait for particular t
 - `pass` - return code 0 (test passed)
 - `fail` - return code 1 (test failed)
 - `error` - return code 2 (prior steps failed, such as compilation, test setup, etc, or infrastructure error)
+- `critical error` - return code 64 (kci-dev failed to execute command, crashed, etc)
 
 For example:
 ```sh
