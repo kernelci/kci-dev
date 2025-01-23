@@ -51,7 +51,6 @@ def add_config(fpath):
     )
     poetry_example_configuration = os.path.normpath(poetry_example_configuration)
     if os.path.isfile(poetry_example_configuration):
-        kci_msg("here1")
         config = True
         if not os.path.exists(dpath) and dpath != "":
             # copy config
@@ -64,7 +63,6 @@ def add_config(fpath):
     )
     pypi_example_configuration = os.path.normpath(pypi_example_configuration)
     if os.path.isfile(pypi_example_configuration):
-        kci_msg("here2")
         config = True
         if not os.path.exists(dpath) and dpath != "":
             # copy config
