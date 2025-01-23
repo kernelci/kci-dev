@@ -30,12 +30,32 @@ kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/gi
 
 ### builds
 
-List builds.
+List builds results.
 
 Example:
 
 ```sh
 kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
+```
+
+### boots
+
+List boot results.
+
+Example:
+
+```sh
+kci-dev results boots --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --latest
+```
+
+### tests
+
+List test results.
+
+Example:
+
+```sh
+kci-dev results tests --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
 ```
 
 ## Common parameters
@@ -74,7 +94,7 @@ kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git
 ### --status
 
 Filter results by the status: "all", "pass", "fail" or "inconclusive".
-(available for subcommand `build`)
+(available for subcommands `build`, `boots` and `tests`)
 
 Example:
 ```sh
@@ -84,13 +104,30 @@ kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git
 ## --download-logs
 
 Automatically download logs for results listed.
-(available for subcommand `build`)
+(available for subcommands `build`, `boots` and `tests`)
 
 Example:
 ```sh
-kci-dev results build --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --download-logs
+kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824 --download-logs
 ```
 
+## --filter
+
+Pass a YAML filter file to customize results. Only supports hardware filtering at the moment.
+See filter yaml example below:
+(available for subcommands `boots` and `tests`)
+
+```yaml
+hardware:
+  - radxa,rock2-square
+  - fsl,imx6q
+  - dell-latitude-3445-7520c-skyrim
+```
+
+Example:
+```sh
+kci-dev results boots --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --latest --filter=filter.yaml
+```
 
 ### without arguments
 
