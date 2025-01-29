@@ -250,7 +250,7 @@ def cmd_builds(data, commit, download_logs, status):
                     file.write(log)
                 log_path = "file://" + os.path.join(os.getcwd(), log_file)
             except:
-                kci_err(f"Failed to fetch log {log_file}).")
+                kci_err(f"Failed to fetch log {build["log_url"]}.")
                 pass
 
         kci_msg_nonl("- config:")
@@ -328,7 +328,7 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
                     file.write(log)
                 log_path = "file://" + os.path.join(os.getcwd(), log_file)
             except:
-                kci_err(f"Failed to fetch log {log_file}).")
+                kci_err(f"Failed to fetch log {test["log_url"]}.")
                 pass
 
         kci_msg_nonl("- test path: ")
