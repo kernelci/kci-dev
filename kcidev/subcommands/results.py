@@ -27,8 +27,14 @@ def dashboard_api_fetch(endpoint, params):
     except:
         click.secho(f"Failed to fetch from {DASHBOARD_API}.")
         raise click.Abort()
+    data = r.json()
 
-    return r.json()
+    # check for errors in json data
+    if "error" in data:
+        kci_msg("json error: " + str(data["error"]))
+        raise click.Abort()
+
+    return data
 
 
 def dashboard_fetch_summary(origin, giturl, branch, commit):
