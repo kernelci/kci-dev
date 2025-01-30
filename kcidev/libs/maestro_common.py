@@ -52,10 +52,10 @@ def maestro_get_node(url, nodeid):
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
         kci_err(ex.response.json().get("detail"))
-        return None
+        click.Abort()
     except Exception as ex:
         kci_err(ex)
-        return None
+        click.Abort()
 
     return response.json()
 
@@ -77,9 +77,9 @@ def maestro_get_nodes(url, limit, offset, filter):
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
         kci_err(ex.response.json().get("detail"))
-        return None
+        click.Abort()
     except Exception as ex:
         kci_err(ex)
-        return None
+        click.Abort()
 
     return response.json()
