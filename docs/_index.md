@@ -107,6 +107,14 @@ Trigger a test retry for a given Maestro node id.
 
 - [testretry](testretry)
 
+
+#### watch
+
+Watch for the results of a given node id.
+
+- [watch](watch)
+
+
 #### maestro-results
 
 Pull Maestro results in the json format.
