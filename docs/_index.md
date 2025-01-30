@@ -85,23 +85,31 @@ kci-dev --settings /path/to/.kci-dev.toml
 
 #### results
 
-Pull results from the Dashboard. See detailed [documentation](results).
+Pull results from the Web Dashboard. See detailed [documentation](results).
 
 ### Maestro Commands
 
-#### checkout
+#### config
+
+Setup the base config for talking to the maestro API. See Configuration section above.
 
 - [config](config)
 
 #### checkout
 
+Trigger ad-hoc test of specific tree/branch/commit.
+
 - [checkout](checkout)
 
 #### testretry
 
+Trigger a test retry for a given Maestro node id.
+
 - [testretry](testretry)
 
 #### maestro-results
+
+Pull Maestro results in the json format.
 
 - [maestro-results](maestro-results)
 
