@@ -141,8 +141,8 @@ def update_tree(workdir, branch, giturl):
     else:
         click.secho("Pulling repository", fg="green")
         repo = Repo(workdir)
-        repo.git.checkout(branch)
-        repo.git.pull()
+        repo.git.fetch("origin", branch)
+        repo.git.reset("--hard", f"origin/{branch}")
 
 
 def bisection_loop(state):
