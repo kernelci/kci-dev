@@ -111,7 +111,7 @@ Additionally, you can use --watch option to watch the progress of the test.
 
 After executing the command, you will see the output similar to the following:
 ```sh
-./kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --job-filter baseline-nfs-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm --watch
+kci-dev checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --job-filter baseline-nfs-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm --watch
 api connect: https://staging.kernelci.org:9100/
 Retrieving latest commit on tree: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git branch: master
 Commit to checkout: d3d1556696c1a993eec54ac585fe5bf677e07474
@@ -171,7 +171,7 @@ Together with --watch option, you can use --test option to wait for particular t
 
 For example:
 ```sh
-kci-dev.py checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --job-filter baseline-nfs-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm --platform-filter sc7180-trogdor-kingoftown --watch --test crit
+kci-dev checkout --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git --branch master --tipoftree --job-filter baseline-nfs-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm --platform-filter sc7180-trogdor-kingoftown --watch --test crit
 ```
 
 This command will wait for the test results of the test with the name `crit`.  

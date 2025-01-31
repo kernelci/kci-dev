@@ -13,6 +13,7 @@ from kcidev.subcommands import (
     patch,
     results,
     testretry,
+    watch,
 )
 
 
@@ -56,6 +57,7 @@ def run():
     cli.add_command(maestro_results.maestro_results)
     cli.add_command(testretry.testretry)
     cli.add_command(results.results)
+    cli.add_command(watch.watch)
     cli()
 
 
