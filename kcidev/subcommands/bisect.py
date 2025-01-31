@@ -112,37 +112,42 @@ def kcidev_exec(cmd):
     return process
 
 
-def init_bisect(state):
+def execute_cmdline(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+    try:
+        return subprocess.run(cmd, stdout=stdout, stderr=stderr)
+    except subprocess.CalledProcessError as e:
+        kci_err(f"cmdline failed with exit code {e.returncode}")
+        click.Abort()
+
+
+def init_bisect(repo, state):
     olddir = os.getcwd()
     os.chdir(state["workdir"])
-    click.secho("init bisect", fg="green")
-    r = os.system("git bisect start")
-    if r != 0:
-        kci_err("git bisect start failed")
-        sys.exit(1)
-    r = os.system("git bisect good " + state["good"])
-    if r != 0:
-        kci_err("git bisect good failed")
-        sys.exit(1)
-    # result = subprocess.run(['ls', '-l'], stdout=subprocess.PIPE)
-    cmd = ["git", "bisect", "bad", state["bad"]]
-    commitid = git_exec_getcommit(cmd)
-    os.chdir(olddir)
-    return commitid
+    click.secho("Initiating bisection...", fg="green")
+    execute_cmdline(["git", "bisect", "start"], subprocess.DEVNULL)
+    execute_cmdline(["git", "bisect", "good", state["good"]], subprocess.DEVNULL)
+    execute_cmdline(["git", "bisect", "bad", state["bad"]], subprocess.DEVNULL)
+    results = execute_cmdline(["git", "bisect", "log"])
+    if results.stdout:
+        kci_log("---")
+        kci_log(results.stdout)
+
+    return repo.head.commit.hexsha
 
 
 def update_tree(workdir, branch, giturl):
     if not os.path.exists(workdir):
         click.secho(
-            "Cloning repository (this might take significant time!)", fg="green"
+            "Cloning repository (this might take significant time!)...", fg="green"
         )
         repo = Repo.clone_from(giturl, workdir)
         repo.git.checkout(branch)
     else:
-        click.secho("Pulling repository", fg="green")
+        click.secho("Pulling repository...", fg="green")
         repo = Repo(workdir)
         repo.git.fetch("origin", branch)
         repo.git.reset("--hard", f"origin/{branch}")
+    return repo
 
 
 def bisection_loop(state):
@@ -275,14 +280,14 @@ def bisect(
         state["platform_filter"] = platform_filter
         state["test"] = test
         state["workdir"] = workdir
-        update_tree(workdir, branch, giturl)
+        repo = update_tree(workdir, branch, giturl)
         save_state(state, state_file)
     else:
         print_state(state)
-        update_tree(workdir, branch, giturl)
+        repo = update_tree(workdir, branch, giturl)
 
     if not state["bisect_init"]:
-        state["next_commit"] = init_bisect(state)
+        state["next_commit"] = init_bisect(repo, state)
         state["bisect_init"] = True
         save_state(state, state_file)
 
