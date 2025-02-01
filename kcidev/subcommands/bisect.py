@@ -20,13 +20,13 @@ The state file is a json file that contains the following keys:
 - branch: the repository branch
 - good: the known good commit
 - bad: the known bad commit
-- retryfail: the number of times to retry the failed test
+- retry_fail: the number of times to retry the failed test
 - history: the list of commits that have been tested (each entry has "commitid": state)
 """
 default_state = {
     "giturl": "",
     "branch": "",
-    "retryfail": 0,
+    "retry_fail": 0,
     "good": "",
     "bad": "",
     "history": [],
@@ -53,7 +53,7 @@ def print_state(state):
     click.secho("branch: " + state["branch"], fg="green")
     click.secho("good: " + state["good"], fg="green")
     click.secho("bad: " + state["bad"], fg="green")
-    click.secho("retryfail: " + str(state["retryfail"]), fg="green")
+    click.secho("retry_fail: " + str(state["retry_fail"]), fg="green")
     click.secho("history: " + str(state["history"]), fg="green")
     click.secho("job_filter: " + str(state["job_filter"]), fg="green")
     click.secho("platform_filter: " + str(state["platform_filter"]), fg="green")
@@ -112,37 +112,42 @@ def kcidev_exec(cmd):
     return process
 
 
-def init_bisect(state):
+def execute_cmdline(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+    try:
+        return subprocess.run(cmd, stdout=stdout, stderr=stderr)
+    except subprocess.CalledProcessError as e:
+        kci_err(f"cmdline failed with exit code {e.returncode}")
+        click.Abort()
+
+
+def init_bisect(repo, state):
     olddir = os.getcwd()
     os.chdir(state["workdir"])
-    click.secho("init bisect", fg="green")
-    r = os.system("git bisect start")
-    if r != 0:
-        kci_err("git bisect start failed")
-        sys.exit(1)
-    r = os.system("git bisect good " + state["good"])
-    if r != 0:
-        kci_err("git bisect good failed")
-        sys.exit(1)
-    # result = subprocess.run(['ls', '-l'], stdout=subprocess.PIPE)
-    cmd = ["git", "bisect", "bad", state["bad"]]
-    commitid = git_exec_getcommit(cmd)
-    os.chdir(olddir)
-    return commitid
+    click.secho("Initiating bisection...", fg="green")
+    execute_cmdline(["git", "bisect", "start"], subprocess.DEVNULL)
+    execute_cmdline(["git", "bisect", "good", state["good"]], subprocess.DEVNULL)
+    execute_cmdline(["git", "bisect", "bad", state["bad"]], subprocess.DEVNULL)
+    results = execute_cmdline(["git", "bisect", "log"])
+    if results.stdout:
+        kci_log("---")
+        kci_log(results.stdout)
+
+    return repo.head.commit.hexsha
 
 
 def update_tree(workdir, branch, giturl):
     if not os.path.exists(workdir):
         click.secho(
-            "Cloning repository (this might take significant time!)", fg="green"
+            "Cloning repository (this might take significant time!)...", fg="green"
         )
         repo = Repo.clone_from(giturl, workdir)
         repo.git.checkout(branch)
     else:
-        click.secho("Pulling repository", fg="green")
+        click.secho("Pulling repository...", fg="green")
         repo = Repo(workdir)
-        repo.git.checkout(branch)
-        repo.git.pull()
+        repo.git.fetch("origin", branch)
+        repo.git.reset("--hard", f"origin/{branch}")
+    return repo
 
 
 def bisection_loop(state):
@@ -213,10 +218,10 @@ def bisection_loop(state):
 @click.option("--branch", help="define the repository branch")
 @click.option("--good", help="known good commit")
 @click.option("--bad", help="known bad commit")
-@click.option("--retryfail", help="retry failed test N times", default=2)
+@click.option("--retry-fail", help="retry failed test N times", default=2)
 @click.option("--workdir", help="define the repository origin", default="kcidev-src")
-@click.option("--ignorestate", help="ignore save state", is_flag=True)
-@click.option("--statefile", help="state file", default="state.json")
+@click.option("--ignore-state", help="ignore save state", is_flag=True)
+@click.option("--state-file", help="state file", default="state.json")
 @click.option("--job-filter", help="filter the job", multiple=True)
 @click.option("--platform-filter", help="filter the platform", multiple=True)
 @click.option("--test", help="Test expected to fail")
@@ -229,10 +234,10 @@ def bisect(
     branch,
     good,
     bad,
-    retryfail,
+    retry_fail,
     workdir,
-    ignorestate,
-    statefile,
+    ignore_state,
+    state_file,
     job_filter,
     platform_filter,
     test,
@@ -240,9 +245,9 @@ def bisect(
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
 
-    state_file = os.path.join(workdir, statefile)
+    state_file = os.path.join(workdir, state_file)
     state = load_state(state_file)
-    if state is None or ignorestate:
+    if state is None or ignore_state:
         state = default_state
         if not giturl:
             kci_err("--giturl is required")
@@ -270,19 +275,19 @@ def bisect(
         state["branch"] = branch
         state["good"] = good
         state["bad"] = bad
-        state["retryfail"] = retryfail
+        state["retry_fail"] = retry_fail
         state["job_filter"] = job_filter
         state["platform_filter"] = platform_filter
         state["test"] = test
         state["workdir"] = workdir
-        update_tree(workdir, branch, giturl)
+        repo = update_tree(workdir, branch, giturl)
         save_state(state, state_file)
     else:
         print_state(state)
-        update_tree(workdir, branch, giturl)
+        repo = update_tree(workdir, branch, giturl)
 
     if not state["bisect_init"]:
-        state["next_commit"] = init_bisect(state)
+        state["next_commit"] = init_bisect(repo, state)
         state["bisect_init"] = True
         save_state(state, state_file)
 
