@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import errno
 import json
 import time
 
@@ -53,10 +54,10 @@ def maestro_get_node(url, nodeid):
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
         kci_err(ex.response.json().get("detail"))
-        click.Abort()
+        sys.exit(errno.ENOENT)
     except Exception as ex:
         kci_err(ex)
-        click.Abort()
+        sys.exit(errno.ENOENT)
 
     return response.json()
 
@@ -78,10 +79,10 @@ def maestro_get_nodes(url, limit, offset, filter):
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
         kci_err(ex.response.json().get("detail"))
-        click.Abort()
+        sys.exit(errno.ENOENT)
     except Exception as ex:
         kci_err(ex)
-        click.Abort()
+        sys.exit(errno.ENOENT)
 
     return response.json()
 
