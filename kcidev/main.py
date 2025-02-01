@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
+
 import click
 
 from kcidev.libs.common import *
@@ -28,8 +30,14 @@ from kcidev.subcommands import (
     required=False,
 )
 @click.option("--instance", help="API instance to use", required=False)
+@click.option("--debug", is_flag=True, help="Enable debug info")
 @click.pass_context
-def cli(ctx, settings, instance):
+def cli(ctx, settings, instance, debug):
+    if debug:
+        # DEBUG level is too verbose about included packages
+        # us INFO instead
+        logging.basicConfig(level=logging.INFO)
+
     subcommand = ctx.invoked_subcommand
     ctx.obj = {"CFG": load_toml(settings, subcommand)}
     ctx.obj["SETTINGS"] = settings

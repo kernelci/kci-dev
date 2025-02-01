@@ -11,9 +11,9 @@ from kcidev.libs.common import *
 
 
 def maestro_print_api_call(host, data=None):
-    click.secho("maestro api endpoint: " + host, fg="green")
+    kci_info("maestro api endpoint: " + host)
     if data:
-        kci_log(json.dumps(data, indent=4))
+        kci_info(json.dumps(data, indent=4))
 
 
 def maestro_api_error(response):
