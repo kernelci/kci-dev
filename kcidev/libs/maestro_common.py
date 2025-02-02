@@ -107,7 +107,7 @@ def maestro_check_node(node):
     else:
         if state == "running":
             return "RUNNING"
-        elif state == "done" and result == "pass":
+        elif state == "done" and (result == "pass" or result == "fail"):
             return "DONE"
         else:
             return "FAIL"
@@ -135,17 +135,57 @@ def maestro_retrieve_treeid_nodes(baseurl, token, treeid):
     return response.json()
 
 
+def maestro_node_result(node):
+    result = node["result"]
+    if node["kind"] == "checkout":
+        if (
+            result == "available"
+            or result == "closing"
+            or result == "done"
+            or result == "pass"
+        ):
+            kci_msg_green_nonl("PASS")
+        elif result == None:
+            kci_msg_green_nonl("PASS")
+        else:
+            kci_msg_red_nonl("FAIL")
+    else:
+        if node["result"] == "pass":
+            kci_msg_green_nonl("PASS")
+        elif node["result"] == "fail":
+            kci_msg_red_nonl("FAIL")
+        else:
+            kci_msg_yellow_nonl(node["result"])
+
+    if node["kind"] == "checkout":
+        kci_msg_nonl(" branch checkout")
+    else:
+        kci_msg_nonl(f" {node["kind"]}: ")
+
+    if node["kind"] != "checkout":
+        kci_msg_nonl(f"{node["name"]}")
+
+    kci_msg(f" - node_id:{node["id"]} ({node["updated"]})")
+
+
 def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
     # we need to add to job_filter "checkout" node
     job_filter = list(job_filter)
     job_filter.append("checkout")
+    kci_log(f"job_filter: {", ".join(job_filter)}")
     previous_nodes = None
+    running = False
+
+    job_info = {}
+    for job in job_filter:
+        job_info[job] = {"done": False, "running": False}
+
     while True:
         inprogress = 0
         joblist = job_filter.copy()
         nodes = maestro_retrieve_treeid_nodes(baseurl, token, treeid)
         if not nodes:
-            click.secho("No nodes found. Retrying...", fg="yellow")
+            kci_warning("No nodes found. Retrying...")
             time.sleep(5)
             continue
         if previous_nodes == nodes:
@@ -154,10 +194,7 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
             continue
 
         time_local = time.localtime()
-        click.echo(f"\nCurrent time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
-        click.secho(
-            f"Total tree nodes {len(nodes)} found. job_filter: {job_filter}", fg="green"
-        )
+        kci_info(f"\nCurrent time: {time.strftime('%Y-%m-%d %H:%M:%S', time_local)}")
 
         # Tricky part in watch is that we might have one item in job_filter (job, test),
         # but it might spawn multiple nodes with same name
@@ -167,30 +204,29 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
             if node["name"] == test:
                 test_result = node["result"]
             if node["name"] in job_filter:
-                result = maestro_check_node(node)
-                if result == "DONE":
+                status = maestro_check_node(node)
+                if status == "DONE":
+                    if job_info[node["name"]]["running"]:
+                        kci_msg("")
+                        job_info[node["name"]]["running"] = False
+                    if not job_info[node["name"]]["done"]:
+                        maestro_node_result(node)
+                        job_info[node["name"]]["done"] = True
                     if isinstance(joblist, list) and node["name"] in joblist:
                         joblist.remove(node["name"])
-                    color = "green"
-                elif result == "RUNNING":
+                elif status == "RUNNING":
+                    job_info[node["name"]]["running"] = True
                     inprogress += 1
-                    color = "yellow"
                 else:
                     if isinstance(joblist, list) and node["name"] in joblist:
                         joblist.remove(node["name"])
-                    color = "red"
                     # if test is same as job, dont indicate infra-failure if test job fail
                     if test and test != node["name"]:
                         # if we have a test, and prior job failed, we should indicate that
                         kci_err(f"Job {node['name']} failed, test can't be executed")
                         sys.exit(2)
-                nodeid = node.get("id")
-                click.secho(
-                    f"Node: {nodeid} job: {node['name']} State: {node['state']} Result: {node['result']}",
-                    fg=color,
-                )
         if isinstance(joblist, list) and len(joblist) == 0 and inprogress == 0:
-            click.secho("All jobs completed", fg="green")
+            kci_info("All jobs completed")
             if not test:
                 return
             else:
@@ -202,13 +238,11 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
                     continue
 
                 if test_result and test_result == "pass":
-                    click.secho(f"Test {test} passed", fg="green")
                     sys.exit(0)
                 elif test_result:
-                    # ignore null, that means result not ready yet
-                    kci_err(f"Test {test} failed: {test_result}")
                     sys.exit(1)
 
-        kci_msg_nonl(f"\rRefresh every 30s...")
+        running = True
+        kci_msg_nonl(f"\rRunning job...")
         previous_nodes = nodes
         time.sleep(30)

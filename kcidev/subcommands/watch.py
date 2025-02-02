@@ -20,7 +20,7 @@ from kcidev.libs.maestro_common import *
 )
 @click.option(
     "--test",
-    help="Return code based on the test result",
+    help="Return 0 if the test name supplied passed, 1 otherwise",
 )
 @click.pass_context
 def watch(ctx, nodeid, job_filter, test):
