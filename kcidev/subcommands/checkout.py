@@ -59,7 +59,7 @@ def retrieve_tot_commit(repourl, branch):
     return sha
 
 
-@click.command(help="Create custom tree checkout on KernelCI and trigger a tests")
+@click.command(help="Trigger a test for a specific tree/branch/commit")
 @click.option(
     "--giturl",
     help="Git URL to checkout",
