@@ -31,6 +31,9 @@ def watch(ctx, nodeid, job_filter, test):
     token = cfg[instance]["token"]
 
     node = maestro_get_node(apiurl, nodeid)
+    if not node:
+        kci_err(f"node id {nodeid} not found.")
+        sys.exit(errno.ENOENT)
     maestro_watch_jobs(apiurl, token, node["treeid"], job_filter, test)
 
 
