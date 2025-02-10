@@ -256,7 +256,7 @@ def cmd_builds(data, commit, download_logs, status):
                     file.write(log)
                 log_path = "file://" + os.path.join(os.getcwd(), log_file)
             except:
-                kci_err(f"Failed to fetch log {build["log_url"]}.")
+                kci_err(f"Failed to fetch log {build['log_url']}.")
                 pass
 
         kci_msg_nonl("- config:")
@@ -329,12 +329,12 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
             try:
                 log_gz = requests.get(test["log_url"])
                 log = gzip.decompress(log_gz.content)
-                log_file = f"{test["misc"]["platform"]}__{test["path"]}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
+                log_file = f"{test['misc']['platform']}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
                 with open(log_file, mode="wb") as file:
                     file.write(log)
                 log_path = "file://" + os.path.join(os.getcwd(), log_file)
             except:
-                kci_err(f"Failed to fetch log {test["log_url"]}.")
+                kci_err(f"Failed to fetch log {test['log_url']}.")
                 pass
 
         kci_msg_nonl("- test path: ")
@@ -364,7 +364,7 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
         elif test["status"] == "FAIL":
             kci_msg_red_nonl("FAIL")
         else:
-            kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test["status"]})")
+            kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test['status']})")
         kci_msg("")
 
         kci_msg(f"  log: {log_path}")
