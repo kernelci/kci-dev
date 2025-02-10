@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
 import os
 import sys
 
@@ -63,6 +64,10 @@ def config_path(settings):
     global_path = os.path.join("/", "etc", fname)
     if os.path.exists(global_path):
         return global_path
+
+
+def kci_info(content):
+    logging.info(content)
 
 
 def kci_msg(content):
