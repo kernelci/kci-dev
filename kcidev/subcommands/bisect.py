@@ -132,6 +132,7 @@ def init_bisect(repo, state):
         kci_log("---")
         kci_log(results.stdout)
 
+    os.chdir(olddir)
     return repo.head.commit.hexsha
 
 
