@@ -1,5 +1,5 @@
 #!/bin/bash
 
-poetry run black . --extend-exclude="kcidev_src"
-poetry run isort . --extend-skip-glob="kcidev_src"
-poetry run pytest -rP
+poetry run black . --extend-exclude="kcidev-src"
+poetry run isort . --extend-skip="kcidev-src"
+poetry run pytest -rP --ignore="kcidev-src"
