@@ -314,6 +314,15 @@ def filter_out_by_hardware(test, filter_data):
     return True
 
 
+def filter_out_by_test(test, filter_data):
+    # Check if the test name is in the list
+    test_list = filter_data["test"]
+    if test["path"] in test_list:
+        return False
+
+    return True
+
+
 def cmd_tests(data, commit, download_logs, status_filter, filter):
     filter_data = yaml.safe_load(filter) if filter else None
 
@@ -322,6 +331,9 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
             continue
 
         if filter_data and filter_out_by_hardware(test, filter_data):
+            continue
+
+        if filter_data and filter_out_by_test(test, filter_data):
             continue
 
         log_path = test["log_url"]

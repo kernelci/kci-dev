@@ -113,7 +113,7 @@ kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git
 
 ## --filter
 
-Pass a YAML filter file to customize results. Only supports hardware filtering at the moment.
+Pass a YAML filter file to customize results. Only supports hardware and test name filtering at the moment.
 See filter yaml example below:
 (available for subcommands `boots` and `tests`)
 
@@ -122,6 +122,9 @@ hardware:
   - radxa,rock2-square
   - fsl,imx6q
   - dell-latitude-3445-7520c-skyrim
+test:
+  - kselftest.dt
+  - kselftest.iommu
 ```
 
 Example:
