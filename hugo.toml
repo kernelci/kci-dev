@@ -7,14 +7,14 @@ contentDir = "docs/"
 pygmentsCodeFences = true
 pygmentsUseClasses = false
 pygmentsUseClassic = false
-pygmentsStyle = "tango"
+pygmentsStyle = "monokai"
 
 [markup]
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true
   [markup.highlight]
-      style = "tango"
+      style = "monokai"
 
 [params.ui]
 sidebar_search_disable = true
