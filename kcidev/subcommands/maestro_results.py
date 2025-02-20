@@ -49,6 +49,9 @@ def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = config[instance]["api"]
+    if not nodeid and not nodes:
+        kci_err("--nodes or --nodes needs to be supplied")
+        sys.exit(-1)
     if nodeid:
         results = maestro_get_node(url, nodeid)
     if nodes:
