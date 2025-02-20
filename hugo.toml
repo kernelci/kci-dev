@@ -1,4 +1,4 @@
-baseURL = 'https://kernelci.github.io/kci-dev/'
+baseURL = 'https://kci.dev/'
 languageCode = 'en-us'
 title = 'kci-dev'
 description = 'Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI'
@@ -7,14 +7,14 @@ contentDir = "docs/"
 pygmentsCodeFences = true
 pygmentsUseClasses = false
 pygmentsUseClassic = false
-pygmentsStyle = "tango"
+pygmentsStyle = "monokai"
 
 [markup]
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true
   [markup.highlight]
-      style = "tango"
+      style = "monokai"
 
 [params.ui]
 sidebar_search_disable = true

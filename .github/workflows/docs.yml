@@ -22,7 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: 0.137.1
+      HUGO_VERSION: 0.144.2
     steps:
       - name: Install Hugo CLI
         run: |
@@ -50,13 +50,12 @@ jobs:
           HUGO_ENVIRONMENT: production
           TZ: America/Los_Angeles
         run: |
-          git clone --depth 1 --branch v0.11.0 https://github.com/google/docsy.git themes/docsy
-          sed -i 's/fixed/relative/g' themes/docsy/assets/scss/_nav.scss
+          git clone --recursive --depth 1 --branch master https://github.com/adityatelange/hugo-PaperMod.git themes/PaperMod
           git clone --depth 1 --branch 6.7.0 https://github.com/FortAwesome/Font-Awesome.git themes/github.com/FortAwesome/Font-Awesome
           git clone --depth 1 --branch v5.3.3 https://github.com/twbs/bootstrap.git themes/github.com/twbs/bootstrap
           hugo \
             --gc \
-            --theme docsy \
+            --theme PaperMod \
             --minify \
             --baseURL "${{ steps.pages.outputs.base_url }}/"          
       - name: Upload artifact
