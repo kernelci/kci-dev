@@ -147,6 +147,16 @@ def checkout(
     if resp and "message" in resp:
         click.secho(resp["message"], fg="green")
 
+    if resp and "node" in resp:
+        node = resp.get("node")
+        treeid = node.get("treeid")
+        checkout_nodeid = node.get("id")
+
+        if treeid:
+            click.secho(f"treeid: {treeid}", fg="green")
+        if checkout_nodeid:
+            click.secho(f"checkout_nodeid: {checkout_nodeid}", fg="green")
+
     if watch and isinstance(resp, dict):
         node = resp.get("node")
         treeid = node.get("treeid")
