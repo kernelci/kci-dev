@@ -160,19 +160,19 @@ def maestro_node_result(node):
     if node["kind"] == "checkout":
         kci_msg_nonl(" branch checkout")
     else:
-        kci_msg_nonl(f" {node["kind"]}: ")
+        kci_msg_nonl(f" {node['kind']}: ")
 
     if node["kind"] != "checkout":
-        kci_msg_nonl(f"{node["name"]}")
+        kci_msg_nonl(f"{node['name']}")
 
-    kci_msg(f" - node_id:{node["id"]} ({node["updated"]})")
+    kci_msg(f" - node_id:{node['id']} ({node['updated']})")
 
 
 def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
     # we need to add to job_filter "checkout" node
     job_filter = list(job_filter)
     job_filter.append("checkout")
-    kci_log(f"job_filter: {", ".join(job_filter)}")
+    kci_log(f"job_filter: {', '.join(job_filter)}")
     previous_nodes = None
     running = False
 
