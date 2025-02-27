@@ -3,7 +3,38 @@ name: Poetry
 on: [push, pull_request]
 
 jobs:
-  ci:
+  ci_python_3_11:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v3
+      - name: Install shellcheck
+        uses: bewuethr/shellcheck-action@v2
+      - name: Setup a local virtual environment
+        run: |
+          poetry env use 3.11
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - uses: actions/cache@v4
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install the project dependencies
+        run: poetry install
+      - name: Lint check with python black
+        run: poetry run black --check --verbose .
+      - name: Isort check
+        run: poetry run isort . --profile black --check --diff
+      - name: Pytest check
+        run: poetry run pytest -rP
+
+  ci_latest:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
