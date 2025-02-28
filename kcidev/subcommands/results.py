@@ -19,22 +19,40 @@ from kcidev.libs.common import *
 DASHBOARD_API = "https://dashboard.kernelci.org/api/"
 
 
-def dashboard_api_fetch(endpoint, params):
+def dashboard_api_fetch(endpoint, params, max_retries=3):
     base_url = urllib.parse.urljoin(DASHBOARD_API, endpoint)
-    try:
-        url = "{}?{}".format(base_url, urllib.parse.urlencode(params))
-        r = requests.get(url)
-    except:
-        click.secho(f"Failed to fetch from {DASHBOARD_API}.")
-        raise click.Abort()
-    data = r.json()
+    url = "{}?{}".format(base_url, urllib.parse.urlencode(params))
+    retries = 0
 
-    # check for errors in json data
-    if "error" in data:
-        kci_msg("json error: " + str(data["error"]))
-        raise click.Abort()
+    # Status codes that should trigger a retry
+    RETRY_STATUS_CODES = [429, 500, 502, 503, 504, 507]
 
-    return data
+    while retries <= max_retries:
+        try:
+            r = requests.get(url)
+
+            if r.status_code in RETRY_STATUS_CODES:
+                retries += 1
+                if retries <= max_retries:
+                    continue
+                else:
+                    kci_err(f"Failed after {max_retries} retries with 500 error.")
+                    raise click.Abort()
+
+            r.raise_for_status()
+
+            data = r.json()
+            if "error" in data:
+                kci_msg("json error: " + str(data["error"]))
+                raise click.Abort()
+            return data
+
+        except requests.exceptions.RequestException as e:
+            kci_err(f"Failed to fetch from {DASHBOARD_API}: {str(e)}.")
+            raise click.Abort()
+
+    kci_err("Unexpected failure in API request")
+    raise click.Abort()
 
 
 def dashboard_fetch_summary(origin, giturl, branch, commit):
