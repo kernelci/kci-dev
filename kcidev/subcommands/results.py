@@ -372,7 +372,7 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
         kci_msg("")
 
         kci_msg_nonl("  hardware: ")
-        kci_msg_cyan_nonl(test["misc"]["platform"])
+        kci_msg_cyan_nonl(test["environment_misc"]["platform"])
         kci_msg("")
 
         if test["environment_compatible"]:
