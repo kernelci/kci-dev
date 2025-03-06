@@ -132,6 +132,15 @@ Example:
 kci-dev results boots --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --latest --filter=filter.yaml
 ```
 
+## --arch
+
+Filters results by arch.
+
+Example:
+```sh
+kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master  --latest --arch arm64
+```
+
 ### without arguments
 
 If used without arguments, `kci-dev results` subcommands will get KernelCI status

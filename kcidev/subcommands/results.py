@@ -55,47 +55,51 @@ def dashboard_api_fetch(endpoint, params, max_retries=3):
     raise click.Abort()
 
 
-def dashboard_fetch_summary(origin, giturl, branch, commit):
+def dashboard_fetch_summary(origin, giturl, branch, commit, arch):
     endpoint = f"tree/{commit}/summary"
     params = {
         "origin": origin,
         "git_url": giturl,
         "git_branch": branch,
     }
-
+    if arch is not None:
+        params["filter_architecture"] = arch
     return dashboard_api_fetch(endpoint, params)
 
 
-def dashboard_fetch_builds(origin, giturl, branch, commit):
+def dashboard_fetch_builds(origin, giturl, branch, commit, arch):
     endpoint = f"tree/{commit}/builds"
     params = {
         "origin": origin,
         "git_url": giturl,
         "git_branch": branch,
     }
-
+    if arch is not None:
+        params["filter_architecture"] = arch
     return dashboard_api_fetch(endpoint, params)
 
 
-def dashboard_fetch_boots(origin, giturl, branch, commit):
+def dashboard_fetch_boots(origin, giturl, branch, commit, arch):
     endpoint = f"tree/{commit}/boots"
     params = {
         "origin": origin,
         "git_url": giturl,
         "git_branch": branch,
     }
-
+    if arch is not None:
+        params["filter_architecture"] = arch
     return dashboard_api_fetch(endpoint, params)
 
 
-def dashboard_fetch_tests(origin, giturl, branch, commit):
+def dashboard_fetch_tests(origin, giturl, branch, commit, arch):
     endpoint = f"tree/{commit}/tests"
     params = {
         "origin": origin,
         "git_url": giturl,
         "git_branch": branch,
     }
-
+    if arch is not None:
+        params["filter_architecture"] = arch
     return dashboard_api_fetch(endpoint, params)
 
 
@@ -439,6 +443,7 @@ def common_options(func):
         is_flag=True,
         help="Select latest results available",
     )
+    @click.option("--arch", help="Filter by arch")
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -480,20 +485,12 @@ def results(ctx):
 @results.command()
 @common_options
 @click.pass_context
-def summary(
-    ctx,
-    origin,
-    git_folder,
-    giturl,
-    branch,
-    commit,
-    latest,
-):
+def summary(ctx, origin, git_folder, giturl, branch, commit, latest, arch):
     """Display a summary of results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_summary(origin, giturl, branch, commit)
+    data = dashboard_fetch_summary(origin, giturl, branch, commit, arch)
     cmd_summary(data)
 
 
@@ -521,6 +518,7 @@ def builds(
     branch,
     commit,
     latest,
+    arch,
     download_logs,
     status,
     filter,
@@ -529,7 +527,7 @@ def builds(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_builds(origin, giturl, branch, commit)
+    data = dashboard_fetch_builds(origin, giturl, branch, commit, arch)
     cmd_builds(data, commit, download_logs, status)
 
 
@@ -545,6 +543,7 @@ def boots(
     branch,
     commit,
     latest,
+    arch,
     download_logs,
     status,
     filter,
@@ -553,7 +552,7 @@ def boots(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_boots(origin, giturl, branch, commit)
+    data = dashboard_fetch_boots(origin, giturl, branch, commit, arch)
     cmd_tests(data["boots"], commit, download_logs, status, filter)
 
 
@@ -569,6 +568,7 @@ def tests(
     branch,
     commit,
     latest,
+    arch,
     download_logs,
     status,
     filter,
@@ -577,7 +577,7 @@ def tests(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_tests(origin, giturl, branch, commit)
+    data = dashboard_fetch_tests(origin, giturl, branch, commit, arch)
     cmd_tests(data["tests"], commit, download_logs, status, filter)
 
 
