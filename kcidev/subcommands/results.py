@@ -252,11 +252,11 @@ def cmd_list_trees(origin):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_builds(data, commit, download_logs, status):
+def cmd_builds(data, commit, download_logs, status, count):
     if status == "inconclusive":
         kci_msg("No information about inconclusive builds.")
         return
-
+    filtered_builds = 0
     for build in data["builds"]:
         if build["valid"] == None:
             continue
@@ -280,27 +280,31 @@ def cmd_builds(data, commit, download_logs, status):
             except:
                 kci_err(f"Failed to fetch log {build['log_url']}.")
                 pass
-
-        kci_msg_nonl("- config:")
-        kci_msg_cyan_nonl(build["config_name"])
-        kci_msg_nonl(" arch: ")
-        kci_msg_cyan_nonl(build["architecture"])
-        kci_msg_nonl(" compiler: ")
-        kci_msg_cyan_nonl(build["compiler"])
-        kci_msg("")
-
-        kci_msg_nonl("  status:")
-        if build["valid"]:
-            kci_msg_green_nonl("PASS")
+        if count:
+            filtered_builds += 1
         else:
-            kci_msg_red_nonl("FAIL")
-        kci_msg("")
+            kci_msg_nonl("- config:")
+            kci_msg_cyan_nonl(build["config_name"])
+            kci_msg_nonl(" arch: ")
+            kci_msg_cyan_nonl(build["architecture"])
+            kci_msg_nonl(" compiler: ")
+            kci_msg_cyan_nonl(build["compiler"])
+            kci_msg("")
 
-        kci_msg(f"  config_url: {build['config_url']}")
-        kci_msg(f"  log: {log_path}")
-        kci_msg(f"  id: {build['id']}")
-        kci_msg(f"  dashboard: https://dashboard.kernelci.org/build/{build['id']}")
-        kci_msg("")
+            kci_msg_nonl("  status:")
+            if build["valid"]:
+                kci_msg_green_nonl("PASS")
+            else:
+                kci_msg_red_nonl("FAIL")
+            kci_msg("")
+
+            kci_msg(f"  config_url: {build['config_url']}")
+            kci_msg(f"  log: {log_path}")
+            kci_msg(f"  id: {build['id']}")
+            kci_msg(f"  dashboard: https://dashboard.kernelci.org/build/{build['id']}")
+            kci_msg("")
+    if count:
+        kci_msg(filtered_builds)
 
 
 def filter_out_by_status(status, filter):
@@ -345,9 +349,9 @@ def filter_out_by_test(test, filter_data):
     return True
 
 
-def cmd_tests(data, commit, download_logs, status_filter, filter):
+def cmd_tests(data, commit, download_logs, status_filter, filter, count):
     filter_data = yaml.safe_load(filter) if filter else None
-
+    filtered_tests = 0
     for test in data:
         if filter_out_by_status(test["status"], status_filter):
             continue
@@ -370,42 +374,46 @@ def cmd_tests(data, commit, download_logs, status_filter, filter):
             except:
                 kci_err(f"Failed to fetch log {test['log_url']}.")
                 pass
-
-        kci_msg_nonl("- test path: ")
-        kci_msg_cyan_nonl(test["path"])
-        kci_msg("")
-
-        kci_msg_nonl("  hardware: ")
-        kci_msg_cyan_nonl(test["environment_misc"]["platform"])
-        kci_msg("")
-
-        if test["environment_compatible"]:
-            kci_msg_nonl("  compatibles: ")
-            kci_msg_cyan_nonl(" | ".join(test["environment_compatible"]))
+        if count:
+            filtered_tests += 1
+        else:
+            kci_msg_nonl("- test path: ")
+            kci_msg_cyan_nonl(test["path"])
             kci_msg("")
 
-        kci_msg_nonl("  config: ")
-        kci_msg_cyan_nonl(test["config"])
-        kci_msg_nonl(" arch: ")
-        kci_msg_cyan_nonl(test["architecture"])
-        kci_msg_nonl(" compiler: ")
-        kci_msg_cyan_nonl(test["compiler"])
-        kci_msg("")
+            kci_msg_nonl("  hardware: ")
+            kci_msg_cyan_nonl(test["environment_misc"]["platform"])
+            kci_msg("")
 
-        kci_msg_nonl("  status:")
-        if test["status"] == "PASS":
-            kci_msg_green_nonl("PASS")
-        elif test["status"] == "FAIL":
-            kci_msg_red_nonl("FAIL")
-        else:
-            kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test['status']})")
-        kci_msg("")
+            if test["environment_compatible"]:
+                kci_msg_nonl("  compatibles: ")
+                kci_msg_cyan_nonl(" | ".join(test["environment_compatible"]))
+                kci_msg("")
 
-        kci_msg(f"  log: {log_path}")
-        kci_msg(f"  start time: {test['start_time']}")
-        kci_msg(f"  id: {test['id']}")
-        kci_msg(f"  dashboard: https://dashboard.kernelci.org/test/{test['id']}")
-        kci_msg("")
+            kci_msg_nonl("  config: ")
+            kci_msg_cyan_nonl(test["config"])
+            kci_msg_nonl(" arch: ")
+            kci_msg_cyan_nonl(test["architecture"])
+            kci_msg_nonl(" compiler: ")
+            kci_msg_cyan_nonl(test["compiler"])
+            kci_msg("")
+
+            kci_msg_nonl("  status:")
+            if test["status"] == "PASS":
+                kci_msg_green_nonl("PASS")
+            elif test["status"] == "FAIL":
+                kci_msg_red_nonl("FAIL")
+            else:
+                kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test['status']})")
+            kci_msg("")
+
+            kci_msg(f"  log: {log_path}")
+            kci_msg(f"  start time: {test['start_time']}")
+            kci_msg(f"  id: {test['id']}")
+            kci_msg(f"  dashboard: https://dashboard.kernelci.org/test/{test['id']}")
+            kci_msg("")
+    if count:
+        kci_msg(filtered_tests)
 
 
 def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder):
@@ -468,6 +476,9 @@ def build_and_test_options(func):
         type=click.File("r"),
         help="Pass filter file for builds, boot and tests results.",
     )
+    @click.option(
+        "--count", is_flag=True, help="Display the number of matching results"
+    )
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -522,13 +533,14 @@ def builds(
     download_logs,
     status,
     filter,
+    count,
 ):
     """Display build results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_builds(origin, giturl, branch, commit, arch)
-    cmd_builds(data, commit, download_logs, status)
+    cmd_builds(data, commit, download_logs, status, count)
 
 
 @results.command()
@@ -547,13 +559,14 @@ def boots(
     download_logs,
     status,
     filter,
+    count,
 ):
     """Display boot results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_boots(origin, giturl, branch, commit, arch)
-    cmd_tests(data["boots"], commit, download_logs, status, filter)
+    cmd_tests(data["boots"], commit, download_logs, status, filter, count)
 
 
 @results.command()
@@ -572,13 +585,14 @@ def tests(
     download_logs,
     status,
     filter,
+    count,
 ):
     """Display test results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_tests(origin, giturl, branch, commit, arch)
-    cmd_tests(data["tests"], commit, download_logs, status, filter)
+    cmd_tests(data["tests"], commit, download_logs, status, filter, count)
 
 
 if __name__ == "__main__":
