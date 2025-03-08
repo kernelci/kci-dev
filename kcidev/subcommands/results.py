@@ -202,6 +202,7 @@ def get_latest_commit(origin, giturl, branch):
 
 
 def print_summary(type, n_pass, n_fail, n_inconclusive):
+
     kci_msg_nonl(f"{type}:\t")
     kci_msg_green_nonl(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}")
     kci_msg_nonl("/")
@@ -224,27 +225,95 @@ def sum_inconclusive_results(results):
     return count
 
 
-def cmd_summary(data):
-    kci_msg("pass/fail/inconclusive")
+def create_summary_json(n_pass, n_fail, n_inconclusive):
+    return {"pass": n_pass, "fail": n_fail, "inconclusive": n_inconclusive}
+
+
+def create_tree_json(tree):
+    tree_name = tree["tree_name"]
+    if tree["tree_name"] is None:
+        tree_name = "-"
+    return {
+        "tree": f"{tree_name}/{tree['git_repository_branch']}",
+        "giturl": tree["git_repository_url"],
+        "latest_commit_hash": tree["git_commit_hash"],
+        "latest_commit_name": tree["git_commit_name"],
+        "latest_commit_start_time": tree["start_time"],
+    }
+
+
+def create_build_json(build, log_path):
+    return {
+        "config": build["config_name"],
+        "arch": build["architecture"],
+        "compiler": build["compiler"],
+        "status": "PASS" if build["valid"] else "FAIL",
+        "config_url": build["config_url"],
+        "log": log_path,
+        "id": build["id"],
+        "dashboard": f"https://dashboard.kernelci.org/build/{build['id']}",
+    }
+
+
+def create_test_json(test, log_path):
+    if test["status"] == "PASS":
+        test_status = "PASS"
+    elif test["status"] == "FAIL":
+        test_status = "FAIL"
+    else:
+        test_status = f"INCONCLUSIVE (status: {test['status']})"
+    return {
+        "test_path": test["path"],
+        "hardware": test["environment_misc"]["platform"],
+        "compatibles": test.get("environment_compatible", []),
+        "config": test["config"],
+        "arch": test["architecture"],
+        "status": test_status,
+        "start_time": test["start_time"],
+        "log": log_path,
+        "id": test["id"],
+        "dashboard": f"https://dashboard.kernelci.org/build/{test['id']}",
+    }
+
+
+def cmd_summary(data, use_json):
     summary = data["summary"]
+
     builds = summary["builds"]["status"]
-    print_summary("builds", builds["valid"], builds["invalid"], builds["null"])
 
     boots = summary["boots"]["status"]
     inconclusive_boots = sum_inconclusive_results(boots)
     pass_boots = boots["PASS"] if "PASS" in boots.keys() else 0
     fail_boots = boots["FAIL"] if "FAIL" in boots.keys() else 0
-    print_summary("boots", pass_boots, fail_boots, inconclusive_boots)
 
     tests = summary["tests"]["status"]
     pass_tests = tests["PASS"] if "PASS" in tests.keys() else 0
     fail_tests = tests["FAIL"] if "FAIL" in tests.keys() else 0
     inconclusive_tests = sum_inconclusive_results(tests)
-    print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
+
+    if use_json:
+        builds_json = create_summary_json(
+            builds["valid"], builds["invalid"], builds["null"]
+        )
+        boots_json = create_summary_json(pass_boots, fail_boots, inconclusive_boots)
+        tests_json = create_summary_json(pass_tests, fail_tests, inconclusive_tests)
+        kci_msg(
+            json.dumps(
+                {"builds": builds_json, "boots": boots_json, "tests": tests_json}
+            )
+        )
+    else:
+        kci_msg("pass/fail/inconclusive")
+        print_summary("builds", builds["valid"], builds["invalid"], builds["null"])
+        print_summary("boots", pass_boots, fail_boots, inconclusive_boots)
+        print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
 
 
-def cmd_list_trees(origin):
+def cmd_list_trees(origin, use_json):
     trees = dashboard_fetch_tree_list(origin)
+    if use_json:
+        kci_msg(json.dumps(list(map(lambda t: create_tree_json(t), trees))))
+        return
     for t in trees:
         kci_msg_green_nonl(f"- {t['tree_name']}/{t['git_repository_branch']}:\n")
         kci_msg(f"  giturl: {t['git_repository_url']}")
@@ -252,11 +321,15 @@ def cmd_list_trees(origin):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_builds(data, commit, download_logs, status, count):
-    if status == "inconclusive":
+def cmd_builds(data, commit, download_logs, status, count, use_json):
+    if status == "inconclusive" and use_json:
+        kci_msg('{"message":"No information about inconclusive builds."}')
+        return
+    elif status == "inconclusive":
         kci_msg("No information about inconclusive builds.")
         return
     filtered_builds = 0
+    builds = []
     for build in data["builds"]:
         if build["valid"] == None:
             continue
@@ -282,6 +355,8 @@ def cmd_builds(data, commit, download_logs, status, count):
                 pass
         if count:
             filtered_builds += 1
+        elif use_json:
+            builds.append(create_build_json(build, log_path))
         else:
             kci_msg_nonl("- config:")
             kci_msg_cyan_nonl(build["config_name"])
@@ -303,8 +378,12 @@ def cmd_builds(data, commit, download_logs, status, count):
             kci_msg(f"  id: {build['id']}")
             kci_msg(f"  dashboard: https://dashboard.kernelci.org/build/{build['id']}")
             kci_msg("")
-    if count:
+    if count and use_json:
+        kci_msg(f'{{"count":{filtered_builds}}}')
+    elif count:
         kci_msg(filtered_builds)
+    elif use_json:
+        kci_msg(json.dumps(builds))
 
 
 def filter_out_by_status(status, filter):
@@ -349,9 +428,10 @@ def filter_out_by_test(test, filter_data):
     return True
 
 
-def cmd_tests(data, commit, download_logs, status_filter, filter, count):
+def cmd_tests(data, commit, download_logs, status_filter, filter, count, use_json):
     filter_data = yaml.safe_load(filter) if filter else None
     filtered_tests = 0
+    tests = []
     for test in data:
         if filter_out_by_status(test["status"], status_filter):
             continue
@@ -376,6 +456,8 @@ def cmd_tests(data, commit, download_logs, status_filter, filter, count):
                 pass
         if count:
             filtered_tests += 1
+        elif use_json:
+            tests.append(create_test_json(test, log_path))
         else:
             kci_msg_nonl("- test path: ")
             kci_msg_cyan_nonl(test["path"])
@@ -412,8 +494,12 @@ def cmd_tests(data, commit, download_logs, status_filter, filter, count):
             kci_msg(f"  id: {test['id']}")
             kci_msg(f"  dashboard: https://dashboard.kernelci.org/test/{test['id']}")
             kci_msg("")
-    if count:
+    if count and use_json:
+        kci_msg(f'{{"count":{filtered_tests}}}')
+    elif count:
         kci_msg(filtered_tests)
+    elif use_json:
+        kci_msg(json.dumps(tests))
 
 
 def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder):
@@ -422,6 +508,15 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
     if latest:
         commit = get_latest_commit(origin, giturl, branch)
     return giturl, branch, commit
+
+
+def display_options(func):
+    @click.option("--json", "use_json", is_flag=True, help="Displays results as json")
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 def common_options(func):
@@ -452,6 +547,7 @@ def common_options(func):
         help="Select latest results available",
     )
     @click.option("--arch", help="Filter by arch")
+    @display_options
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -496,13 +592,13 @@ def results(ctx):
 @results.command()
 @common_options
 @click.pass_context
-def summary(ctx, origin, git_folder, giturl, branch, commit, latest, arch):
+def summary(ctx, origin, git_folder, giturl, branch, commit, latest, arch, use_json):
     """Display a summary of results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_summary(origin, giturl, branch, commit, arch)
-    cmd_summary(data)
+    cmd_summary(data, use_json)
 
 
 @results.command()
@@ -511,10 +607,11 @@ def summary(ctx, origin, git_folder, giturl, branch, commit, latest, arch):
     help="Select KCIDB origin",
     default="maestro",
 )
+@display_options
 @click.pass_context
-def trees(ctx, origin):
+def trees(ctx, origin, use_json):
     """List trees from a give origin."""
-    cmd_list_trees(origin)
+    cmd_list_trees(origin, use_json)
 
 
 @results.command()
@@ -534,13 +631,14 @@ def builds(
     status,
     filter,
     count,
+    use_json,
 ):
     """Display build results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_builds(origin, giturl, branch, commit, arch)
-    cmd_builds(data, commit, download_logs, status, count)
+    cmd_builds(data, commit, download_logs, status, count, use_json)
 
 
 @results.command()
@@ -560,13 +658,14 @@ def boots(
     status,
     filter,
     count,
+    use_json,
 ):
     """Display boot results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_boots(origin, giturl, branch, commit, arch)
-    cmd_tests(data["boots"], commit, download_logs, status, filter, count)
+    cmd_tests(data["boots"], commit, download_logs, status, filter, count, use_json)
 
 
 @results.command()
@@ -586,13 +685,14 @@ def tests(
     status,
     filter,
     count,
+    use_json,
 ):
     """Display test results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_tests(origin, giturl, branch, commit, arch)
-    cmd_tests(data["tests"], commit, download_logs, status, filter, count)
+    cmd_tests(data["tests"], commit, download_logs, status, filter, count, use_json)
 
 
 if __name__ == "__main__":
