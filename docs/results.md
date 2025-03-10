@@ -151,6 +151,16 @@ Example:
 kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master  --latest --count
 ```
 
+## --json
+
+Displays results in a json format. It also affects flags like  `--count`.
+
+Example:
+
+```sh
+kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master  --latest --json
+```
+
 ### without arguments
 
 If used without arguments, `kci-dev results` subcommands will get KernelCI status
