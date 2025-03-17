@@ -7,12 +7,14 @@ from libs.dashboard import (
     dashboard_fetch_boots,
     dashboard_fetch_builds,
     dashboard_fetch_summary,
+    dashboard_fetch_test,
     dashboard_fetch_tests,
 )
 from libs.git_repo import set_giturl_branch_commit
 from subcommands.results.parser import (
     cmd_builds,
     cmd_list_trees,
+    cmd_single_test,
     cmd_summary,
     cmd_tests,
 )
@@ -63,7 +65,7 @@ def common_options(func):
     return wrapper
 
 
-def build_and_test_options(func):
+def builds_and_tests_options(func):
     @click.option(
         "--download-logs",
         is_flag=True,
@@ -82,6 +84,25 @@ def build_and_test_options(func):
     )
     @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
+    )
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def single_build_and_test_options(func):
+    @click.option(
+        "--id",
+        "op_id",
+        required=True,
+        help="Pass an id filter to get specific results",
+    )
+    @click.option(
+        "--download-logs",
+        is_flag=True,
+        help="Select desired results action",
     )
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -121,7 +142,7 @@ def trees(origin, use_json):
 
 @results.command()
 @common_options
-@build_and_test_options
+@builds_and_tests_options
 def builds(
     origin,
     git_folder,
@@ -146,7 +167,7 @@ def builds(
 
 @results.command()
 @common_options
-@build_and_test_options
+@builds_and_tests_options
 def boots(
     origin,
     git_folder,
@@ -171,7 +192,7 @@ def boots(
 
 @results.command()
 @common_options
-@build_and_test_options
+@builds_and_tests_options
 def tests(
     origin,
     git_folder,
@@ -192,6 +213,14 @@ def tests(
     )
     data = dashboard_fetch_tests(origin, giturl, branch, commit, arch)
     cmd_tests(data["tests"], commit, download_logs, status, filter, count, use_json)
+
+
+@results.command()
+@single_build_and_test_options
+@results_display_options
+def test(op_id, download_logs, use_json):
+    data = dashboard_fetch_test(op_id)
+    cmd_single_test(data, download_logs, use_json)
 
 
 if __name__ == "__main__":

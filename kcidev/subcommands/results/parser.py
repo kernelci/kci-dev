@@ -4,6 +4,7 @@ import json
 import requests
 import yaml
 from libs.dashboard import dashboard_fetch_tree_list
+from libs.files import download_logs_to_file
 
 from kcidev.libs.common import *
 
@@ -69,11 +70,16 @@ def create_test_json(test, log_path):
         test_status = "FAIL"
     else:
         test_status = f"INCONCLUSIVE (status: {test['status']})"
+    config_name = "No config available"
+    if "config" in test:
+        config_name = test["config"]
+    elif "config_name" in test:
+        config_name = test["config_name"]
     return {
         "test_path": test["path"],
         "hardware": test["environment_misc"]["platform"],
         "compatibles": test.get("environment_compatible", []),
-        "config": test["config"],
+        "config": config_name,
         "arch": test["architecture"],
         "status": test_status,
         "start_time": test["start_time"],
@@ -251,59 +257,71 @@ def cmd_tests(data, commit, download_logs, status_filter, filter, count, use_jso
 
         log_path = test["log_url"]
         if download_logs:
-            try:
-                log_gz = requests.get(test["log_url"])
-                log = gzip.decompress(log_gz.content)
-                log_file = f"{test['misc']['platform']}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
-                with open(log_file, mode="wb") as file:
-                    file.write(log)
-                log_path = "file://" + os.path.join(os.getcwd(), log_file)
-            except:
-                kci_err(f"Failed to fetch log {test['log_url']}.")
-                pass
+            log_file = f"{test['misc']['platform']}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
+            log_path = download_logs_to_file(test["log_url"], log_file)
         if count:
             filtered_tests += 1
         elif use_json:
             tests.append(create_test_json(test, log_path))
         else:
-            kci_msg_nonl("- test path: ")
-            kci_msg_cyan_nonl(test["path"])
-            kci_msg("")
-
-            kci_msg_nonl("  hardware: ")
-            kci_msg_cyan_nonl(test["environment_misc"]["platform"])
-            kci_msg("")
-
-            if test["environment_compatible"]:
-                kci_msg_nonl("  compatibles: ")
-                kci_msg_cyan_nonl(" | ".join(test["environment_compatible"]))
-                kci_msg("")
-
-            kci_msg_nonl("  config: ")
-            kci_msg_cyan_nonl(test["config"])
-            kci_msg_nonl(" arch: ")
-            kci_msg_cyan_nonl(test["architecture"])
-            kci_msg_nonl(" compiler: ")
-            kci_msg_cyan_nonl(test["compiler"])
-            kci_msg("")
-
-            kci_msg_nonl("  status:")
-            if test["status"] == "PASS":
-                kci_msg_green_nonl("PASS")
-            elif test["status"] == "FAIL":
-                kci_msg_red_nonl("FAIL")
-            else:
-                kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test['status']})")
-            kci_msg("")
-
-            kci_msg(f"  log: {log_path}")
-            kci_msg(f"  start time: {test['start_time']}")
-            kci_msg(f"  id: {test['id']}")
-            kci_msg(f"  dashboard: https://dashboard.kernelci.org/test/{test['id']}")
-            kci_msg("")
+            print_test(test, log_path)
     if count and use_json:
         kci_msg(f'{{"count":{filtered_tests}}}')
     elif count:
         kci_msg(filtered_tests)
     elif use_json:
         kci_msg(json.dumps(tests))
+
+
+def print_test(test, log_path):
+    kci_msg_nonl("- test path: ")
+    kci_msg_cyan_nonl(test["path"])
+    kci_msg("")
+
+    kci_msg_nonl("  hardware: ")
+    kci_msg_cyan_nonl(test["environment_misc"]["platform"])
+    kci_msg("")
+
+    if test["environment_compatible"]:
+        kci_msg_nonl("  compatibles: ")
+        kci_msg_cyan_nonl(" | ".join(test["environment_compatible"]))
+        kci_msg("")
+
+    kci_msg_nonl("  config: ")
+    if "config" in test:
+        kci_msg_cyan_nonl(test["config"])
+    elif "config_name" in test:
+        kci_msg_cyan_nonl(test["config_name"])
+    else:
+        kci_msg_cyan_nonl("No config available")
+    kci_msg_nonl(" arch: ")
+    kci_msg_cyan_nonl(test["architecture"])
+    kci_msg_nonl(" compiler: ")
+    kci_msg_cyan_nonl(test["compiler"])
+    kci_msg("")
+
+    kci_msg_nonl("  status:")
+    if test["status"] == "PASS":
+        kci_msg_green_nonl("PASS")
+    elif test["status"] == "FAIL":
+        kci_msg_red_nonl("FAIL")
+    else:
+        kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test['status']})")
+    kci_msg("")
+
+    kci_msg(f"  log: {log_path}")
+    kci_msg(f"  start time: {test['start_time']}")
+    kci_msg(f"  id: {test['id']}")
+    kci_msg(f"  dashboard: https://dashboard.kernelci.org/test/{test['id']}")
+    kci_msg("")
+
+
+def cmd_single_test(test, download_logs, use_json):
+    log_path = test["log_url"]
+    if download_logs:
+        log_file = f"{test['environment_misc']['platform']}__{test['path']}__{test['config_name']}-{test['architecture']}-{test['compiler']}-{test['id']}.log"
+        log_path = download_logs_to_file(test["log_url"], log_file)
+    if use_json:
+        kci_msg(create_test_json(test, log_path))
+    else:
+        print_test(test, log_path)
