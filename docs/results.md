@@ -58,6 +58,16 @@ Example:
 kci-dev results tests --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
 ```
 
+### test
+
+Obtains a single test result.
+
+Example:
+
+```sh
+kci-dev results test --id 'maestro:67d3e293f378f0c5986d3309' --download-logs --json
+```
+
 ## Common parameters
 
 ### --origin

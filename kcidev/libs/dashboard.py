@@ -91,6 +91,11 @@ def dashboard_fetch_tests(origin, giturl, branch, commit, arch):
     return dashboard_api_fetch(endpoint, params)
 
 
+def dashboard_fetch_test(test_id):
+    endpoint = f"test/{test_id}"
+    return dashboard_api_fetch(endpoint, {})
+
+
 def dashboard_fetch_tree_list(origin):
     params = {
         "origin": origin,
