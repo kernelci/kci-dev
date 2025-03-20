@@ -55,7 +55,7 @@ def create_build_json(build, log_path):
         "config": build["config_name"],
         "arch": build["architecture"],
         "compiler": build["compiler"],
-        "status": "PASS" if build["valid"] else "FAIL",
+        "status": build["status"],
         "config_url": build["config_url"],
         "log": log_path,
         "id": build["id"],
@@ -93,21 +93,16 @@ def cmd_summary(data, use_json):
     summary = data["summary"]
 
     builds = summary["builds"]["status"]
+    inconclusive_builds, pass_builds, fail_builds = get_command_summary(builds)
 
     boots = summary["boots"]["status"]
-    inconclusive_boots = sum_inconclusive_results(boots)
-    pass_boots = boots["PASS"] if "PASS" in boots.keys() else 0
-    fail_boots = boots["FAIL"] if "FAIL" in boots.keys() else 0
+    inconclusive_boots, pass_boots, fail_boots = get_command_summary(boots)
 
     tests = summary["tests"]["status"]
-    pass_tests = tests["PASS"] if "PASS" in tests.keys() else 0
-    fail_tests = tests["FAIL"] if "FAIL" in tests.keys() else 0
-    inconclusive_tests = sum_inconclusive_results(tests)
+    inconclusive_tests, pass_tests, fail_tests = get_command_summary(tests)
 
     if use_json:
-        builds_json = create_summary_json(
-            builds["valid"], builds["invalid"], builds["null"]
-        )
+        builds_json = create_summary_json(pass_builds, fail_builds, inconclusive_builds)
         boots_json = create_summary_json(pass_boots, fail_boots, inconclusive_boots)
         tests_json = create_summary_json(pass_tests, fail_tests, inconclusive_tests)
         kci_msg(
@@ -117,9 +112,16 @@ def cmd_summary(data, use_json):
         )
     else:
         kci_msg("pass/fail/inconclusive")
-        print_summary("builds", builds["valid"], builds["invalid"], builds["null"])
+        print_summary("builds", pass_builds, fail_builds, inconclusive_builds)
         print_summary("boots", pass_boots, fail_boots, inconclusive_boots)
         print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
+
+
+def get_command_summary(command_data):
+    inconclusive_cmd = sum_inconclusive_results(command_data)
+    pass_cmd = command_data["PASS"] if "PASS" in command_data.keys() else 0
+    fail_cmd = command_data["FAIL"] if "FAIL" in command_data.keys() else 0
+    return inconclusive_cmd, pass_cmd, fail_cmd
 
 
 def cmd_list_trees(origin, use_json):
@@ -144,14 +146,11 @@ def cmd_builds(data, commit, download_logs, status, count, use_json):
     filtered_builds = 0
     builds = []
     for build in data["builds"]:
-        if build["valid"] == None:
-            continue
-
         if not status == "all":
-            if build["valid"] == (status == "fail"):
+            if build["status"] != "FAIL" and status == "fail":
                 continue
 
-            if not build["valid"] == (status == "pass"):
+            if build["status"] != "PASS" and status == "pass":
                 continue
 
         log_path = build["log_url"]
@@ -180,10 +179,12 @@ def cmd_builds(data, commit, download_logs, status, count, use_json):
             kci_msg("")
 
             kci_msg_nonl("  status:")
-            if build["valid"]:
+            if build["status"] == "PASS":
                 kci_msg_green_nonl("PASS")
-            else:
+            elif build["status"] == "FAIL":
                 kci_msg_red_nonl("FAIL")
+            else:
+                kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {build['status']})")
             kci_msg("")
 
             kci_msg(f"  config_url: {build['config_url']}")
