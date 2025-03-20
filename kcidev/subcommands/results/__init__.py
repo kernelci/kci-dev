@@ -5,6 +5,7 @@ from functools import wraps
 import click
 from libs.dashboard import (
     dashboard_fetch_boots,
+    dashboard_fetch_build,
     dashboard_fetch_builds,
     dashboard_fetch_summary,
     dashboard_fetch_test,
@@ -14,6 +15,7 @@ from libs.git_repo import set_giturl_branch_commit
 from subcommands.results.parser import (
     cmd_builds,
     cmd_list_trees,
+    cmd_single_build,
     cmd_single_test,
     cmd_summary,
     cmd_tests,
@@ -221,6 +223,14 @@ def tests(
 def test(op_id, download_logs, use_json):
     data = dashboard_fetch_test(op_id, use_json)
     cmd_single_test(data, download_logs, use_json)
+
+
+@results.command()
+@single_build_and_test_options
+@results_display_options
+def build(op_id, download_logs, use_json):
+    data = dashboard_fetch_build(op_id, use_json)
+    cmd_single_build(data, download_logs, use_json)
 
 
 if __name__ == "__main__":

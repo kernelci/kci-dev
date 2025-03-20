@@ -99,6 +99,11 @@ def dashboard_fetch_test(test_id, use_json):
     return dashboard_api_fetch(endpoint, {}, use_json)
 
 
+def dashboard_fetch_build(build_id, use_json):
+    endpoint = f"build/{build_id}"
+    return dashboard_api_fetch(endpoint, {}, use_json)
+
+
 def dashboard_fetch_tree_list(origin, use_json):
     params = {
         "origin": origin,

@@ -68,6 +68,16 @@ Example:
 kci-dev results test --id 'maestro:67d3e293f378f0c5986d3309' --download-logs --json
 ```
 
+### build
+
+Displays all the information from a single build.
+
+Example:
+
+```sh
+kci-dev results build --id 'maestro:67d409f9f378f0c5986dc7df' --download-logs --json
+```
+
 ## Common parameters
 
 ### --origin
