@@ -221,7 +221,7 @@ def filter_out_by_status(status, filter):
 def filter_out_by_hardware(test, filter_data):
     # Check if the hardware name is in the list
     hardware_list = filter_data["hardware"]
-    if test["misc"]["platform"] in hardware_list:
+    if test["environment_misc"]["platform"] in hardware_list:
         return False
 
     if test["environment_compatible"]:
@@ -257,7 +257,12 @@ def cmd_tests(data, commit, download_logs, status_filter, filter, count, use_jso
 
         log_path = test["log_url"]
         if download_logs:
-            log_file = f"{test['misc']['platform']}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
+            platform = (
+                test["environment_misc"]["platform"]
+                if "environment_misc" in test
+                else "(Unknown platform)"
+            )
+            log_file = f"{platform}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
             log_path = download_logs_to_file(test["log_url"], log_file)
         if count:
             filtered_tests += 1
