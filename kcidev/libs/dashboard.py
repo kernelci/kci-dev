@@ -7,7 +7,7 @@ from kcidev.libs.common import *
 DASHBOARD_API = "https://dashboard.kernelci.org/api/"
 
 
-def dashboard_api_fetch(endpoint, params, max_retries=3):
+def dashboard_api_fetch(endpoint, params, use_json, max_retries=3):
     base_url = urllib.parse.urljoin(DASHBOARD_API, endpoint)
     url = "{}?{}".format(base_url, urllib.parse.urlencode(params))
     retries = 0
@@ -31,7 +31,10 @@ def dashboard_api_fetch(endpoint, params, max_retries=3):
 
             data = r.json()
             if "error" in data:
-                kci_msg("json error: " + str(data["error"]))
+                if use_json:
+                    kci_msg(data)
+                else:
+                    kci_msg("json error: " + str(data["error"]))
                 raise click.Abort()
             return data
 
@@ -43,7 +46,7 @@ def dashboard_api_fetch(endpoint, params, max_retries=3):
     raise click.Abort()
 
 
-def dashboard_fetch_summary(origin, giturl, branch, commit, arch):
+def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):
     endpoint = f"tree/{commit}/summary"
     params = {
         "origin": origin,
@@ -52,10 +55,10 @@ def dashboard_fetch_summary(origin, giturl, branch, commit, arch):
     }
     if arch is not None:
         params["filter_architecture"] = arch
-    return dashboard_api_fetch(endpoint, params)
+    return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_builds(origin, giturl, branch, commit, arch):
+def dashboard_fetch_builds(origin, giturl, branch, commit, arch, use_json):
     endpoint = f"tree/{commit}/builds"
     params = {
         "origin": origin,
@@ -64,10 +67,10 @@ def dashboard_fetch_builds(origin, giturl, branch, commit, arch):
     }
     if arch is not None:
         params["filter_architecture"] = arch
-    return dashboard_api_fetch(endpoint, params)
+    return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_boots(origin, giturl, branch, commit, arch):
+def dashboard_fetch_boots(origin, giturl, branch, commit, arch, use_json):
     endpoint = f"tree/{commit}/boots"
     params = {
         "origin": origin,
@@ -76,10 +79,10 @@ def dashboard_fetch_boots(origin, giturl, branch, commit, arch):
     }
     if arch is not None:
         params["filter_architecture"] = arch
-    return dashboard_api_fetch(endpoint, params)
+    return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_tests(origin, giturl, branch, commit, arch):
+def dashboard_fetch_tests(origin, giturl, branch, commit, arch, use_json):
     endpoint = f"tree/{commit}/tests"
     params = {
         "origin": origin,
@@ -88,16 +91,16 @@ def dashboard_fetch_tests(origin, giturl, branch, commit, arch):
     }
     if arch is not None:
         params["filter_architecture"] = arch
-    return dashboard_api_fetch(endpoint, params)
+    return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_test(test_id):
+def dashboard_fetch_test(test_id, use_json):
     endpoint = f"test/{test_id}"
-    return dashboard_api_fetch(endpoint, {})
+    return dashboard_api_fetch(endpoint, {}, use_json)
 
 
-def dashboard_fetch_tree_list(origin):
+def dashboard_fetch_tree_list(origin, use_json):
     params = {
         "origin": origin,
     }
-    return dashboard_api_fetch("tree-fast", params)
+    return dashboard_api_fetch("tree-fast", params, use_json)

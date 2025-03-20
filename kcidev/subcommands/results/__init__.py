@@ -124,7 +124,7 @@ def summary(origin, git_folder, giturl, branch, commit, latest, arch, use_json):
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_summary(origin, giturl, branch, commit, arch)
+    data = dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json)
     cmd_summary(data, use_json)
 
 
@@ -161,7 +161,7 @@ def builds(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_builds(origin, giturl, branch, commit, arch)
+    data = dashboard_fetch_builds(origin, giturl, branch, commit, arch, use_json)
     cmd_builds(data, commit, download_logs, status, count, use_json)
 
 
@@ -186,7 +186,7 @@ def boots(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_boots(origin, giturl, branch, commit, arch)
+    data = dashboard_fetch_boots(origin, giturl, branch, commit, arch, use_json)
     cmd_tests(data["boots"], commit, download_logs, status, filter, count, use_json)
 
 
@@ -211,7 +211,7 @@ def tests(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_tests(origin, giturl, branch, commit, arch)
+    data = dashboard_fetch_tests(origin, giturl, branch, commit, arch, use_json)
     cmd_tests(data["tests"], commit, download_logs, status, filter, count, use_json)
 
 
@@ -219,7 +219,7 @@ def tests(
 @single_build_and_test_options
 @results_display_options
 def test(op_id, download_logs, use_json):
-    data = dashboard_fetch_test(op_id)
+    data = dashboard_fetch_test(op_id, use_json)
     cmd_single_test(data, download_logs, use_json)
 
 
