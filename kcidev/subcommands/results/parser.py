@@ -156,12 +156,8 @@ def cmd_builds(data, commit, download_logs, status, count, use_json):
         log_path = build["log_url"]
         if download_logs:
             try:
-                log_gz = requests.get(build["log_url"])
-                log = gzip.decompress(log_gz.content)
                 log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{commit}.log"
-                with open(log_file, mode="wb") as file:
-                    file.write(log)
-                log_path = "file://" + os.path.join(os.getcwd(), log_file)
+                log_path = download_logs_to_file(build["log_url"], log_file)
             except:
                 kci_err(f"Failed to fetch log {build['log_url']}.")
                 pass
@@ -170,34 +166,38 @@ def cmd_builds(data, commit, download_logs, status, count, use_json):
         elif use_json:
             builds.append(create_build_json(build, log_path))
         else:
-            kci_msg_nonl("- config:")
-            kci_msg_cyan_nonl(build["config_name"])
-            kci_msg_nonl(" arch: ")
-            kci_msg_cyan_nonl(build["architecture"])
-            kci_msg_nonl(" compiler: ")
-            kci_msg_cyan_nonl(build["compiler"])
-            kci_msg("")
-
-            kci_msg_nonl("  status:")
-            if build["status"] == "PASS":
-                kci_msg_green_nonl("PASS")
-            elif build["status"] == "FAIL":
-                kci_msg_red_nonl("FAIL")
-            else:
-                kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {build['status']})")
-            kci_msg("")
-
-            kci_msg(f"  config_url: {build['config_url']}")
-            kci_msg(f"  log: {log_path}")
-            kci_msg(f"  id: {build['id']}")
-            kci_msg(f"  dashboard: https://dashboard.kernelci.org/build/{build['id']}")
-            kci_msg("")
+            print_build(build, log_path)
     if count and use_json:
         kci_msg(f'{{"count":{filtered_builds}}}')
     elif count:
         kci_msg(filtered_builds)
     elif use_json:
         kci_msg(json.dumps(builds))
+
+
+def print_build(build, log_path):
+    kci_msg_nonl("- config:")
+    kci_msg_cyan_nonl(build["config_name"])
+    kci_msg_nonl(" arch: ")
+    kci_msg_cyan_nonl(build["architecture"])
+    kci_msg_nonl(" compiler: ")
+    kci_msg_cyan_nonl(build["compiler"])
+    kci_msg("")
+
+    kci_msg_nonl("  status:")
+    if build["status"] == "PASS":
+        kci_msg_green_nonl("PASS")
+    elif build["status"] == "FAIL":
+        kci_msg_red_nonl("FAIL")
+    else:
+        kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {build['status']})")
+    kci_msg("")
+
+    kci_msg(f"  config_url: {build['config_url']}")
+    kci_msg(f"  log: {log_path}")
+    kci_msg(f"  id: {build['id']}")
+    kci_msg(f"  dashboard: https://dashboard.kernelci.org/build/{build['id']}")
+    kci_msg("")
 
 
 def filter_out_by_status(status, filter):
@@ -331,3 +331,16 @@ def cmd_single_test(test, download_logs, use_json):
         kci_msg(create_test_json(test, log_path))
     else:
         print_test(test, log_path)
+
+
+def cmd_single_build(build, download_logs, use_json):
+    log_path = build["log_url"]
+    if download_logs:
+        log_file = log_file = (
+            f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{build['git_commit_hash']}-{build['id']}.log"
+        )
+        log_path = download_logs_to_file(build["log_url"], log_file)
+    if use_json:
+        kci_msg(create_build_json(build, log_path))
+    else:
+        print_build(build, log_path)
