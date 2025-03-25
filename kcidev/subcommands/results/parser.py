@@ -344,3 +344,22 @@ def cmd_single_build(build, download_logs, use_json):
         kci_msg(create_build_json(build, log_path))
     else:
         print_build(build, log_path)
+
+
+def cmd_hardware_list(data, use_json):
+    if use_json:
+        hardware = [
+            {"name": hardware["hardware_name"], "compatibles": hardware["platform"]}
+            for hardware in data["hardware"]
+        ]
+        kci_msg(hardware)
+    else:
+        for hardware in data["hardware"]:
+            kci_msg_nonl("- name: ")
+            kci_msg_cyan_nonl(hardware["hardware_name"])
+            kci_msg("")
+
+            kci_msg_nonl("  compatibles: ")
+            kci_msg_cyan_nonl(hardware["platform"])
+            kci_msg("")
+            kci_msg("")

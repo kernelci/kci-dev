@@ -29,7 +29,10 @@ from subcommands.results.parser import (
 )
 
 
-@click.group(help="[Experimental] Get results from the dashboard")
+@click.group(
+    help="[Experimental] Get results from the dashboard",
+    commands={"hardware": hardware},
+)
 def results():
     """Commands related to results."""
     pass

@@ -1,4 +1,5 @@
 import urllib
+from datetime import datetime, timedelta
 
 import requests
 
@@ -109,3 +110,15 @@ def dashboard_fetch_tree_list(origin, use_json):
         "origin": origin,
     }
     return dashboard_api_fetch("tree-fast", params, use_json)
+
+
+def dashboard_fetch_hardware_list(origin, use_json):
+    # TODO: add date filter
+    now = datetime.today()
+    last_week = now - timedelta(days=7)
+    params = {
+        "origin": origin,
+        "endTimeStampInSeconds": int(now.timestamp()),
+        "startTimestampInSeconds": int(last_week.timestamp()),
+    }
+    return dashboard_api_fetch("hardware/", params, use_json)
