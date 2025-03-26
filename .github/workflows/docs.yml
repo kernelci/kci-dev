@@ -57,6 +57,22 @@ jobs:
             --theme PaperMod \
             --minify \
             --baseURL "${{ steps.pages.outputs.base_url }}/" 
+      - name: Build with Hugo v0.1.5
+        env:
+          HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
+          HUGO_ENVIRONMENT: production
+          TZ: America/Los_Angeles
+        run: |
+          git fetch --prune --unshallow
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+          git fetch --all --tags
+          git checkout tags/v0.1.5
+          hugo \
+            --gc \
+            --theme PaperMod \
+            --minify \
+            --baseURL "${{ steps.pages.outputs.base_url }}/v0.1.5/" \
+            --destination ./public/v0.1.5
       - name: Build with Hugo v0.1.4
         env:
           HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
