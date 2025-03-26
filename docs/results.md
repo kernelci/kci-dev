@@ -78,6 +78,20 @@ Example:
 kci-dev results build --id 'maestro:67d409f9f378f0c5986dc7df' --download-logs --json
 ```
 
+### hardware
+
+Displays hardware related information
+
+#### list
+
+List all available hardware for the given origin (Maestro by default), for the last 7 days
+
+Example:
+
+```sh
+kci-dev results hardware list --origin maestro --json
+```
+
 ## Common parameters
 
 ### --origin
