@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kci-dev"
-version = "0.1.4"
+version = "0.1.5"
 description = "Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI"
 authors = ["Arisu Tachibana <arisu.tachibana@miraclelinux.com>"]
 license = "LGPL-2.1-or-later"
