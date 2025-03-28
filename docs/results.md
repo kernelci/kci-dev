@@ -92,6 +92,16 @@ Example:
 kci-dev results hardware list --origin maestro --json
 ```
 
+#### summary
+
+Gives a summary on the builds, boots and tests run of the hardware with `name` for the last seven days
+
+Example:
+
+```sh
+kci-dev results hardware summary --name mediatek,mt8195 --origin maestro --json
+```
+
 ## Common parameters
 
 ### --origin
