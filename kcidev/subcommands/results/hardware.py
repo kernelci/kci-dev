@@ -1,10 +1,11 @@
 import click
-from libs.dashboard import (
+
+from kcidev.libs.dashboard import (
     dashboard_fetch_hardware_list,
     dashboard_fetch_hardware_summary,
 )
-from subcommands.results.options import results_display_options
-from subcommands.results.parser import cmd_hardware_list, cmd_summary
+from kcidev.subcommands.results.options import results_display_options
+from kcidev.subcommands.results.parser import cmd_hardware_list, cmd_summary
 
 
 @click.group(chain=True, help="Get hardware related information from the dashboard")

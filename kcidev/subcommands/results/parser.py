@@ -3,10 +3,10 @@ import json
 
 import requests
 import yaml
-from libs.dashboard import dashboard_fetch_tree_list
-from libs.files import download_logs_to_file
 
 from kcidev.libs.common import *
+from kcidev.libs.dashboard import dashboard_fetch_tree_list
+from kcidev.libs.files import download_logs_to_file
 
 
 def print_summary(type, n_pass, n_fail, n_inconclusive):

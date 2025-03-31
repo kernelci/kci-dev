@@ -3,9 +3,8 @@ import os
 import subprocess
 import urllib
 
-from libs.dashboard import dashboard_fetch_tree_list
-
 from kcidev.libs.common import *
+from kcidev.libs.dashboard import dashboard_fetch_tree_list
 
 
 def repository_url_cleaner(url):

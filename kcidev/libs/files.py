@@ -3,7 +3,8 @@ import os
 import re
 
 import requests
-from libs.common import kci_err
+
+from kcidev.libs.common import kci_err
 
 INVALID_FILE_CHARS = re.compile(r'[\\/:"*?<>|]+')
 

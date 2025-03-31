@@ -3,7 +3,8 @@
 from functools import wraps
 
 import click
-from libs.dashboard import (
+
+from kcidev.libs.dashboard import (
     dashboard_fetch_boots,
     dashboard_fetch_build,
     dashboard_fetch_builds,
@@ -11,15 +12,15 @@ from libs.dashboard import (
     dashboard_fetch_test,
     dashboard_fetch_tests,
 )
-from libs.git_repo import set_giturl_branch_commit
-from subcommands.results.hardware import hardware
-from subcommands.results.options import (
+from kcidev.libs.git_repo import set_giturl_branch_commit
+from kcidev.subcommands.results.hardware import hardware
+from kcidev.subcommands.results.options import (
     builds_and_tests_options,
     common_options,
     results_display_options,
     single_build_and_test_options,
 )
-from subcommands.results.parser import (
+from kcidev.subcommands.results.parser import (
     cmd_builds,
     cmd_list_trees,
     cmd_single_build,
