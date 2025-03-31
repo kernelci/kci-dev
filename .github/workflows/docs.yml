@@ -52,7 +52,6 @@ jobs:
           git clone --recursive --depth 1 --branch master https://github.com/adityatelange/hugo-PaperMod.git themes/PaperMod
           git clone --depth 1 --branch 6.7.0 https://github.com/FortAwesome/Font-Awesome.git themes/github.com/FortAwesome/Font-Awesome
           git clone --depth 1 --branch v5.3.3 https://github.com/twbs/bootstrap.git themes/github.com/twbs/bootstrap
-          sed -i 's/{version}//' hugo.toml
           hugo \
             --gc \
             --theme PaperMod \
@@ -64,16 +63,15 @@ jobs:
           HUGO_ENVIRONMENT: production
           TZ: America/Los_Angeles
         run: |
-          git checkout hugo.toml
           git fetch --prune --unshallow
           git fetch --depth=1 origin +refs/tags/*:refs/tags/*
           git fetch --all --tags
           git checkout tags/v0.1.4
-          sed -i 's/{version}/v0.1.4\//' hugo.toml
           hugo \
             --gc \
             --theme PaperMod \
             --minify \
+            --baseURL "${{ steps.pages.outputs.base_url }}/v0.1.4/" \
             --destination ./public/v0.1.4
       - name: Build with Hugo v0.1.3
         env:
@@ -81,16 +79,15 @@ jobs:
           HUGO_ENVIRONMENT: production
           TZ: America/Los_Angeles
         run: |
-          git checkout hugo.toml
           git fetch --prune --unshallow
           git fetch --depth=1 origin +refs/tags/*:refs/tags/*
           git fetch --all --tags
           git checkout tags/v0.1.3
-          sed -i 's/{version}/v0.1.3\//' hugo.toml
           hugo \
             --gc \
             --theme PaperMod \
             --minify \
+            --baseURL "${{ steps.pages.outputs.base_url }}/v0.1.3/" \
             --destination ./public/v0.1.3
       - name: Build with Hugo version
         env:
