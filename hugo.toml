@@ -1,4 +1,4 @@
-baseURL = 'https://kci.dev/'
+baseURL = 'https://kci.dev/{version}'
 languageCode = 'en-us'
 title = 'kci-dev'
 description = 'Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI'
