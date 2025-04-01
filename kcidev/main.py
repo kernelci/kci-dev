@@ -22,7 +22,7 @@ from kcidev.subcommands import (
 @click.group(
     help="Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI."
 )
-@click.version_option("0.1.5", prog_name="kci-dev")
+@click.version_option("0.1.6", prog_name="kci-dev")
 @click.option(
     "--settings",
     default=".kci-dev.toml",
