@@ -125,7 +125,7 @@ def get_command_summary(command_data):
 
 
 def cmd_list_trees(origin, use_json):
-    trees = dashboard_fetch_tree_list(origin)
+    trees = dashboard_fetch_tree_list(origin, use_json)
     if use_json:
         kci_msg(json.dumps(list(map(lambda t: create_tree_json(t), trees))))
         return
