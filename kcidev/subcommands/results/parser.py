@@ -242,7 +242,7 @@ def filter_out_by_test(test, filter_data):
     return True
 
 
-def cmd_tests(data, commit, download_logs, status_filter, filter, count, use_json):
+def cmd_tests(data, id, download_logs, status_filter, filter, count, use_json):
     filter_data = yaml.safe_load(filter) if filter else None
     filtered_tests = 0
     tests = []
@@ -263,7 +263,7 @@ def cmd_tests(data, commit, download_logs, status_filter, filter, count, use_jso
                 if "environment_misc" in test
                 else "(Unknown platform)"
             )
-            log_file = f"{platform}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{commit}.log"
+            log_file = f"{platform}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{id}.log"
             log_path = download_logs_to_file(test["log_url"], log_file)
         if count:
             filtered_tests += 1

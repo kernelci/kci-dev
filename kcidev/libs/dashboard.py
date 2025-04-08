@@ -139,8 +139,7 @@ def dashboard_fetch_hardware_list(origin, use_json):
     return dashboard_api_fetch("hardware/", params, use_json)
 
 
-def dashboard_fetch_hardware_summary(name, origin, use_json):
-    # TODO: add extra filters: Commits, date, filter, origin
+def _create_hardware_request_body(origin):
     now = datetime.today()
     last_week = now - timedelta(days=7)
     body = {
@@ -150,6 +149,19 @@ def dashboard_fetch_hardware_summary(name, origin, use_json):
         "selectedCommits": {},
         "filter": {},
     }
+    return body
+
+
+def dashboard_fetch_hardware_summary(name, origin, use_json):
+    # TODO: add extra filters: Commits, date, filter, origin
+    body = _create_hardware_request_body(origin)
     return dashboard_api_post(
         f"hardware/{urllib.parse.quote_plus(name)}/summary", {}, use_json, body
+    )
+
+
+def dashboard_fetch_hardware_boots(name, origin, use_json):
+    body = _create_hardware_request_body(origin)
+    return dashboard_api_post(
+        f"hardware/{urllib.parse.quote_plus(name)}/boots", {}, use_json, body
     )
