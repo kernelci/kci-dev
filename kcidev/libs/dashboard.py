@@ -172,3 +172,10 @@ def dashboard_fetch_hardware_builds(name, origin, use_json):
     return dashboard_api_post(
         f"hardware/{urllib.parse.quote_plus(name)}/builds", {}, use_json, body
     )
+
+
+def dashboard_fetch_hardware_tests(name, origin, use_json):
+    body = _create_hardware_request_body(origin)
+    return dashboard_api_post(
+        f"hardware/{urllib.parse.quote_plus(name)}/tests", {}, use_json, body
+    )

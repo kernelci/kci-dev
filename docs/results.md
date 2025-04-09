@@ -48,7 +48,7 @@ Example:
 kci-dev results boots --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --latest
 ```
 
-### tests
+### <a id="result-tests"></a>tests
 
 List test results.
 
@@ -122,6 +122,17 @@ Example:
 
 ```sh
 kci-dev results hardware builds --name mediatek,mt8195 --origin maestro --json
+```
+
+#### tests
+
+List test results for a hardware with `name` list for the last seven days.
+It supports the same options as [results tests](#result-tests).
+
+Example:
+
+```sh
+kci-dev results hardware tests --name mediatek,mt8195 --origin maestro --json
 ```
 
 ## Common parameters

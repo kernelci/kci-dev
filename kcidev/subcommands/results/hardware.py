@@ -7,6 +7,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_hardware_builds,
     dashboard_fetch_hardware_list,
     dashboard_fetch_hardware_summary,
+    dashboard_fetch_hardware_tests,
 )
 from kcidev.subcommands.results.options import (
     builds_and_tests_options,
@@ -68,3 +69,12 @@ def boots(name, origin, use_json, download_logs, status, filter, count):
 def builds(name, origin, use_json, download_logs, status, filter, count):
     data = dashboard_fetch_hardware_builds(name, origin, use_json)
     cmd_builds(data, name, download_logs, status, count, use_json)
+
+
+@hardware.command()
+@hardware_common_opt
+@results_display_options
+@builds_and_tests_options
+def tests(name, origin, use_json, download_logs, status, filter, count):
+    data = dashboard_fetch_hardware_tests(name, origin, use_json)
+    cmd_tests(data["tests"], name, download_logs, status, filter, count, use_json)
