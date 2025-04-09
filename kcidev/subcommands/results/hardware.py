@@ -4,6 +4,7 @@ import click
 
 from kcidev.libs.dashboard import (
     dashboard_fetch_hardware_boots,
+    dashboard_fetch_hardware_builds,
     dashboard_fetch_hardware_list,
     dashboard_fetch_hardware_summary,
 )
@@ -11,7 +12,12 @@ from kcidev.subcommands.results.options import (
     builds_and_tests_options,
     results_display_options,
 )
-from kcidev.subcommands.results.parser import cmd_hardware_list, cmd_summary, cmd_tests, cmd_builds
+from kcidev.subcommands.results.parser import (
+    cmd_builds,
+    cmd_hardware_list,
+    cmd_summary,
+    cmd_tests,
+)
 
 
 def hardware_common_opt(func):
@@ -54,3 +60,11 @@ def boots(name, origin, use_json, download_logs, status, filter, count):
     data = dashboard_fetch_hardware_boots(name, origin, use_json)
     cmd_tests(data["boots"], name, download_logs, status, filter, count, use_json)
 
+
+@hardware.command()
+@hardware_common_opt
+@results_display_options
+@builds_and_tests_options
+def builds(name, origin, use_json, download_logs, status, filter, count):
+    data = dashboard_fetch_hardware_builds(name, origin, use_json)
+    cmd_builds(data, name, download_logs, status, count, use_json)

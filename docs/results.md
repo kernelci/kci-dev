@@ -28,7 +28,7 @@ Example:
 kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
 ```
 
-### builds
+### <a id="result-builds"></a>builds
 
 List builds results.
 
@@ -111,6 +111,17 @@ Example:
 
 ```sh
 kci-dev results hardware boots --name mediatek,mt8195 --origin maestro --json
+```
+
+#### builds
+
+List build results for a hardware with `name` list for the last seven days.
+It supports the same options as [results builds](#result-builds).
+
+Example:
+
+```sh
+kci-dev results hardware builds --name mediatek,mt8195 --origin maestro --json
 ```
 
 ## Common parameters
