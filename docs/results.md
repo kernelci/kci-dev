@@ -28,7 +28,7 @@ Example:
 kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
 ```
 
-### builds
+### <a id="result-builds"></a>builds
 
 List builds results.
 
@@ -38,7 +38,7 @@ Example:
 kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
 ```
 
-### boots
+### <a id="result-boots"></a>boots
 
 List boot results.
 
@@ -48,7 +48,7 @@ Example:
 kci-dev results boots --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --latest
 ```
 
-### tests
+### <a id="result-tests"></a>tests
 
 List test results.
 
@@ -100,6 +100,39 @@ Example:
 
 ```sh
 kci-dev results hardware summary --name mediatek,mt8195 --origin maestro --json
+```
+
+#### boots
+
+List boot results for a hardware with `name` list for the last seven days.
+It supports the same options as [results boots](#result-boots).
+
+Example:
+
+```sh
+kci-dev results hardware boots --name mediatek,mt8195 --origin maestro --json
+```
+
+#### builds
+
+List build results for a hardware with `name` list for the last seven days.
+It supports the same options as [results builds](#result-builds).
+
+Example:
+
+```sh
+kci-dev results hardware builds --name mediatek,mt8195 --origin maestro --json
+```
+
+#### tests
+
+List test results for a hardware with `name` list for the last seven days.
+It supports the same options as [results tests](#result-tests).
+
+Example:
+
+```sh
+kci-dev results hardware tests --name mediatek,mt8195 --origin maestro --json
 ```
 
 ## Common parameters
