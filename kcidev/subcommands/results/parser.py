@@ -221,6 +221,9 @@ def filter_out_by_status(status, filter):
 
 def filter_out_by_hardware(test, filter_data):
     # Check if the hardware name is in the list
+    if "hardware" not in filter_data:
+        return False
+
     hardware_list = filter_data["hardware"]
     if test["environment_misc"]["platform"] in hardware_list:
         return False
