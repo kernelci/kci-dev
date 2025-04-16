@@ -68,6 +68,16 @@ Example:
 kci-dev results test --id 'maestro:67d3e293f378f0c5986d3309' --download-logs --json
 ```
 
+### boot
+
+Obtains a single boot result.
+
+Example:
+
+```sh
+kci-dev results boot --id 'maestro:67ffde3a69241b2ece0ccaa6' --download-logs --json
+```
+
 ### build
 
 Displays all the information from a single build.
