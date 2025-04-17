@@ -153,5 +153,13 @@ def build(op_id, download_logs, use_json):
     cmd_single_build(data, download_logs, use_json)
 
 
+@results.command()
+@single_build_and_test_options
+@results_display_options
+def boot(op_id, download_logs, use_json):
+    data = dashboard_fetch_test(op_id, use_json)
+    cmd_single_test(data, download_logs, use_json)
+
+
 if __name__ == "__main__":
     main_kcidev()
