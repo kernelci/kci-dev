@@ -225,13 +225,13 @@ def filter_out_by_hardware(test, filter_data):
     if "hardware" not in filter_data:
         return False
 
-    hardware_list = filter_data["hardware"]
-    if test["environment_misc"]["platform"] in hardware_list:
+    hardware_list_re = re.compile(filter_data["hardware"])
+    if hardware_list_re.match(test["environment_misc"]["platform"]):
         return False
 
     if test["environment_compatible"]:
         for compatible in test["environment_compatible"]:
-            if compatible in hardware_list:
+            if hardware_list_re.match(compatible):
                 return False
 
     return True
@@ -246,17 +246,19 @@ def filter_out_by_test(test, filter_data):
     return True
 
 
+def filter_array2regex(filter_array):
+    return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
+
+
 def parse_filter_file(filter):
     filter_data = yaml.safe_load(filter) if filter else None
     if filter_data is None:
         return None
     parsed_filter = {}
     if "hardware" in filter_data:
-        parsed_filter["hardware"] = filter_data["hardware"]
+        parsed_filter["hardware"] = filter_array2regex(filter_data["hardware"])
     if "test" in filter_data:
-        parsed_filter["test"] = rf"^({'|'.join(filter_data.get('test', []))})$".replace(
-            ".", r"\."
-        ).replace("*", ".*")
+        parsed_filter["test"] = filter_array2regex(filter_data["test"])
     return parsed_filter
 
 
