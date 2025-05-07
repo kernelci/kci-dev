@@ -1,5 +1,6 @@
 import gzip
 import json
+import re
 
 import requests
 import yaml
@@ -238,15 +239,29 @@ def filter_out_by_hardware(test, filter_data):
 
 def filter_out_by_test(test, filter_data):
     # Check if the test name is in the list
-    test_list = filter_data["test"]
-    if test["path"] in test_list:
+    test_list_re = re.compile(filter_data["test"])
+    if test_list_re.match(test["path"]):
         return False
 
     return True
 
 
-def cmd_tests(data, id, download_logs, status_filter, filter, count, use_json):
+def parse_filter_file(filter):
     filter_data = yaml.safe_load(filter) if filter else None
+    if filter_data is None:
+        return None
+    parsed_filter = {}
+    if "hardware" in filter_data:
+        parsed_filter["hardware"] = filter_data["hardware"]
+    if "test" in filter_data:
+        parsed_filter["test"] = rf"^({'|'.join(filter_data.get('test', []))})$".replace(
+            ".", r"\."
+        ).replace("*", ".*")
+    return parsed_filter
+
+
+def cmd_tests(data, id, download_logs, status_filter, filter, count, use_json):
+    filter_data = parse_filter_file(filter)
     filtered_tests = 0
     tests = []
     for test in data:
