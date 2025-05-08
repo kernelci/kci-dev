@@ -201,6 +201,7 @@ kci-dev results builds --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git
 ## --filter
 
 Pass a YAML filter file to customize results. Only supports hardware and test name filtering at the moment.
+You can use wildcards (`*`) in both `hardware` and `test`.
 See filter yaml example below:
 (available for subcommands `boots` and `tests`)
 
@@ -212,6 +213,7 @@ hardware:
 test:
   - kselftest.dt
   - kselftest.iommu
+  - kunit.*
 ```
 
 Example:
