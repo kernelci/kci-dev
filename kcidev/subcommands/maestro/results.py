@@ -67,6 +67,19 @@ Examples:
     required=False,
     help="Filter results by tree name",
 )
+@click.option(
+    "--count",
+    is_flag=True,
+    required=False,
+    help="Print only count of nodes",
+)
+@click.option(
+    "--paginate",
+    is_flag=True,
+    required=False,
+    default=True,
+    help="Set True if pagination is required in the output. Default is True",
+)
 @add_filter_options
 @click.pass_context
 def results(
@@ -84,6 +97,8 @@ def results(
     compiler,
     config,
     git_branch,
+    count,
+    paginate,
 ):
     logging.info("Starting maestro results command")
     logging.debug(
@@ -127,9 +142,12 @@ def results(
         logging.info(
             f"Fetching nodes with {len(filter)} filters, limit: {limit}, offset: {offset}"
         )
-        results = maestro_get_nodes(url, limit, offset, filter)
+        results = maestro_get_nodes(url, limit, offset, filter, paginate)
+        if count:
+            return results
 
     logging.debug(f"Displaying results with fields: {field if field else 'all'}")
+
     maestro_print_nodes(results, field)
 
 

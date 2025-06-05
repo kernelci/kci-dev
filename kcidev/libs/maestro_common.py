@@ -80,20 +80,29 @@ def maestro_get_node(url, nodeid):
     return node_data
 
 
-def maestro_get_nodes(url, limit, offset, filter):
+def maestro_get_nodes(url, limit, offset, filter, paginate):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
 
-    logging.info(f"Fetching Maestro nodes - limit: {limit}, offset: {offset}")
-    if filter:
-        logging.debug(f"Applying filters: {filter}")
-        for f in filter:
-            # TBD: We need to add translate filter to API
-            # if we need anything more complex than eq(=)
-            url = url + "&" + f
+    if paginate:
+        url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
+        logging.info(f"Fetching Maestro nodes - limit: {limit}, offset: {offset}")
+        if filter:
+            for f in filter:
+                logging.debug(f"Applying filters: {filter}")
+                # TBD: We need to add translate filter to API
+                # if we need anything more complex than eq(=)
+                url = url + "&" + f
 
+    else:
+        url = url + "latest/nodes/fast"
+        if filter:
+            url = url + "?"
+            for f in filter:
+                # TBD: We need to add translate filter to API
+                # if we need anything more complex than eq(=)
+                url = url + "&" + f
     logging.debug(f"Full nodes URL: {url}")
     maestro_print_api_call(url)
 

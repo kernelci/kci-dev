@@ -149,25 +149,37 @@ def get_command_summary(command_data):
     return inconclusive_cmd, pass_cmd, fail_cmd
 
 
-def cmd_list_trees(origin, use_json, days):
+def cmd_list_trees(origin, use_json, days, verbose):
     logging.info(f"Listing trees for origin: {origin}")
     trees = dashboard_fetch_tree_list(origin, use_json, days)
     logging.debug(f"Found {len(trees)} trees")
     if use_json:
         kci_msg(json.dumps(list(map(lambda t: create_tree_json(t), trees))))
         return
+
     for t in trees:
         logging.debug(
             f"Tree: {t['tree_name']}/{t['git_repository_branch']} - {t['git_commit_hash']}"
         )
-        kci_msg_green(f"- {t['tree_name']}/{t['git_repository_branch']}:")
-        kci_msg(f"  giturl: {t['git_repository_url']}")
-        kci_msg(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
-        kci_msg(f"  latest: {t['start_time']}")
+        if verbose:
+            kci_msg_green(f"- {t['tree_name']}/{t['git_repository_branch']}:")
+            kci_msg(f"  giturl: {t['git_repository_url']}")
+            kci_msg(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
+            kci_msg(f"  latest: {t['start_time']}")
+    return trees
 
 
 def cmd_builds(
-    data, commit, download_logs, status, compiler, config, git_branch, count, use_json
+    data,
+    commit,
+    download_logs,
+    status,
+    compiler,
+    config,
+    git_branch,
+    count,
+    use_json,
+    verbose=True,
 ):
     logging.info(
         f"Processing builds with filters - status: {status}, compiler: {compiler}, config: {config}, branch: {git_branch}"
@@ -218,10 +230,11 @@ def cmd_builds(
 
     if count and use_json:
         kci_msg(f'{{"count":{filtered_builds}}}')
-    elif count:
+    elif count and verbose:
         kci_msg(filtered_builds)
     elif use_json:
         kci_msg(json.dumps(builds))
+    return data["builds"]
 
 
 def print_build(build, log_path):

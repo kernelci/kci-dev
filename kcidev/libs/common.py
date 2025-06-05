@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import json
 import logging
 import os
 import sys
@@ -142,3 +143,7 @@ def kci_msg_yellow(content, nl=True):
 
 def kci_msg_cyan(content, nl=True):
     click.secho(content, fg="cyan", nl=nl)
+
+
+def kci_msg_json(content, indent=1):
+    click.echo(json.dumps(content, indent=indent))
