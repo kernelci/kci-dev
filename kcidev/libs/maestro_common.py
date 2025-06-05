@@ -62,18 +62,29 @@ def maestro_get_node(url, nodeid):
     return response.json()
 
 
-def maestro_get_nodes(url, limit, offset, filter):
+def maestro_get_nodes(url, limit, offset, filter, paginate):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
-    maestro_print_api_call(url)
-    if filter:
-        for f in filter:
-            # TBD: We need to add translate filter to API
-            # if we need anything more complex than eq(=)
-            url = url + "&" + f
 
+    if paginate:
+        url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
+        if filter:
+            for f in filter:
+                # TBD: We need to add translate filter to API
+                # if we need anything more complex than eq(=)
+                url = url + "&" + f
+
+    else:
+        url = url + "latest/nodes/fast"
+        if filter:
+            url = url + "?"
+            for f in filter:
+                # TBD: We need to add translate filter to API
+                # if we need anything more complex than eq(=)
+                url = url + "&" + f
+
+    maestro_print_api_call(url)
     response = requests.get(url, headers=headers)
     try:
         response.raise_for_status()

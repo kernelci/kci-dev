@@ -14,6 +14,7 @@ from kcidev.subcommands import (
     maestro_results,
     results,
     testretry,
+    validate,
     watch,
 )
 
@@ -63,6 +64,7 @@ def run():
     cli.add_command(maestro_results.maestro_results)
     cli.add_command(testretry.testretry)
     cli.add_command(results.results)
+    cli.add_command(validate.validate)
     cli.add_command(watch.watch)
     cli()
 
