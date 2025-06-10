@@ -5,9 +5,12 @@ import pytest
 import yaml
 
 from kcidev.subcommands.results.parser import (
+    filter_out_by_compatible,
     filter_out_by_compiler,
     filter_out_by_config,
     filter_out_by_date,
+    filter_out_by_duration,
+    filter_out_by_git_branch,
     filter_out_by_hardware_option,
     filter_out_by_test_path,
     filter_out_by_tree,
@@ -358,3 +361,142 @@ class TestTestPathFilter:
         assert not filter_out_by_test_path(test, "kselftest.*")
         assert not filter_out_by_test_path(test, "*pcm-test")
         assert filter_out_by_test_path(test, "baseline.*")
+
+
+class TestGitBranchFilter:
+    """Test git-branch filter functionality"""
+
+    def test_filter_out_by_git_branch_matching(self):
+        """Test that items with matching git branch are not filtered out"""
+        item = {"git_repository_branch": "master"}
+        assert not filter_out_by_git_branch(item, "master")
+
+    def test_filter_out_by_git_branch_non_matching(self):
+        """Test that items with non-matching git branch are filtered out"""
+        item = {"git_repository_branch": "master"}
+        assert filter_out_by_git_branch(item, "develop")
+
+    def test_filter_out_by_git_branch_wildcard(self):
+        """Test that git branch filter supports wildcards"""
+        item = {"git_repository_branch": "linux-6.1.y"}
+        assert not filter_out_by_git_branch(item, "linux-*")
+        assert not filter_out_by_git_branch(item, "*-6.1.y")
+        assert not filter_out_by_git_branch(item, "linux-6.*.y")
+        assert filter_out_by_git_branch(item, "linux-5.*")
+
+    def test_filter_out_by_git_branch_no_filter(self):
+        """Test that no filtering occurs when git branch filter is None"""
+        item = {"git_repository_branch": "master"}
+        assert not filter_out_by_git_branch(item, None)
+        assert not filter_out_by_git_branch(item, "")
+
+    def test_filter_out_by_git_branch_missing_field(self):
+        """Test that items without git_repository_branch field are filtered out when filter is active"""
+        item = {"other_field": "value"}
+        assert filter_out_by_git_branch(item, "master")
+
+
+class TestCompatibleFilter:
+    """Test compatible filter functionality"""
+
+    def test_filter_out_by_compatible_matching(self):
+        """Test that items with matching compatible string are not filtered out"""
+        test = {
+            "environment_compatible": ["rockchip,rk3399", "rockchip,rk3399-rock-pi-4b"]
+        }
+        assert not filter_out_by_compatible(test, "rk3399")
+
+    def test_filter_out_by_compatible_non_matching(self):
+        """Test that items with non-matching compatible string are filtered out"""
+        test = {
+            "environment_compatible": ["rockchip,rk3399", "rockchip,rk3399-rock-pi-4b"]
+        }
+        assert filter_out_by_compatible(test, "bcm2711")
+
+    def test_filter_out_by_compatible_case_insensitive(self):
+        """Test that compatible filter is case insensitive"""
+        test = {
+            "environment_compatible": ["Rockchip,RK3399", "ROCKCHIP,RK3399-ROCK-PI-4B"]
+        }
+        assert not filter_out_by_compatible(test, "rk3399")
+        assert not filter_out_by_compatible(test, "RK3399")
+
+    def test_filter_out_by_compatible_partial_match(self):
+        """Test that compatible filter matches partial strings"""
+        test = {"environment_compatible": ["ti,am625-sk", "ti,am62"]}
+        assert not filter_out_by_compatible(test, "am625")
+        assert not filter_out_by_compatible(test, "ti,am")
+        assert not filter_out_by_compatible(test, "625")
+
+    def test_filter_out_by_compatible_no_filter(self):
+        """Test that no filtering occurs when compatible filter is None"""
+        test = {"environment_compatible": ["rockchip,rk3399"]}
+        assert not filter_out_by_compatible(test, None)
+        assert not filter_out_by_compatible(test, "")
+
+    def test_filter_out_by_compatible_missing_field(self):
+        """Test that items without environment_compatible field are filtered out when filter is active"""
+        test = {"other_field": "value"}
+        assert filter_out_by_compatible(test, "rockchip")
+
+    def test_filter_out_by_compatible_empty_list(self):
+        """Test that items with empty compatible list are filtered out"""
+        test = {"environment_compatible": []}
+        assert filter_out_by_compatible(test, "rockchip")
+
+
+class TestDurationFilter:
+    """Test duration filter functionality"""
+
+    def test_filter_out_by_duration_with_duration_field(self):
+        """Test filtering using the duration field"""
+        # Test with min duration
+        test = {"duration": 30.5}
+        assert not filter_out_by_duration(test, 20.0, None)
+        assert filter_out_by_duration(test, 40.0, None)
+
+        # Test with max duration
+        assert not filter_out_by_duration(test, None, 40.0)
+        assert filter_out_by_duration(test, None, 20.0)
+
+        # Test with both min and max
+        assert not filter_out_by_duration(test, 20.0, 40.0)
+        assert filter_out_by_duration(test, 35.0, 40.0)
+        assert filter_out_by_duration(test, 20.0, 25.0)
+
+    def test_filter_out_by_duration_calculated_from_timestamps(self):
+        """Test filtering with duration calculated from start_time and end_time"""
+        test = {
+            "start_time": "2025-01-06T10:00:00Z",
+            "end_time": "2025-01-06T10:00:30Z",  # 30 seconds duration
+        }
+        assert not filter_out_by_duration(test, 20.0, None)
+        assert filter_out_by_duration(test, 40.0, None)
+
+    def test_filter_out_by_duration_no_filter(self):
+        """Test that no filtering occurs when duration filters are None"""
+        test = {"duration": 30.5}
+        assert not filter_out_by_duration(test, None, None)
+
+    def test_filter_out_by_duration_missing_duration_info(self):
+        """Test that items without duration information are not filtered out"""
+        test = {"other_field": "value"}
+        assert not filter_out_by_duration(test, 10.0, 60.0)
+
+    def test_filter_out_by_duration_invalid_timestamps(self):
+        """Test that items with invalid timestamps are not filtered out"""
+        test = {
+            "start_time": "invalid-date",
+            "end_time": "also-invalid",
+        }
+        assert not filter_out_by_duration(test, 10.0, 60.0)
+
+    def test_filter_out_by_duration_priority(self):
+        """Test that duration field takes priority over calculated duration"""
+        test = {
+            "duration": 30.0,  # Use this
+            "start_time": "2025-01-06T10:00:00Z",
+            "end_time": "2025-01-06T10:01:00Z",  # Would be 60 seconds
+        }
+        assert not filter_out_by_duration(test, 20.0, 40.0)  # 30 is in range
+        assert filter_out_by_duration(test, 40.0, 50.0)  # 30 is below range
