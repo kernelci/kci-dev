@@ -9,6 +9,7 @@ from kcidev.subcommands.results.parser import (
     filter_out_by_config,
     filter_out_by_date,
     filter_out_by_hardware_option,
+    filter_out_by_test_path,
     filter_out_by_tree,
     parse_filter_file,
 )
@@ -315,3 +316,45 @@ class TestHardwareOptionFilter:
         assert not filter_out_by_hardware_option(test, "ti,*")
         # Matches neither
         assert filter_out_by_hardware_option(test, "bcm*")
+
+
+class TestTestPathFilter:
+    """Test test-path command-line option filter functionality"""
+
+    def test_filter_out_by_test_path_matching(self):
+        """Test that items with matching test path are not filtered out"""
+        test = {"path": "baseline.login"}
+        assert not filter_out_by_test_path(test, "baseline.login")
+
+    def test_filter_out_by_test_path_non_matching(self):
+        """Test that items with non-matching test path are filtered out"""
+        test = {"path": "baseline.login"}
+        assert filter_out_by_test_path(test, "baseline.dmesg")
+
+    def test_filter_out_by_test_path_wildcard(self):
+        """Test that test path filter supports wildcards"""
+        test = {"path": "baseline.login"}
+        assert not filter_out_by_test_path(test, "baseline.*")
+        assert not filter_out_by_test_path(test, "*login")
+        assert not filter_out_by_test_path(test, "base*")
+        assert filter_out_by_test_path(test, "kunit.*")
+
+    def test_filter_out_by_test_path_no_filter(self):
+        """Test that no filtering occurs when test path filter is None"""
+        test = {"path": "baseline.login"}
+        assert not filter_out_by_test_path(test, None)
+        assert not filter_out_by_test_path(test, "")
+
+    def test_filter_out_by_test_path_missing_field(self):
+        """Test that items without path field are filtered out when filter is active"""
+        test = {"other_field": "value"}
+        assert filter_out_by_test_path(test, "baseline.*")
+
+    def test_filter_out_by_test_path_complex_paths(self):
+        """Test filtering with complex test paths"""
+        test = {"path": "kselftest.alsa.pcm-test"}
+        assert not filter_out_by_test_path(test, "kselftest.alsa.pcm-test")
+        assert not filter_out_by_test_path(test, "kselftest.alsa.*")
+        assert not filter_out_by_test_path(test, "kselftest.*")
+        assert not filter_out_by_test_path(test, "*pcm-test")
+        assert filter_out_by_test_path(test, "baseline.*")

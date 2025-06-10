@@ -150,6 +150,7 @@ def boots(
     compiler,
     config,
     hardware,
+    test_path,
     count,
     use_json,
 ):
@@ -171,6 +172,7 @@ def boots(
         compiler,
         config,
         hardware,
+        test_path,
         count,
         use_json,
     )
@@ -196,6 +198,7 @@ def tests(
     compiler,
     config,
     hardware,
+    test_path,
     count,
     use_json,
 ):
@@ -217,6 +220,7 @@ def tests(
         compiler,
         config,
         hardware,
+        test_path,
         count,
         use_json,
     )

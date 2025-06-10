@@ -368,6 +368,20 @@ def filter_out_by_hardware_option(test, hardware_filter):
     return True
 
 
+def filter_out_by_test_path(test, test_path_filter):
+    # Filter by test path
+    if not test_path_filter:
+        return False
+
+    if "path" not in test:
+        return True
+
+    # Support wildcards
+    import fnmatch
+
+    return not fnmatch.fnmatch(test["path"], test_path_filter)
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -397,6 +411,7 @@ def cmd_tests(
     compiler,
     config,
     hardware,
+    test_path,
     count,
     use_json,
 ):
@@ -426,6 +441,9 @@ def cmd_tests(
             continue
 
         if filter_out_by_hardware_option(test, hardware):
+            continue
+
+        if filter_out_by_test_path(test, test_path):
             continue
 
         log_path = test["log_url"]
