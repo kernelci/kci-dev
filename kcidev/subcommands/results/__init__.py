@@ -149,6 +149,7 @@ def boots(
     end_date,
     compiler,
     config,
+    hardware,
     count,
     use_json,
 ):
@@ -169,6 +170,7 @@ def boots(
         end_date,
         compiler,
         config,
+        hardware,
         count,
         use_json,
     )
@@ -193,6 +195,7 @@ def tests(
     end_date,
     compiler,
     config,
+    hardware,
     count,
     use_json,
 ):
@@ -213,6 +216,7 @@ def tests(
         end_date,
         compiler,
         config,
+        hardware,
         count,
         use_json,
     )

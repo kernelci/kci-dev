@@ -344,6 +344,30 @@ def filter_out_by_config(item, config_filter):
     return not fnmatch.fnmatch(config_value, config_filter)
 
 
+def filter_out_by_hardware_option(test, hardware_filter):
+    # Filter by hardware platform name or compatible
+    if not hardware_filter:
+        return False
+
+    # Check platform name
+    if "environment_misc" in test and "platform" in test["environment_misc"]:
+        platform = test["environment_misc"]["platform"]
+        import fnmatch
+
+        if fnmatch.fnmatch(platform, hardware_filter):
+            return False
+
+    # Check compatibles
+    if "environment_compatible" in test and test["environment_compatible"]:
+        for compatible in test["environment_compatible"]:
+            import fnmatch
+
+            if fnmatch.fnmatch(compatible, hardware_filter):
+                return False
+
+    return True
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -372,6 +396,7 @@ def cmd_tests(
     end_date,
     compiler,
     config,
+    hardware,
     count,
     use_json,
 ):
@@ -398,6 +423,9 @@ def cmd_tests(
             continue
 
         if filter_out_by_config(test, config):
+            continue
+
+        if filter_out_by_hardware_option(test, hardware):
             continue
 
         log_path = test["log_url"]

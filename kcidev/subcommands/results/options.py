@@ -84,6 +84,10 @@ def builds_and_tests_options(func):
         help="Filter by kernel configuration (e.g., defconfig, allmodconfig)",
     )
     @click.option(
+        "--hardware",
+        help="Filter by hardware platform name or compatible",
+    )
+    @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
     )
     @wraps(func)

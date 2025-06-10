@@ -8,6 +8,7 @@ from kcidev.subcommands.results.parser import (
     filter_out_by_compiler,
     filter_out_by_config,
     filter_out_by_date,
+    filter_out_by_hardware_option,
     filter_out_by_tree,
     parse_filter_file,
 )
@@ -244,3 +245,73 @@ class TestConfigFilter:
 
         item = {"config_name": "defconfig"}
         assert filter_out_by_config(item, "DEFCONFIG")
+
+
+class TestHardwareOptionFilter:
+    """Test hardware command-line option filter functionality"""
+
+    def test_filter_out_by_hardware_option_matching_platform(self):
+        """Test that items with matching platform are not filtered out"""
+        test = {"environment_misc": {"platform": "rk3399-rock-pi-4b"}}
+        assert not filter_out_by_hardware_option(test, "rk3399-rock-pi-4b")
+
+    def test_filter_out_by_hardware_option_non_matching_platform(self):
+        """Test that items with non-matching platform are filtered out"""
+        test = {"environment_misc": {"platform": "rk3399-rock-pi-4b"}}
+        assert filter_out_by_hardware_option(test, "bcm2711-rpi-4-b")
+
+    def test_filter_out_by_hardware_option_wildcard_platform(self):
+        """Test that hardware filter supports wildcards for platform"""
+        test = {"environment_misc": {"platform": "rk3399-rock-pi-4b"}}
+        assert not filter_out_by_hardware_option(test, "rk3399*")
+        assert not filter_out_by_hardware_option(test, "*rock-pi*")
+        assert filter_out_by_hardware_option(test, "bcm*")
+
+    def test_filter_out_by_hardware_option_matching_compatible(self):
+        """Test that items with matching compatible are not filtered out"""
+        test = {
+            "environment_misc": {"platform": "generic-platform"},
+            "environment_compatible": ["rockchip,rk3399", "rockchip,rk3399-rock-pi-4b"],
+        }
+        assert not filter_out_by_hardware_option(test, "rockchip,rk3399")
+
+    def test_filter_out_by_hardware_option_wildcard_compatible(self):
+        """Test that hardware filter supports wildcards for compatibles"""
+        test = {
+            "environment_misc": {"platform": "generic-platform"},
+            "environment_compatible": ["rockchip,rk3399", "rockchip,rk3399-rock-pi-4b"],
+        }
+        assert not filter_out_by_hardware_option(test, "rockchip,*")
+        assert not filter_out_by_hardware_option(test, "*rock-pi*")
+
+    def test_filter_out_by_hardware_option_no_filter(self):
+        """Test that no filtering occurs when hardware filter is None"""
+        test = {"environment_misc": {"platform": "rk3399-rock-pi-4b"}}
+        assert not filter_out_by_hardware_option(test, None)
+        assert not filter_out_by_hardware_option(test, "")
+
+    def test_filter_out_by_hardware_option_missing_fields(self):
+        """Test that items without hardware fields are filtered out when filter is active"""
+        test = {"other_field": "value"}
+        assert filter_out_by_hardware_option(test, "rk3399*")
+
+    def test_filter_out_by_hardware_option_empty_compatible(self):
+        """Test handling of empty compatible list"""
+        test = {
+            "environment_misc": {"platform": "generic-platform"},
+            "environment_compatible": [],
+        }
+        assert filter_out_by_hardware_option(test, "rockchip,*")
+
+    def test_filter_out_by_hardware_option_platform_or_compatible(self):
+        """Test that filter matches either platform OR compatible"""
+        test = {
+            "environment_misc": {"platform": "rk3399-rock-pi-4b"},
+            "environment_compatible": ["ti,am625", "ti,am62"],
+        }
+        # Matches platform
+        assert not filter_out_by_hardware_option(test, "rk3399*")
+        # Matches compatible
+        assert not filter_out_by_hardware_option(test, "ti,*")
+        # Matches neither
+        assert filter_out_by_hardware_option(test, "bcm*")
