@@ -401,6 +401,22 @@ def filter_out_by_git_branch(item, git_branch_filter):
     return not fnmatch.fnmatch(item["git_repository_branch"], git_branch_filter)
 
 
+def filter_out_by_compatible(test, compatible_filter):
+    # Filter by device tree compatible string
+    if not compatible_filter:
+        return False
+
+    if "environment_compatible" not in test or not test["environment_compatible"]:
+        return True
+
+    # Check if filter string is contained in any compatible string
+    for compatible in test["environment_compatible"]:
+        if compatible_filter.lower() in compatible.lower():
+            return False
+
+    return True
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -432,6 +448,7 @@ def cmd_tests(
     hardware,
     test_path,
     git_branch,
+    compatible,
     count,
     use_json,
 ):
@@ -467,6 +484,9 @@ def cmd_tests(
             continue
 
         if filter_out_by_git_branch(test, git_branch):
+            continue
+
+        if filter_out_by_compatible(test, compatible):
             continue
 
         log_path = test["log_url"]

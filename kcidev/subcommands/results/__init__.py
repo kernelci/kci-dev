@@ -163,6 +163,7 @@ def boots(
     hardware,
     test_path,
     git_branch,
+    compatible,
     count,
     use_json,
 ):
@@ -186,6 +187,7 @@ def boots(
         hardware,
         test_path,
         git_branch,
+        compatible,
         count,
         use_json,
     )
@@ -213,6 +215,7 @@ def tests(
     hardware,
     test_path,
     git_branch,
+    compatible,
     count,
     use_json,
 ):
@@ -236,6 +239,7 @@ def tests(
         hardware,
         test_path,
         git_branch,
+        compatible,
         count,
         use_json,
     )

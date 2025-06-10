@@ -96,6 +96,10 @@ def builds_and_tests_options(func):
         help="Filter by git branch name",
     )
     @click.option(
+        "--compatible",
+        help="Filter by device tree compatible string",
+    )
+    @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
     )
     @wraps(func)
