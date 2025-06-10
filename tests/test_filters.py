@@ -6,6 +6,7 @@ import yaml
 
 from kcidev.subcommands.results.parser import (
     filter_out_by_compiler,
+    filter_out_by_config,
     filter_out_by_date,
     filter_out_by_tree,
     parse_filter_file,
@@ -185,3 +186,61 @@ class TestCompilerFilter:
         """Test that items without compiler field are filtered out when filter is active"""
         item = {"other_field": "value"}
         assert filter_out_by_compiler(item, "gcc")
+
+
+class TestConfigFilter:
+    """Test config filter functionality"""
+
+    def test_filter_out_by_config_matching(self):
+        """Test that items with matching config are not filtered out"""
+        item = {"config_name": "defconfig", "other_field": "value"}
+        assert not filter_out_by_config(item, "defconfig")
+
+    def test_filter_out_by_config_non_matching(self):
+        """Test that items with non-matching config are filtered out"""
+        item = {"config_name": "defconfig", "other_field": "value"}
+        assert filter_out_by_config(item, "allmodconfig")
+
+    def test_filter_out_by_config_wildcard(self):
+        """Test that config filter supports wildcards"""
+        item = {"config_name": "allmodconfig"}
+        assert not filter_out_by_config(item, "*modconfig")
+
+        item = {"config_name": "defconfig"}
+        assert not filter_out_by_config(item, "def*")
+
+        item = {"config_name": "tinyconfig"}
+        assert filter_out_by_config(item, "def*")
+
+    def test_filter_out_by_config_both_fields(self):
+        """Test that filter checks both config_name and config fields"""
+        # Test with config_name field
+        item = {"config_name": "defconfig"}
+        assert not filter_out_by_config(item, "defconfig")
+
+        # Test with config field
+        item = {"config": "defconfig"}
+        assert not filter_out_by_config(item, "defconfig")
+
+        # Test with both fields (config_name takes precedence)
+        item = {"config_name": "defconfig", "config": "allmodconfig"}
+        assert not filter_out_by_config(item, "defconfig")
+
+    def test_filter_out_by_config_no_filter(self):
+        """Test that no filtering occurs when config filter is None"""
+        item = {"config_name": "defconfig"}
+        assert not filter_out_by_config(item, None)
+        assert not filter_out_by_config(item, "")
+
+    def test_filter_out_by_config_missing_field(self):
+        """Test that items without config fields are filtered out when filter is active"""
+        item = {"other_field": "value"}
+        assert filter_out_by_config(item, "defconfig")
+
+    def test_filter_out_by_config_case_sensitive(self):
+        """Test that config filter is case sensitive"""
+        item = {"config_name": "DEFCONFIG"}
+        assert filter_out_by_config(item, "defconfig")
+
+        item = {"config_name": "defconfig"}
+        assert filter_out_by_config(item, "DEFCONFIG")

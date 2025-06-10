@@ -80,6 +80,10 @@ def builds_and_tests_options(func):
         help="Filter by compiler (e.g., gcc, clang)",
     )
     @click.option(
+        "--config",
+        help="Filter by kernel configuration (e.g., defconfig, allmodconfig)",
+    )
+    @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
     )
     @wraps(func)

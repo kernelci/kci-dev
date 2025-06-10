@@ -137,7 +137,7 @@ def cmd_list_trees(origin, use_json):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_builds(data, commit, download_logs, status, compiler, count, use_json):
+def cmd_builds(data, commit, download_logs, status, compiler, config, count, use_json):
     if status == "inconclusive" and use_json:
         kci_msg('{"message":"No information about inconclusive builds."}')
         return
@@ -155,6 +155,9 @@ def cmd_builds(data, commit, download_logs, status, compiler, count, use_json):
                 continue
 
         if filter_out_by_compiler(build, compiler):
+            continue
+
+        if filter_out_by_config(build, config):
             continue
 
         log_path = build["log_url"]
@@ -320,6 +323,27 @@ def filter_out_by_compiler(item, compiler_filter):
     return item["compiler"].lower() != compiler_filter.lower()
 
 
+def filter_out_by_config(item, config_filter):
+    # Filter by config if provided
+    if not config_filter:
+        return False
+
+    # Check both config_name and config fields
+    config_value = None
+    if "config_name" in item:
+        config_value = item["config_name"]
+    elif "config" in item:
+        config_value = item["config"]
+
+    if not config_value:
+        return True
+
+    # Support wildcards
+    import fnmatch
+
+    return not fnmatch.fnmatch(config_value, config_filter)
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -347,6 +371,7 @@ def cmd_tests(
     start_date,
     end_date,
     compiler,
+    config,
     count,
     use_json,
 ):
@@ -370,6 +395,9 @@ def cmd_tests(
             continue
 
         if filter_out_by_compiler(test, compiler):
+            continue
+
+        if filter_out_by_config(test, config):
             continue
 
         log_path = test["log_url"]

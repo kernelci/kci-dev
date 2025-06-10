@@ -116,6 +116,7 @@ def builds(
     start_date,
     end_date,
     compiler,
+    config,
     count,
     use_json,
 ):
@@ -126,7 +127,7 @@ def builds(
     data = dashboard_fetch_builds(
         origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
     )
-    cmd_builds(data, commit, download_logs, status, compiler, count, use_json)
+    cmd_builds(data, commit, download_logs, status, compiler, config, count, use_json)
 
 
 @results.command()
@@ -147,6 +148,7 @@ def boots(
     start_date,
     end_date,
     compiler,
+    config,
     count,
     use_json,
 ):
@@ -166,6 +168,7 @@ def boots(
         start_date,
         end_date,
         compiler,
+        config,
         count,
         use_json,
     )
@@ -189,6 +192,7 @@ def tests(
     start_date,
     end_date,
     compiler,
+    config,
     count,
     use_json,
 ):
@@ -208,6 +212,7 @@ def tests(
         start_date,
         end_date,
         compiler,
+        config,
         count,
         use_json,
     )
