@@ -74,7 +74,7 @@ def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_builds(origin, giturl, branch, commit, arch, use_json):
+def dashboard_fetch_builds(origin, giturl, branch, commit, arch, tree, use_json):
     endpoint = f"tree/{commit}/builds"
     params = {
         "origin": origin,
@@ -83,10 +83,12 @@ def dashboard_fetch_builds(origin, giturl, branch, commit, arch, use_json):
     }
     if arch is not None:
         params["filter_architecture"] = arch
+    if tree is not None:
+        params["filter_tree_name"] = tree
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_boots(origin, giturl, branch, commit, arch, use_json):
+def dashboard_fetch_boots(origin, giturl, branch, commit, arch, tree, use_json):
     endpoint = f"tree/{commit}/boots"
     params = {
         "origin": origin,
@@ -95,10 +97,12 @@ def dashboard_fetch_boots(origin, giturl, branch, commit, arch, use_json):
     }
     if arch is not None:
         params["filter_architecture"] = arch
+    if tree is not None:
+        params["filter_tree_name"] = tree
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_tests(origin, giturl, branch, commit, arch, use_json):
+def dashboard_fetch_tests(origin, giturl, branch, commit, arch, tree, use_json):
     endpoint = f"tree/{commit}/tests"
     params = {
         "origin": origin,
@@ -107,6 +111,8 @@ def dashboard_fetch_tests(origin, giturl, branch, commit, arch, use_json):
     }
     if arch is not None:
         params["filter_architecture"] = arch
+    if tree is not None:
+        params["filter_tree_name"] = tree
     return dashboard_api_fetch(endpoint, params, use_json)
 
 

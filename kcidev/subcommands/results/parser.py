@@ -246,6 +246,18 @@ def filter_out_by_test(test, filter_data):
     return True
 
 
+def filter_out_by_tree(test, filter_data):
+    # Check if the tree name is in the list
+    if "tree" not in filter_data:
+        return False
+
+    tree_list_re = re.compile(filter_data["tree"])
+    if tree_list_re.match(test.get("tree_name", "")):
+        return False
+
+    return True
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -259,6 +271,8 @@ def parse_filter_file(filter):
         parsed_filter["hardware"] = filter_array2regex(filter_data["hardware"])
     if "test" in filter_data:
         parsed_filter["test"] = filter_array2regex(filter_data["test"])
+    if "tree" in filter_data:
+        parsed_filter["tree"] = filter_array2regex(filter_data["tree"])
     return parsed_filter
 
 
@@ -274,6 +288,9 @@ def cmd_tests(data, id, download_logs, status_filter, filter, count, use_json):
             continue
 
         if filter_data and filter_out_by_test(test, filter_data):
+            continue
+
+        if filter_data and filter_out_by_tree(test, filter_data):
             continue
 
         log_path = test["log_url"]

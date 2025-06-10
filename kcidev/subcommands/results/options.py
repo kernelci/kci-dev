@@ -41,6 +41,7 @@ def common_options(func):
         help="Select latest results available",
     )
     @click.option("--arch", help="Filter by arch")
+    @click.option("--tree", help="Filter by tree name")
     @results_display_options
     @wraps(func)
     def wrapper(*args, **kwargs):

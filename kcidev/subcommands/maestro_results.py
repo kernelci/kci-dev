@@ -57,8 +57,13 @@ Examples:
     multiple=True,
     help="Display only specific field(s) from node data (e.g., 'name', 'status'). Can be used multiple times",
 )
+@click.option(
+    "--tree",
+    required=False,
+    help="Filter results by tree name",
+)
 @click.pass_context
-def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
+def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field, tree):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = config[instance]["api"]
@@ -69,6 +74,10 @@ def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
     if nodeid:
         results = maestro_get_node(url, nodeid)
     if nodes:
+        # Add tree filter if provided
+        if tree:
+            filter = list(filter) if filter else []
+            filter.append(f"data.kernel_revision.tree::{tree}")
         results = maestro_get_nodes(url, limit, offset, filter)
     maestro_print_nodes(results, field)
 

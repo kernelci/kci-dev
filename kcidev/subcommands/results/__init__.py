@@ -77,7 +77,7 @@ def results(ctx):
 
 @results.command()
 @common_options
-def summary(origin, git_folder, giturl, branch, commit, latest, arch, use_json):
+def summary(origin, git_folder, giturl, branch, commit, latest, arch, tree, use_json):
     """Display a summary of results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
@@ -109,6 +109,7 @@ def builds(
     commit,
     latest,
     arch,
+    tree,
     download_logs,
     status,
     filter,
@@ -119,7 +120,7 @@ def builds(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_builds(origin, giturl, branch, commit, arch, use_json)
+    data = dashboard_fetch_builds(origin, giturl, branch, commit, arch, tree, use_json)
     cmd_builds(data, commit, download_logs, status, count, use_json)
 
 
@@ -134,6 +135,7 @@ def boots(
     commit,
     latest,
     arch,
+    tree,
     download_logs,
     status,
     filter,
@@ -144,7 +146,7 @@ def boots(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_boots(origin, giturl, branch, commit, arch, use_json)
+    data = dashboard_fetch_boots(origin, giturl, branch, commit, arch, tree, use_json)
     cmd_tests(data["boots"], commit, download_logs, status, filter, count, use_json)
 
 
@@ -159,6 +161,7 @@ def tests(
     commit,
     latest,
     arch,
+    tree,
     download_logs,
     status,
     filter,
@@ -169,7 +172,7 @@ def tests(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_tests(origin, giturl, branch, commit, arch, use_json)
+    data = dashboard_fetch_tests(origin, giturl, branch, commit, arch, tree, use_json)
     cmd_tests(data["tests"], commit, download_logs, status, filter, count, use_json)
 
 
