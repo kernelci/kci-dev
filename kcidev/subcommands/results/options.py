@@ -100,6 +100,16 @@ def builds_and_tests_options(func):
         help="Filter by device tree compatible string",
     )
     @click.option(
+        "--min-duration",
+        type=float,
+        help="Filter tests with duration >= this value (in seconds)",
+    )
+    @click.option(
+        "--max-duration",
+        type=float,
+        help="Filter tests with duration <= this value (in seconds)",
+    )
+    @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
     )
     @wraps(func)

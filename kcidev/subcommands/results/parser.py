@@ -417,6 +417,39 @@ def filter_out_by_compatible(test, compatible_filter):
     return True
 
 
+def filter_out_by_duration(test, min_duration, max_duration):
+    # Filter by test duration
+    if not min_duration and not max_duration:
+        return False
+
+    # Calculate duration from start_time and end_time, or use duration field
+    duration = None
+
+    if "duration" in test and test["duration"] is not None:
+        duration = test["duration"]
+    elif "start_time" in test and "end_time" in test:
+        try:
+            from datetime import datetime
+
+            start = datetime.fromisoformat(test["start_time"].replace("Z", "+00:00"))
+            end = datetime.fromisoformat(test["end_time"].replace("Z", "+00:00"))
+            duration = (end - start).total_seconds()
+        except Exception:
+            # If we can't parse the dates, don't filter out
+            return False
+    else:
+        # No duration information available
+        return False
+
+    # Apply min/max filters
+    if min_duration and duration < min_duration:
+        return True
+    if max_duration and duration > max_duration:
+        return True
+
+    return False
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -449,6 +482,8 @@ def cmd_tests(
     test_path,
     git_branch,
     compatible,
+    min_duration,
+    max_duration,
     count,
     use_json,
 ):
@@ -487,6 +522,9 @@ def cmd_tests(
             continue
 
         if filter_out_by_compatible(test, compatible):
+            continue
+
+        if filter_out_by_duration(test, min_duration, max_duration):
             continue
 
         log_path = test["log_url"]

@@ -164,6 +164,8 @@ def boots(
     test_path,
     git_branch,
     compatible,
+    min_duration,
+    max_duration,
     count,
     use_json,
 ):
@@ -188,6 +190,8 @@ def boots(
         test_path,
         git_branch,
         compatible,
+        min_duration,
+        max_duration,
         count,
         use_json,
     )
@@ -216,6 +220,8 @@ def tests(
     test_path,
     git_branch,
     compatible,
+    min_duration,
+    max_duration,
     count,
     use_json,
 ):
@@ -240,6 +246,8 @@ def tests(
         test_path,
         git_branch,
         compatible,
+        min_duration,
+        max_duration,
         count,
         use_json,
     )
