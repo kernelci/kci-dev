@@ -76,6 +76,10 @@ def builds_and_tests_options(func):
         help="Filter results before this date (YYYY-MM-DD format)",
     )
     @click.option(
+        "--compiler",
+        help="Filter by compiler (e.g., gcc, clang)",
+    )
+    @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
     )
     @wraps(func)

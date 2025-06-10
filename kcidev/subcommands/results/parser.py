@@ -137,7 +137,7 @@ def cmd_list_trees(origin, use_json):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_builds(data, commit, download_logs, status, count, use_json):
+def cmd_builds(data, commit, download_logs, status, compiler, count, use_json):
     if status == "inconclusive" and use_json:
         kci_msg('{"message":"No information about inconclusive builds."}')
         return
@@ -153,6 +153,9 @@ def cmd_builds(data, commit, download_logs, status, count, use_json):
 
             if build["status"] != "PASS" and status == "pass":
                 continue
+
+        if filter_out_by_compiler(build, compiler):
+            continue
 
         log_path = build["log_url"]
         if download_logs:
@@ -306,6 +309,17 @@ def filter_out_by_date(item, start_date, end_date):
     return False
 
 
+def filter_out_by_compiler(item, compiler_filter):
+    # Filter by compiler if provided
+    if not compiler_filter:
+        return False
+
+    if "compiler" not in item:
+        return True
+
+    return item["compiler"].lower() != compiler_filter.lower()
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -324,7 +338,18 @@ def parse_filter_file(filter):
     return parsed_filter
 
 
-def cmd_tests(data, id, download_logs, status_filter, filter, start_date, end_date, count, use_json):
+def cmd_tests(
+    data,
+    id,
+    download_logs,
+    status_filter,
+    filter,
+    start_date,
+    end_date,
+    compiler,
+    count,
+    use_json,
+):
     filter_data = parse_filter_file(filter)
     filtered_tests = 0
     tests = []
@@ -342,6 +367,9 @@ def cmd_tests(data, id, download_logs, status_filter, filter, start_date, end_da
             continue
 
         if filter_out_by_date(test, start_date, end_date):
+            continue
+
+        if filter_out_by_compiler(test, compiler):
             continue
 
         log_path = test["log_url"]

@@ -73,7 +73,9 @@ Examples:
     help="Filter results before this date (ISO format: YYYY-MM-DD or full timestamp)",
 )
 @click.pass_context
-def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field, tree, start_date, end_date):
+def maestro_results(
+    ctx, nodeid, nodes, limit, offset, filter, field, tree, start_date, end_date
+):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = config[instance]["api"]

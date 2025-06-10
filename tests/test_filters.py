@@ -4,7 +4,12 @@ from datetime import datetime, timedelta
 import pytest
 import yaml
 
-from kcidev.subcommands.results.parser import filter_out_by_tree, filter_out_by_date, parse_filter_file
+from kcidev.subcommands.results.parser import (
+    filter_out_by_compiler,
+    filter_out_by_date,
+    filter_out_by_tree,
+    parse_filter_file,
+)
 
 
 class TestTreeFilter:
@@ -147,3 +152,36 @@ class TestDateFilter:
         item = {"start_time": "2025-01-15T10:00:00Z"}
         assert not filter_out_by_date(item, None, None)
         assert not filter_out_by_date(item, "", "")
+
+
+class TestCompilerFilter:
+    """Test compiler filter functionality"""
+
+    def test_filter_out_by_compiler_matching(self):
+        """Test that items with matching compiler are not filtered out"""
+        item = {"compiler": "gcc", "other_field": "value"}
+        assert not filter_out_by_compiler(item, "gcc")
+
+    def test_filter_out_by_compiler_non_matching(self):
+        """Test that items with non-matching compiler are filtered out"""
+        item = {"compiler": "gcc", "other_field": "value"}
+        assert filter_out_by_compiler(item, "clang")
+
+    def test_filter_out_by_compiler_case_insensitive(self):
+        """Test that compiler filter is case insensitive"""
+        item = {"compiler": "GCC"}
+        assert not filter_out_by_compiler(item, "gcc")
+
+        item = {"compiler": "gcc"}
+        assert not filter_out_by_compiler(item, "GCC")
+
+    def test_filter_out_by_compiler_no_filter(self):
+        """Test that no filtering occurs when compiler filter is None"""
+        item = {"compiler": "gcc"}
+        assert not filter_out_by_compiler(item, None)
+        assert not filter_out_by_compiler(item, "")
+
+    def test_filter_out_by_compiler_missing_field(self):
+        """Test that items without compiler field are filtered out when filter is active"""
+        item = {"other_field": "value"}
+        assert filter_out_by_compiler(item, "gcc")

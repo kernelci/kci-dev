@@ -115,6 +115,7 @@ def builds(
     filter,
     start_date,
     end_date,
+    compiler,
     count,
     use_json,
 ):
@@ -122,8 +123,10 @@ def builds(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_builds(origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json)
-    cmd_builds(data, commit, download_logs, status, count, use_json)
+    data = dashboard_fetch_builds(
+        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    )
+    cmd_builds(data, commit, download_logs, status, compiler, count, use_json)
 
 
 @results.command()
@@ -143,6 +146,7 @@ def boots(
     filter,
     start_date,
     end_date,
+    compiler,
     count,
     use_json,
 ):
@@ -150,8 +154,21 @@ def boots(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_boots(origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json)
-    cmd_tests(data["boots"], commit, download_logs, status, filter, start_date, end_date, count, use_json)
+    data = dashboard_fetch_boots(
+        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    )
+    cmd_tests(
+        data["boots"],
+        commit,
+        download_logs,
+        status,
+        filter,
+        start_date,
+        end_date,
+        compiler,
+        count,
+        use_json,
+    )
 
 
 @results.command()
@@ -171,6 +188,7 @@ def tests(
     filter,
     start_date,
     end_date,
+    compiler,
     count,
     use_json,
 ):
@@ -178,8 +196,21 @@ def tests(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_tests(origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json)
-    cmd_tests(data["tests"], commit, download_logs, status, filter, start_date, end_date, count, use_json)
+    data = dashboard_fetch_tests(
+        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    )
+    cmd_tests(
+        data["tests"],
+        commit,
+        download_logs,
+        status,
+        filter,
+        start_date,
+        end_date,
+        compiler,
+        count,
+        use_json,
+    )
 
 
 @results.command()
