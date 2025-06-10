@@ -27,6 +27,31 @@ For other subcommands (like `kci-dev bisect`) is possible to create a default co
 kci-dev config
 ```
 
+## Shell Completions
+
+kci-dev supports tab completion for bash, zsh, and fish shells. To enable completions:
+
+### Bash
+```bash
+# Add to ~/.bashrc
+source /path/to/kci-dev/completions/kci-dev-completion.bash
+```
+
+### Zsh
+```bash
+# Add to ~/.zshrc (make sure compinit is enabled)
+fpath=(/path/to/kci-dev/completions $fpath)
+autoload -U compinit && compinit
+```
+
+### Fish
+```bash
+# Copy to fish completions directory
+cp /path/to/kci-dev/completions/kci-dev.fish ~/.config/fish/completions/
+```
+
+After adding the appropriate lines, restart your shell or source your configuration file.
+
 ## KernelCI authorization tokens
 
 Authorizaton tokens can be requested [here](https://github.com/kernelci/kernelci-core/issues/new?template=kernelci-api-tokens.md)
