@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import sys
 from functools import wraps
 
 import click
@@ -31,12 +32,47 @@ from kcidev.subcommands.results.parser import (
 
 
 @click.group(
-    help="[Experimental] Get results from the dashboard",
+    help="""[Experimental] Query and display test results from the KernelCI dashboard.
+
+This command group provides various ways to retrieve and analyze kernel test
+results from the KernelCI dashboard. You can query results by tree, branch,
+commit, architecture, and more.
+
+\b
+Available subcommands:
+  summary   - Display a summary of test results
+  trees     - List available kernel trees
+  builds    - Display build results
+  boots     - Display boot test results
+  tests     - Display test suite results
+  build     - Display details for a specific build
+  boot      - Display details for a specific boot test
+  test      - Display details for a specific test
+  hardware  - Query hardware-specific results
+
+\b
+Examples:
+  # Show summary for latest mainline commit
+  kci-dev results summary --giturl mainline --latest
+
+  # List all available trees
+  kci-dev results trees
+
+  # Show build results for a specific commit
+  kci-dev results builds --commit abc123def456
+
+  # Show test results with filtering
+  kci-dev results tests --status fail --arch x86_64
+""",
     commands={"hardware": hardware},
+    invoke_without_command=True,
 )
-def results():
+@click.pass_context
+def results(ctx):
     """Commands related to results."""
-    pass
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        sys.exit(0)
 
 
 @results.command()
