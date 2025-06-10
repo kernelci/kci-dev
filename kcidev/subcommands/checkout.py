@@ -135,11 +135,13 @@ def checkout(
     ctx, giturl, branch, commit, job_filter, platform_filter, tipoftree, watch, test
 ):
     # Check if no parameters provided - show help
-    if not any([giturl, branch, commit, job_filter, platform_filter, tipoftree, watch, test]):
+    if not any(
+        [giturl, branch, commit, job_filter, platform_filter, tipoftree, watch, test]
+    ):
         ctx = click.get_current_context()
         click.echo(ctx.get_help())
         sys.exit(0)
-    
+
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = cfg[instance]["pipeline"]
