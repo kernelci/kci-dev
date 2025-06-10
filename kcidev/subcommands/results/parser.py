@@ -8,6 +8,19 @@ import yaml
 from kcidev.libs.common import *
 from kcidev.libs.dashboard import dashboard_fetch_tree_list
 from kcidev.libs.files import download_logs_to_file
+from kcidev.libs.filters import (
+    CompatibleFilter,
+    CompilerFilter,
+    ConfigFilter,
+    DateRangeFilter,
+    DurationFilter,
+    FilterSet,
+    GitBranchFilter,
+    HardwareFilter,
+    PathFilter,
+    StatusFilter,
+)
+from kcidev.libs.job_filters import HardwareRegexFilter, TestRegexFilter, TreeFilter
 
 
 def print_summary(type, n_pass, n_fail, n_inconclusive):
@@ -146,23 +159,18 @@ def cmd_builds(
     elif status == "inconclusive":
         kci_msg("No information about inconclusive builds.")
         return
+
+    # Create filter set for builds
+    filter_set = FilterSet()
+    filter_set.add_filter(StatusFilter(status))
+    filter_set.add_filter(CompilerFilter(compiler))
+    filter_set.add_filter(ConfigFilter(config))
+    filter_set.add_filter(GitBranchFilter(git_branch))
+
     filtered_builds = 0
     builds = []
     for build in data["builds"]:
-        if not status == "all":
-            if build["status"] != "FAIL" and status == "fail":
-                continue
-
-            if build["status"] != "PASS" and status == "pass":
-                continue
-
-        if filter_out_by_compiler(build, compiler):
-            continue
-
-        if filter_out_by_config(build, config):
-            continue
-
-        if filter_out_by_git_branch(build, git_branch):
+        if not filter_set.matches(build):
             continue
 
         log_path = build["log_url"]
@@ -212,242 +220,8 @@ def print_build(build, log_path):
     kci_msg("")
 
 
-def filter_out_by_status(status, filter):
-    if filter == "all":
-        return False
-
-    if filter == status.lower():
-        return False
-
-    elif filter == "inconclusive" and status in [
-        "ERROR",
-        "SKIP",
-        "MISS",
-        "DONE",
-        "NULL",
-    ]:
-        return False
-
-    return True
-
-
-def filter_out_by_hardware(test, filter_data):
-    # Check if the hardware name is in the list
-    if "hardware" not in filter_data:
-        return False
-
-    hardware_list_re = re.compile(filter_data["hardware"])
-    if hardware_list_re.match(test["environment_misc"]["platform"]):
-        return False
-
-    if test["environment_compatible"]:
-        for compatible in test["environment_compatible"]:
-            if hardware_list_re.match(compatible):
-                return False
-
-    return True
-
-
-def filter_out_by_test(test, filter_data):
-    # Check if the test name is in the list
-    test_list_re = re.compile(filter_data["test"])
-    if test_list_re.match(test["path"]):
-        return False
-
-    return True
-
-
-def filter_out_by_tree(test, filter_data):
-    # Check if the tree name is in the list
-    if "tree" not in filter_data:
-        return False
-
-    tree_list_re = re.compile(filter_data["tree"])
-    if tree_list_re.match(test.get("tree_name", "")):
-        return False
-
-    return True
-
-
-def filter_out_by_date(item, start_date, end_date):
-    # Filter by date range if provided
-    if not start_date and not end_date:
-        return False
-
-    # Get the timestamp field from the item
-    timestamp_field = None
-    if "start_time" in item:
-        timestamp_field = item["start_time"]
-    elif "created" in item:
-        timestamp_field = item["created"]
-    elif "updated" in item:
-        timestamp_field = item["updated"]
-
-    if not timestamp_field:
-        return False
-
-    # Parse the timestamp (assuming ISO format)
-    try:
-        from datetime import datetime
-
-        item_date = datetime.fromisoformat(timestamp_field.replace("Z", "+00:00"))
-
-        if start_date:
-            # If start_date is just a date (no time), parse it at start of day
-            if len(start_date) == 10:  # YYYY-MM-DD format
-                start_dt = datetime.fromisoformat(start_date + "T00:00:00+00:00")
-            else:
-                start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
-            if item_date < start_dt:
-                return True
-
-        if end_date:
-            # If end_date is just a date (no time), parse it at end of day
-            if len(end_date) == 10:  # YYYY-MM-DD format
-                end_dt = datetime.fromisoformat(end_date + "T23:59:59+00:00")
-            else:
-                end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
-            if item_date > end_dt:
-                return True
-
-    except Exception:
-        # If we can't parse the date, don't filter out
-        return False
-
-    return False
-
-
-def filter_out_by_compiler(item, compiler_filter):
-    # Filter by compiler if provided
-    if not compiler_filter:
-        return False
-
-    if "compiler" not in item:
-        return True
-
-    return item["compiler"].lower() != compiler_filter.lower()
-
-
-def filter_out_by_config(item, config_filter):
-    # Filter by config if provided
-    if not config_filter:
-        return False
-
-    # Check both config_name and config fields
-    config_value = None
-    if "config_name" in item:
-        config_value = item["config_name"]
-    elif "config" in item:
-        config_value = item["config"]
-
-    if not config_value:
-        return True
-
-    # Support wildcards
-    import fnmatch
-
-    return not fnmatch.fnmatch(config_value, config_filter)
-
-
-def filter_out_by_hardware_option(test, hardware_filter):
-    # Filter by hardware platform name or compatible
-    if not hardware_filter:
-        return False
-
-    # Check platform name
-    if "environment_misc" in test and "platform" in test["environment_misc"]:
-        platform = test["environment_misc"]["platform"]
-        import fnmatch
-
-        if fnmatch.fnmatch(platform, hardware_filter):
-            return False
-
-    # Check compatibles
-    if "environment_compatible" in test and test["environment_compatible"]:
-        for compatible in test["environment_compatible"]:
-            import fnmatch
-
-            if fnmatch.fnmatch(compatible, hardware_filter):
-                return False
-
-    return True
-
-
-def filter_out_by_test_path(test, test_path_filter):
-    # Filter by test path
-    if not test_path_filter:
-        return False
-
-    if "path" not in test:
-        return True
-
-    # Support wildcards
-    import fnmatch
-
-    return not fnmatch.fnmatch(test["path"], test_path_filter)
-
-
-def filter_out_by_git_branch(item, git_branch_filter):
-    # Filter by git branch name
-    if not git_branch_filter:
-        return False
-
-    if "git_repository_branch" not in item:
-        return True
-
-    # Support wildcards
-    import fnmatch
-
-    return not fnmatch.fnmatch(item["git_repository_branch"], git_branch_filter)
-
-
-def filter_out_by_compatible(test, compatible_filter):
-    # Filter by device tree compatible string
-    if not compatible_filter:
-        return False
-
-    if "environment_compatible" not in test or not test["environment_compatible"]:
-        return True
-
-    # Check if filter string is contained in any compatible string
-    for compatible in test["environment_compatible"]:
-        if compatible_filter.lower() in compatible.lower():
-            return False
-
-    return True
-
-
-def filter_out_by_duration(test, min_duration, max_duration):
-    # Filter by test duration
-    if not min_duration and not max_duration:
-        return False
-
-    # Calculate duration from start_time and end_time, or use duration field
-    duration = None
-
-    if "duration" in test and test["duration"] is not None:
-        duration = test["duration"]
-    elif "start_time" in test and "end_time" in test:
-        try:
-            from datetime import datetime
-
-            start = datetime.fromisoformat(test["start_time"].replace("Z", "+00:00"))
-            end = datetime.fromisoformat(test["end_time"].replace("Z", "+00:00"))
-            duration = (end - start).total_seconds()
-        except Exception:
-            # If we can't parse the dates, don't filter out
-            return False
-    else:
-        # No duration information available
-        return False
-
-    # Apply min/max filters
-    if min_duration and duration < min_duration:
-        return True
-    if max_duration and duration > max_duration:
-        return True
-
-    return False
+# Legacy filter functions have been replaced by the unified filter system
+# See kcidev.libs.filters for the new implementation
 
 
 def filter_array2regex(filter_array):
@@ -487,44 +261,32 @@ def cmd_tests(
     count,
     use_json,
 ):
+    # Create filter set for tests
+    filter_set = FilterSet()
+    filter_set.add_filter(StatusFilter(status_filter))
+    filter_set.add_filter(DateRangeFilter(start_date, end_date))
+    filter_set.add_filter(CompilerFilter(compiler))
+    filter_set.add_filter(ConfigFilter(config))
+    filter_set.add_filter(HardwareFilter(hardware))
+    filter_set.add_filter(PathFilter(test_path))
+    filter_set.add_filter(GitBranchFilter(git_branch))
+    filter_set.add_filter(CompatibleFilter(compatible))
+    filter_set.add_filter(DurationFilter(min_duration, max_duration))
+
+    # Parse YAML filter file if provided
     filter_data = parse_filter_file(filter)
+    if filter_data:
+        if "hardware" in filter_data:
+            filter_set.add_filter(HardwareRegexFilter(filter_data["hardware"]))
+        if "test" in filter_data:
+            filter_set.add_filter(TestRegexFilter(filter_data["test"]))
+        if "tree" in filter_data:
+            filter_set.add_filter(TreeFilter(filter_data["tree"]))
+
     filtered_tests = 0
     tests = []
     for test in data:
-        if filter_out_by_status(test["status"], status_filter):
-            continue
-
-        if filter_data and filter_out_by_hardware(test, filter_data):
-            continue
-
-        if filter_data and filter_out_by_test(test, filter_data):
-            continue
-
-        if filter_data and filter_out_by_tree(test, filter_data):
-            continue
-
-        if filter_out_by_date(test, start_date, end_date):
-            continue
-
-        if filter_out_by_compiler(test, compiler):
-            continue
-
-        if filter_out_by_config(test, config):
-            continue
-
-        if filter_out_by_hardware_option(test, hardware):
-            continue
-
-        if filter_out_by_test_path(test, test_path):
-            continue
-
-        if filter_out_by_git_branch(test, git_branch):
-            continue
-
-        if filter_out_by_compatible(test, compatible):
-            continue
-
-        if filter_out_by_duration(test, min_duration, max_duration):
+        if not filter_set.matches(test):
             continue
 
         log_path = test["log_url"]

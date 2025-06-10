@@ -5,6 +5,7 @@ import click
 from git import Repo
 
 from kcidev.libs.common import *
+from kcidev.libs.filter_options import add_filter_options
 from kcidev.libs.maestro_common import *
 
 
@@ -62,23 +63,27 @@ Examples:
     required=False,
     help="Filter results by tree name",
 )
-@click.option(
-    "--start-date",
-    required=False,
-    help="Filter results after this date (ISO format: YYYY-MM-DD or full timestamp)",
-)
-@click.option(
-    "--end-date",
-    required=False,
-    help="Filter results before this date (ISO format: YYYY-MM-DD or full timestamp)",
-)
+@add_filter_options
 @click.pass_context
 def maestro_results(
-    ctx, nodeid, nodes, limit, offset, filter, field, tree, start_date, end_date
+    ctx,
+    nodeid,
+    nodes,
+    limit,
+    offset,
+    filter,
+    field,
+    tree,
+    status,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    git_branch,
 ):
-    config = ctx.obj.get("CFG")
+    config_data = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = config[instance]["api"]
+    url = config_data[instance]["api"]
     if not nodeid and not nodes:
         ctx = click.get_current_context()
         click.echo(ctx.get_help())
