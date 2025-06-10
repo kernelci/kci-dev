@@ -214,18 +214,61 @@ def bisection_loop(state):
     return state
 
 
-@click.command(help="Bisect Linux Kernel regression")
-@click.option("--giturl", help="define the repository url")
-@click.option("--branch", help="define the repository branch")
-@click.option("--good", help="known good commit")
-@click.option("--bad", help="known bad commit")
-@click.option("--retry-fail", help="retry failed test N times", default=2)
-@click.option("--workdir", help="define the repository origin", default="kcidev-src")
-@click.option("--ignore-state", help="ignore save state", is_flag=True)
-@click.option("--state-file", help="state file", default="state.json")
-@click.option("--job-filter", help="filter the job", multiple=True)
-@click.option("--platform-filter", help="filter the platform", multiple=True)
-@click.option("--test", help="Test expected to fail")
+@click.command(
+    help="""Bisect Linux Kernel regression to find the commit that introduced a failure.
+
+This command performs automated git bisection to identify which commit caused a
+test regression. It automatically checks out commits, runs tests via KernelCI,
+and marks commits as good/bad based on test results.
+
+The bisection state is saved to a file, allowing you to interrupt and resume
+the process. Use --ignore-state to start a fresh bisection.
+
+\b
+Examples:
+  kci-dev bisect --giturl https://git.kernel.org/torvalds/linux.git \\
+                 --branch master --good v6.6 --bad v6.7 \\
+                 --job-filter baseline --platform-filter qemu-x86 \\
+                 --test baseline.login
+
+  # Resume previous bisection
+  kci-dev bisect
+
+  # Start fresh, ignoring saved state
+  kci-dev bisect --ignore-state --giturl ... --good ... --bad ...
+"""
+)
+@click.option("--giturl", help="Git repository URL containing the kernel source")
+@click.option("--branch", help="Git branch to bisect on")
+@click.option("--good", help="Known good commit (tag, SHA, or ref)")
+@click.option("--bad", help="Known bad commit (tag, SHA, or ref)")
+@click.option(
+    "--retry-fail", help="Number of times to retry failed tests (default: 2)", default=2
+)
+@click.option(
+    "--workdir",
+    help="Local directory for kernel source checkout (default: kcidev-src)",
+    default="kcidev-src",
+)
+@click.option(
+    "--ignore-state", help="Ignore saved state and start fresh bisection", is_flag=True
+)
+@click.option(
+    "--state-file", help="State file name (default: state.json)", default="state.json"
+)
+@click.option(
+    "--job-filter",
+    help="Filter tests by job name (e.g., baseline, ltp). Can be used multiple times",
+    multiple=True,
+)
+@click.option(
+    "--platform-filter",
+    help="Filter tests by platform (e.g., qemu-x86, rpi4). Can be used multiple times",
+    multiple=True,
+)
+@click.option(
+    "--test", help="Specific test expected to fail (e.g., baseline.login, ltp.syscalls)"
+)
 
 # test
 @click.pass_context
@@ -250,6 +293,14 @@ def bisect(
     state = load_state(state_file)
     if state is None or ignore_state:
         state = default_state
+        # Check if user provided any required parameters
+        if not any([giturl, branch, good, bad, job_filter, platform_filter, test]):
+            # No parameters provided and no state file - show help
+            ctx = click.get_current_context()
+            click.echo(ctx.get_help())
+            sys.exit(0)
+
+        # Validate required parameters for new bisection
         if not giturl:
             kci_err("--giturl is required")
             return
