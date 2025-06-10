@@ -137,7 +137,9 @@ def cmd_list_trees(origin, use_json):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_builds(data, commit, download_logs, status, compiler, config, count, use_json):
+def cmd_builds(
+    data, commit, download_logs, status, compiler, config, git_branch, count, use_json
+):
     if status == "inconclusive" and use_json:
         kci_msg('{"message":"No information about inconclusive builds."}')
         return
@@ -158,6 +160,9 @@ def cmd_builds(data, commit, download_logs, status, compiler, config, count, use
             continue
 
         if filter_out_by_config(build, config):
+            continue
+
+        if filter_out_by_git_branch(build, git_branch):
             continue
 
         log_path = build["log_url"]
@@ -382,6 +387,20 @@ def filter_out_by_test_path(test, test_path_filter):
     return not fnmatch.fnmatch(test["path"], test_path_filter)
 
 
+def filter_out_by_git_branch(item, git_branch_filter):
+    # Filter by git branch name
+    if not git_branch_filter:
+        return False
+
+    if "git_repository_branch" not in item:
+        return True
+
+    # Support wildcards
+    import fnmatch
+
+    return not fnmatch.fnmatch(item["git_repository_branch"], git_branch_filter)
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -412,6 +431,7 @@ def cmd_tests(
     config,
     hardware,
     test_path,
+    git_branch,
     count,
     use_json,
 ):
@@ -444,6 +464,9 @@ def cmd_tests(
             continue
 
         if filter_out_by_test_path(test, test_path):
+            continue
+
+        if filter_out_by_git_branch(test, git_branch):
             continue
 
         log_path = test["log_url"]

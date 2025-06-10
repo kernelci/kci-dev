@@ -92,6 +92,10 @@ def builds_and_tests_options(func):
         help="Filter by test path (e.g., baseline.login)",
     )
     @click.option(
+        "--git-branch",
+        help="Filter by git branch name",
+    )
+    @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
     )
     @wraps(func)
