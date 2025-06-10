@@ -249,12 +249,16 @@ Examples:
     "--workdir",
     help="Local directory for kernel source checkout (default: kcidev-src)",
     default="kcidev-src",
+    type=click.Path(),
 )
 @click.option(
     "--ignore-state", help="Ignore saved state and start fresh bisection", is_flag=True
 )
 @click.option(
-    "--state-file", help="State file name (default: state.json)", default="state.json"
+    "--state-file",
+    help="State file name (default: state.json)",
+    default="state.json",
+    type=click.Path(),
 )
 @click.option(
     "--job-filter",

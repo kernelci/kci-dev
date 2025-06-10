@@ -92,6 +92,7 @@ Examples:
     "--path",
     default=".",
     help="Path to local kernel repository (default: current directory)",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
 )
 @click.pass_context
 def commit(ctx, repository, branch, origin, private, path):
