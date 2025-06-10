@@ -74,7 +74,7 @@ def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_builds(origin, giturl, branch, commit, arch, tree, use_json):
+def dashboard_fetch_builds(origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json):
     endpoint = f"tree/{commit}/builds"
     params = {
         "origin": origin,
@@ -85,10 +85,14 @@ def dashboard_fetch_builds(origin, giturl, branch, commit, arch, tree, use_json)
         params["filter_architecture"] = arch
     if tree is not None:
         params["filter_tree_name"] = tree
+    if start_date is not None:
+        params["filter_start_date"] = start_date
+    if end_date is not None:
+        params["filter_end_date"] = end_date
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_boots(origin, giturl, branch, commit, arch, tree, use_json):
+def dashboard_fetch_boots(origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json):
     endpoint = f"tree/{commit}/boots"
     params = {
         "origin": origin,
@@ -99,10 +103,14 @@ def dashboard_fetch_boots(origin, giturl, branch, commit, arch, tree, use_json):
         params["filter_architecture"] = arch
     if tree is not None:
         params["filter_tree_name"] = tree
+    if start_date is not None:
+        params["filter_start_date"] = start_date
+    if end_date is not None:
+        params["filter_end_date"] = end_date
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
-def dashboard_fetch_tests(origin, giturl, branch, commit, arch, tree, use_json):
+def dashboard_fetch_tests(origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json):
     endpoint = f"tree/{commit}/tests"
     params = {
         "origin": origin,
@@ -113,6 +121,10 @@ def dashboard_fetch_tests(origin, giturl, branch, commit, arch, tree, use_json):
         params["filter_architecture"] = arch
     if tree is not None:
         params["filter_tree_name"] = tree
+    if start_date is not None:
+        params["filter_start_date"] = start_date
+    if end_date is not None:
+        params["filter_end_date"] = end_date
     return dashboard_api_fetch(endpoint, params, use_json)
 
 

@@ -258,6 +258,54 @@ def filter_out_by_tree(test, filter_data):
     return True
 
 
+def filter_out_by_date(item, start_date, end_date):
+    # Filter by date range if provided
+    if not start_date and not end_date:
+        return False
+
+    # Get the timestamp field from the item
+    timestamp_field = None
+    if "start_time" in item:
+        timestamp_field = item["start_time"]
+    elif "created" in item:
+        timestamp_field = item["created"]
+    elif "updated" in item:
+        timestamp_field = item["updated"]
+
+    if not timestamp_field:
+        return False
+
+    # Parse the timestamp (assuming ISO format)
+    try:
+        from datetime import datetime
+
+        item_date = datetime.fromisoformat(timestamp_field.replace("Z", "+00:00"))
+
+        if start_date:
+            # If start_date is just a date (no time), parse it at start of day
+            if len(start_date) == 10:  # YYYY-MM-DD format
+                start_dt = datetime.fromisoformat(start_date + "T00:00:00+00:00")
+            else:
+                start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+            if item_date < start_dt:
+                return True
+
+        if end_date:
+            # If end_date is just a date (no time), parse it at end of day
+            if len(end_date) == 10:  # YYYY-MM-DD format
+                end_dt = datetime.fromisoformat(end_date + "T23:59:59+00:00")
+            else:
+                end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+            if item_date > end_dt:
+                return True
+
+    except Exception:
+        # If we can't parse the date, don't filter out
+        return False
+
+    return False
+
+
 def filter_array2regex(filter_array):
     return f"^({'|'.join(filter_array)})$".replace(".", r"\.").replace("*", ".*")
 
@@ -276,7 +324,7 @@ def parse_filter_file(filter):
     return parsed_filter
 
 
-def cmd_tests(data, id, download_logs, status_filter, filter, count, use_json):
+def cmd_tests(data, id, download_logs, status_filter, filter, start_date, end_date, count, use_json):
     filter_data = parse_filter_file(filter)
     filtered_tests = 0
     tests = []
@@ -291,6 +339,9 @@ def cmd_tests(data, id, download_logs, status_filter, filter, count, use_json):
             continue
 
         if filter_data and filter_out_by_tree(test, filter_data):
+            continue
+
+        if filter_out_by_date(test, start_date, end_date):
             continue
 
         log_path = test["log_url"]

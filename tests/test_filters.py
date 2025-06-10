@@ -1,9 +1,10 @@
 import io
+from datetime import datetime, timedelta
 
 import pytest
 import yaml
 
-from kcidev.subcommands.results.parser import filter_out_by_tree, parse_filter_file
+from kcidev.subcommands.results.parser import filter_out_by_tree, filter_out_by_date, parse_filter_file
 
 
 class TestTreeFilter:
@@ -87,3 +88,62 @@ tree:
         assert parsed["tree"] == "^(stable)$"
         assert "hardware" not in parsed
         assert "test" not in parsed
+
+
+class TestDateFilter:
+    """Test date filter functionality"""
+
+    def test_filter_out_by_date_with_start_date(self):
+        """Test filtering with start date only"""
+        # Item with date before start date - should be filtered out
+        item_old = {"start_time": "2025-01-01T10:00:00Z"}
+        assert filter_out_by_date(item_old, "2025-01-15", None)
+
+        # Item with date after start date - should not be filtered out
+        item_new = {"start_time": "2025-01-20T10:00:00Z"}
+        assert not filter_out_by_date(item_new, "2025-01-15", None)
+
+    def test_filter_out_by_date_with_end_date(self):
+        """Test filtering with end date only"""
+        # Item with date before end date - should not be filtered out
+        item_old = {"start_time": "2025-01-01T10:00:00Z"}
+        assert not filter_out_by_date(item_old, None, "2025-01-15")
+
+        # Item with date after end date - should be filtered out
+        item_new = {"start_time": "2025-01-20T10:00:00Z"}
+        assert filter_out_by_date(item_new, None, "2025-01-15")
+
+    def test_filter_out_by_date_with_date_range(self):
+        """Test filtering with both start and end dates"""
+        # Item within range - should not be filtered out
+        item_in_range = {"start_time": "2025-01-15T10:00:00Z"}
+        assert not filter_out_by_date(item_in_range, "2025-01-10", "2025-01-20")
+
+        # Item before range - should be filtered out
+        item_before = {"start_time": "2025-01-05T10:00:00Z"}
+        assert filter_out_by_date(item_before, "2025-01-10", "2025-01-20")
+
+        # Item after range - should be filtered out
+        item_after = {"start_time": "2025-01-25T10:00:00Z"}
+        assert filter_out_by_date(item_after, "2025-01-10", "2025-01-20")
+
+    def test_filter_out_by_date_with_different_timestamp_fields(self):
+        """Test that different timestamp fields are handled correctly"""
+        # Test with 'created' field
+        item_created = {"created": "2025-01-15T10:00:00Z"}
+        assert not filter_out_by_date(item_created, "2025-01-10", "2025-01-20")
+
+        # Test with 'updated' field
+        item_updated = {"updated": "2025-01-15T10:00:00Z"}
+        assert not filter_out_by_date(item_updated, "2025-01-10", "2025-01-20")
+
+    def test_filter_out_by_date_with_no_timestamp(self):
+        """Test that items without timestamp fields are not filtered out"""
+        item = {"other_field": "value"}
+        assert not filter_out_by_date(item, "2025-01-10", "2025-01-20")
+
+    def test_filter_out_by_date_with_no_filters(self):
+        """Test that no filtering occurs when no date filters are provided"""
+        item = {"start_time": "2025-01-15T10:00:00Z"}
+        assert not filter_out_by_date(item, None, None)
+        assert not filter_out_by_date(item, "", "")

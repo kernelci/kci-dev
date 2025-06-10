@@ -62,8 +62,18 @@ Examples:
     required=False,
     help="Filter results by tree name",
 )
+@click.option(
+    "--start-date",
+    required=False,
+    help="Filter results after this date (ISO format: YYYY-MM-DD or full timestamp)",
+)
+@click.option(
+    "--end-date",
+    required=False,
+    help="Filter results before this date (ISO format: YYYY-MM-DD or full timestamp)",
+)
 @click.pass_context
-def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field, tree):
+def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field, tree, start_date, end_date):
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = config[instance]["api"]
@@ -75,9 +85,13 @@ def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field, tree):
         results = maestro_get_node(url, nodeid)
     if nodes:
         # Add tree filter if provided
+        filter = list(filter) if filter else []
         if tree:
-            filter = list(filter) if filter else []
             filter.append(f"data.kernel_revision.tree::{tree}")
+        if start_date:
+            filter.append(f"created__gte={start_date}")
+        if end_date:
+            filter.append(f"created__lte={end_date}")
         results = maestro_get_nodes(url, limit, offset, filter)
     maestro_print_nodes(results, field)
 
