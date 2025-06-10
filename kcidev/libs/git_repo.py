@@ -101,6 +101,14 @@ def get_latest_commit(origin, giturl, branch):
 def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder):
     if not giturl or not branch or not ((commit != None) ^ latest):
         giturl, branch, commit = get_folder_repository(git_folder, branch)
+    else:
+        # Print git folder and tree info when giturl is provided
+        kci_msg("git folder: " + str(git_folder))
+        kci_msg("tree: " + giturl)
+        if branch:
+            kci_msg("branch: " + branch)
+        if commit:
+            kci_msg("commit: " + commit)
     if latest:
         commit = get_latest_commit(origin, giturl, branch)
     return giturl, branch, commit
