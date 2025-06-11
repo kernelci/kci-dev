@@ -190,18 +190,18 @@ def maestro_node_result(node):
             or result == "done"
             or result == "pass"
         ):
-            kci_msg_green_nonl("PASS")
+            kci_msg_green("PASS", nl=False)
         elif result == None:
-            kci_msg_green_nonl("PASS")
+            kci_msg_green("PASS", nl=False)
         else:
-            kci_msg_red_nonl("FAIL")
+            kci_msg_red("FAIL", nl=False)
     else:
         if node["result"] == "pass":
-            kci_msg_green_nonl("PASS")
+            kci_msg_green("PASS", nl=False)
         elif node["result"] == "fail":
-            kci_msg_red_nonl("FAIL")
+            kci_msg_red("FAIL", nl=False)
         else:
-            kci_msg_yellow_nonl(node["result"])
+            kci_msg_yellow(node["result"])
 
     if node["kind"] == "checkout":
         kci_msg_nonl(" branch checkout")

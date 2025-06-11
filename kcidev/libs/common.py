@@ -128,17 +128,17 @@ def kci_msg_nonl(content):
     click.echo(content, nl=False)
 
 
-def kci_msg_green_nonl(content):
-    click.secho(content, fg="green", nl=False)
+def kci_msg_green(content, nl=True):
+    click.secho(content, fg="green", nl=nl)
 
 
-def kci_msg_red_nonl(content):
-    click.secho(content, fg="red", nl=False)
+def kci_msg_red(content, nl=True):
+    click.secho(content, fg="red", nl=nl)
 
 
-def kci_msg_yellow_nonl(content):
-    click.secho(content, fg="bright_yellow", nl=False)
+def kci_msg_yellow(content, nl=True):
+    click.secho(content, fg="bright_yellow", nl=nl)
 
 
-def kci_msg_cyan_nonl(content):
-    click.secho(content, fg="cyan", nl=False)
+def kci_msg_cyan(content, nl=True):
+    click.secho(content, fg="cyan", nl=nl)
