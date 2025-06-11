@@ -76,11 +76,33 @@ def add_config(fpath):
         raise click.Abort()
 
 
-@click.command(help="Config tool for creating a config file")
+@click.command(
+    help="""Create a configuration file for kci-dev.
+
+This command helps you set up a configuration file by copying a template
+configuration to your specified location. The configuration file contains
+settings for connecting to KernelCI instances, including API URLs and tokens.
+
+The command will check for existing configuration files in standard locations
+and prevent overwriting them. If no file path is specified, it will create
+the config at ~/.config/kci-dev/kci-dev.toml.
+
+\b
+Examples:
+  # Create config at default location
+  kci-dev config
+
+  # Create config at custom location
+  kci-dev config --file-path ~/my-kci-config.toml
+
+  # Create config in current directory
+  kci-dev config --file-path ./kci-dev.toml
+"""
+)
 @click.option(
     "--file-path",
     default="~/.config/kci-dev/kci-dev.toml",
-    help="File path for creating a config file, if none is provided ~/config/kci-dev/kci-dev.toml is used",
+    help="Path where the config file will be created (default: ~/.config/kci-dev/kci-dev.toml)",
 )
 @click.pass_context
 def config(

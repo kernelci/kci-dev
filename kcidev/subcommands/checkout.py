@@ -59,51 +59,89 @@ def retrieve_tot_commit(repourl, branch):
     return sha
 
 
-@click.command(help="Trigger a test for a specific tree/branch/commit")
+@click.command(
+    help="""Trigger test runs for a specific kernel tree/branch/commit.
+
+This command submits a kernel checkout request to KernelCI's pipeline system,
+which will build and test the specified kernel version. You can filter which
+jobs and platforms to run, and optionally watch the results in real-time.
+
+Either --commit or --tipoftree must be specified to identify which kernel
+version to test.
+
+\b
+Examples:
+  # Test a specific commit
+  kci-dev checkout --giturl https://git.kernel.org/torvalds/linux.git \\
+                   --branch master --commit abc123def456
+
+  # Test the latest commit on a branch
+  kci-dev checkout --giturl https://git.kernel.org/torvalds/linux.git \\
+                   --branch master --tipoftree
+
+  # Test with job and platform filters, and watch results
+  kci-dev checkout --giturl https://git.kernel.org/torvalds/linux.git \\
+                   --branch master --tipoftree \\
+                   --job-filter baseline --platform-filter qemu-x86 \\
+                   --watch
+
+  # Watch for a specific test result and return appropriate exit code
+  kci-dev checkout --giturl ... --branch ... --commit ... \\
+                   --job-filter baseline --watch --test baseline.login
+"""
+)
 @click.option(
     "--giturl",
-    help="Git URL to checkout",
+    help="Git repository URL containing the kernel source",
     required=True,
 )
 @click.option(
     "--branch",
-    help="Branch to checkout",
+    help="Git branch to checkout and test",
     required=True,
 )
 @click.option(
     "--commit",
-    help="Commit to checkout",
+    help="Specific commit SHA to checkout (40 characters)",
 )
 @click.option(
     "--tipoftree",
-    help="Checkout on latest commit on tree/branch",
+    help="Use the latest commit on the specified tree/branch",
     is_flag=True,
 )
 @click.option(
     "--watch",
     "-w",
-    help="Interactively watch for a tasks in job-filter",
+    help="Watch and display test results interactively as they complete",
     is_flag=True,
 )
 # job_filter is a list, might be one or more jobs
 @click.option(
     "--job-filter",
-    help="Job filter to trigger",
+    help="Filter tests by job name (e.g., baseline, ltp). Can be used multiple times",
     multiple=True,
 )
 @click.option(
     "--platform-filter",
-    help="Platform filter to trigger",
+    help="Filter tests by platform (e.g., qemu-x86, rpi4). Can be used multiple times",
     multiple=True,
 )
 @click.option(
     "--test",
-    help="Return code based on the test result",
+    help="Watch for specific test result and set exit code accordingly (requires --watch)",
 )
 @click.pass_context
 def checkout(
     ctx, giturl, branch, commit, job_filter, platform_filter, tipoftree, watch, test
 ):
+    # Check if no parameters provided - show help
+    if not any(
+        [giturl, branch, commit, job_filter, platform_filter, tipoftree, watch, test]
+    ):
+        ctx = click.get_current_context()
+        click.echo(ctx.get_help())
+        sys.exit(0)
+
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = cfg[instance]["pipeline"]
