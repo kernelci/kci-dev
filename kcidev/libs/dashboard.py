@@ -59,7 +59,7 @@ def dashboard_api_post(endpoint, params, use_json, body, max_retries=3):
 
 @_dashboard_request
 def dashboard_api_fetch(endpoint, params, use_json, max_retries=3):
-    return requests.get(endpoint)
+    return requests.get(endpoint, params=params)
 
 
 def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):
@@ -144,9 +144,10 @@ def dashboard_fetch_build(build_id, use_json):
     return dashboard_api_fetch(endpoint, {}, use_json)
 
 
-def dashboard_fetch_tree_list(origin, use_json):
+def dashboard_fetch_tree_list(origin, use_json, days=7):
     params = {
         "origin": origin,
+        "interval_in_days": days,
     }
     return dashboard_api_fetch("tree-fast", params, use_json)
 
