@@ -29,6 +29,7 @@ def common_options(func):
     @click.option(
         "--git-folder",
         help="Path of git repository folder",
+        type=click.Path(exists=True, file_okay=False, dir_okay=True),
     )
     @click.option(
         "--commit",

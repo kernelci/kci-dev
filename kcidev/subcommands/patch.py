@@ -65,7 +65,12 @@ Examples:
     is_flag=True,
     help="Keep test results private (not published publicly)",
 )
-@click.option("--patch", required=True, help="Path to patch or mbox file to test")
+@click.option(
+    "--patch",
+    required=True,
+    help="Path to patch or mbox file to test",
+    type=click.Path(exists=True, readable=True),
+)
 @click.pass_context
 def patch(ctx, repository, branch, private, patch):
     config = ctx.obj.get("CFG")

@@ -103,6 +103,7 @@ Examples:
     "--file-path",
     default="~/.config/kci-dev/kci-dev.toml",
     help="Path where the config file will be created (default: ~/.config/kci-dev/kci-dev.toml)",
+    type=click.Path(),
 )
 @click.pass_context
 def config(
