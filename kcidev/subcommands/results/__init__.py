@@ -92,10 +92,22 @@ def summary(origin, git_folder, giturl, branch, commit, latest, arch, tree, use_
     help="Select KCIDB origin",
     default="maestro",
 )
+@click.option(
+    "--days",
+    help="Provide a period of time in days to get results for",
+    type=int,
+    default=7,
+)
+@click.option(
+    "--verbose",
+    is_flag=True,
+    default=True,
+    help="Print tree details",
+)
 @results_display_options
-def trees(origin, use_json):
+def trees(origin, use_json, days, verbose):
     """List trees from a give origin."""
-    cmd_list_trees(origin, use_json)
+    return cmd_list_trees(origin, use_json, days, verbose)
 
 
 @results.command()
@@ -133,7 +145,7 @@ def builds(
     data = dashboard_fetch_builds(
         origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
     )
-    cmd_builds(
+    return cmd_builds(
         data,
         commit,
         download_logs,

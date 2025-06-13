@@ -63,6 +63,19 @@ Examples:
     required=False,
     help="Filter results by tree name",
 )
+@click.option(
+    "--count",
+    is_flag=True,
+    required=False,
+    help="Print only count of nodes",
+)
+@click.option(
+    "--paginate",
+    is_flag=True,
+    required=False,
+    default=True,
+    help="Set True if pagination is required in the output. Default is True",
+)
 @add_filter_options
 @click.pass_context
 def maestro_results(
@@ -80,6 +93,8 @@ def maestro_results(
     compiler,
     config,
     git_branch,
+    count,
+    paginate,
 ):
     config_data = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
@@ -99,7 +114,11 @@ def maestro_results(
             filter.append(f"created__gte={start_date}")
         if end_date:
             filter.append(f"created__lte={end_date}")
-        results = maestro_get_nodes(url, limit, offset, filter)
+        results = maestro_get_nodes(url, limit, offset, filter, paginate)
+        if count:
+            kci_msg_cyan("Maestro:")
+            kci_msg(f"Build count:{len(results)}")
+            return results
     maestro_print_nodes(results, field)
 
 

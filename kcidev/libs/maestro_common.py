@@ -62,18 +62,29 @@ def maestro_get_node(url, nodeid):
     return response.json()
 
 
-def maestro_get_nodes(url, limit, offset, filter):
+def maestro_get_nodes(url, limit, offset, filter, paginate):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
-    maestro_print_api_call(url)
-    if filter:
-        for f in filter:
-            # TBD: We need to add translate filter to API
-            # if we need anything more complex than eq(=)
-            url = url + "&" + f
 
+    if paginate:
+        url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
+        if filter:
+            for f in filter:
+                # TBD: We need to add translate filter to API
+                # if we need anything more complex than eq(=)
+                url = url + "&" + f
+
+    else:
+        url = url + "latest/nodes/fast"
+        if filter:
+            url = url + "?"
+            for f in filter:
+                # TBD: We need to add translate filter to API
+                # if we need anything more complex than eq(=)
+                url = url + "&" + f
+
+    maestro_print_api_call(url)
     response = requests.get(url, headers=headers)
     try:
         response.raise_for_status()
@@ -144,18 +155,18 @@ def maestro_node_result(node):
             or result == "done"
             or result == "pass"
         ):
-            kci_msg_green_nonl("PASS")
+            kci_msg_green("PASS", nl=False)
         elif result == None:
-            kci_msg_green_nonl("PASS")
+            kci_msg_green("PASS", nl=False)
         else:
-            kci_msg_red_nonl("FAIL")
+            kci_msg_red("FAIL", nl=False)
     else:
         if node["result"] == "pass":
-            kci_msg_green_nonl("PASS")
+            kci_msg_green("PASS", nl=False)
         elif node["result"] == "fail":
-            kci_msg_red_nonl("FAIL")
+            kci_msg_red("FAIL", nl=False)
         else:
-            kci_msg_yellow_nonl(node["result"])
+            kci_msg_yellow(node["result"])
 
     if node["kind"] == "checkout":
         kci_msg_nonl(" branch checkout")
