@@ -47,25 +47,6 @@ def test_kcidev_commit_help(kcidev_config):
     assert result.returncode == 0
 
 
-def test_kcidev_patch_help(kcidev_config):
-    command = [
-        "poetry",
-        "run",
-        "kci-dev",
-        "--settings",
-        kcidev_config,
-        "patch",
-        "--help",
-    ]
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
-    assert result.returncode == 0
-
-
 def test_kcidev_results_help(kcidev_config):
     command = [
         "poetry",
