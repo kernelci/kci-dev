@@ -77,7 +77,7 @@ def results(ctx):
 
 @results.command()
 @common_options
-def summary(origin, git_folder, giturl, branch, commit, latest, arch, use_json):
+def summary(origin, git_folder, giturl, branch, commit, latest, arch, tree, use_json):
     """Display a summary of results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
@@ -109,9 +109,15 @@ def builds(
     commit,
     latest,
     arch,
+    tree,
     download_logs,
     status,
     filter,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    git_branch,
     count,
     use_json,
 ):
@@ -119,8 +125,20 @@ def builds(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_builds(origin, giturl, branch, commit, arch, use_json)
-    cmd_builds(data, commit, download_logs, status, count, use_json)
+    data = dashboard_fetch_builds(
+        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    )
+    cmd_builds(
+        data,
+        commit,
+        download_logs,
+        status,
+        compiler,
+        config,
+        git_branch,
+        count,
+        use_json,
+    )
 
 
 @results.command()
@@ -134,9 +152,20 @@ def boots(
     commit,
     latest,
     arch,
+    tree,
     download_logs,
     status,
     filter,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    hardware,
+    test_path,
+    git_branch,
+    compatible,
+    min_duration,
+    max_duration,
     count,
     use_json,
 ):
@@ -144,8 +173,28 @@ def boots(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_boots(origin, giturl, branch, commit, arch, use_json)
-    cmd_tests(data["boots"], commit, download_logs, status, filter, count, use_json)
+    data = dashboard_fetch_boots(
+        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    )
+    cmd_tests(
+        data["boots"],
+        commit,
+        download_logs,
+        status,
+        filter,
+        start_date,
+        end_date,
+        compiler,
+        config,
+        hardware,
+        test_path,
+        git_branch,
+        compatible,
+        min_duration,
+        max_duration,
+        count,
+        use_json,
+    )
 
 
 @results.command()
@@ -159,9 +208,20 @@ def tests(
     commit,
     latest,
     arch,
+    tree,
     download_logs,
     status,
     filter,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    hardware,
+    test_path,
+    git_branch,
+    compatible,
+    min_duration,
+    max_duration,
     count,
     use_json,
 ):
@@ -169,8 +229,28 @@ def tests(
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
-    data = dashboard_fetch_tests(origin, giturl, branch, commit, arch, use_json)
-    cmd_tests(data["tests"], commit, download_logs, status, filter, count, use_json)
+    data = dashboard_fetch_tests(
+        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    )
+    cmd_tests(
+        data["tests"],
+        commit,
+        download_logs,
+        status,
+        filter,
+        start_date,
+        end_date,
+        compiler,
+        config,
+        hardware,
+        test_path,
+        git_branch,
+        compatible,
+        min_duration,
+        max_duration,
+        count,
+        use_json,
+    )
 
 
 @results.command()

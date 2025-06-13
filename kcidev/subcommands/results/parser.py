@@ -8,6 +8,19 @@ import yaml
 from kcidev.libs.common import *
 from kcidev.libs.dashboard import dashboard_fetch_tree_list
 from kcidev.libs.files import download_logs_to_file
+from kcidev.libs.filters import (
+    CompatibleFilter,
+    CompilerFilter,
+    ConfigFilter,
+    DateRangeFilter,
+    DurationFilter,
+    FilterSet,
+    GitBranchFilter,
+    HardwareFilter,
+    PathFilter,
+    StatusFilter,
+)
+from kcidev.libs.job_filters import HardwareRegexFilter, TestRegexFilter, TreeFilter
 
 
 def print_summary(type, n_pass, n_fail, n_inconclusive):
@@ -137,22 +150,28 @@ def cmd_list_trees(origin, use_json):
         kci_msg(f"  latest: {t['start_time']}")
 
 
-def cmd_builds(data, commit, download_logs, status, count, use_json):
+def cmd_builds(
+    data, commit, download_logs, status, compiler, config, git_branch, count, use_json
+):
     if status == "inconclusive" and use_json:
         kci_msg('{"message":"No information about inconclusive builds."}')
         return
     elif status == "inconclusive":
         kci_msg("No information about inconclusive builds.")
         return
+
+    # Create filter set for builds
+    filter_set = FilterSet()
+    filter_set.add_filter(StatusFilter(status))
+    filter_set.add_filter(CompilerFilter(compiler))
+    filter_set.add_filter(ConfigFilter(config))
+    filter_set.add_filter(GitBranchFilter(git_branch))
+
     filtered_builds = 0
     builds = []
     for build in data["builds"]:
-        if not status == "all":
-            if build["status"] != "FAIL" and status == "fail":
-                continue
-
-            if build["status"] != "PASS" and status == "pass":
-                continue
+        if not filter_set.matches(build):
+            continue
 
         log_path = build["log_url"]
         if download_logs:
@@ -201,49 +220,8 @@ def print_build(build, log_path):
     kci_msg("")
 
 
-def filter_out_by_status(status, filter):
-    if filter == "all":
-        return False
-
-    if filter == status.lower():
-        return False
-
-    elif filter == "inconclusive" and status in [
-        "ERROR",
-        "SKIP",
-        "MISS",
-        "DONE",
-        "NULL",
-    ]:
-        return False
-
-    return True
-
-
-def filter_out_by_hardware(test, filter_data):
-    # Check if the hardware name is in the list
-    if "hardware" not in filter_data:
-        return False
-
-    hardware_list_re = re.compile(filter_data["hardware"])
-    if hardware_list_re.match(test["environment_misc"]["platform"]):
-        return False
-
-    if test["environment_compatible"]:
-        for compatible in test["environment_compatible"]:
-            if hardware_list_re.match(compatible):
-                return False
-
-    return True
-
-
-def filter_out_by_test(test, filter_data):
-    # Check if the test name is in the list
-    test_list_re = re.compile(filter_data["test"])
-    if test_list_re.match(test["path"]):
-        return False
-
-    return True
+# Legacy filter functions have been replaced by the unified filter system
+# See kcidev.libs.filters for the new implementation
 
 
 def filter_array2regex(filter_array):
@@ -259,21 +237,56 @@ def parse_filter_file(filter):
         parsed_filter["hardware"] = filter_array2regex(filter_data["hardware"])
     if "test" in filter_data:
         parsed_filter["test"] = filter_array2regex(filter_data["test"])
+    if "tree" in filter_data:
+        parsed_filter["tree"] = filter_array2regex(filter_data["tree"])
     return parsed_filter
 
 
-def cmd_tests(data, id, download_logs, status_filter, filter, count, use_json):
+def cmd_tests(
+    data,
+    id,
+    download_logs,
+    status_filter,
+    filter,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    hardware,
+    test_path,
+    git_branch,
+    compatible,
+    min_duration,
+    max_duration,
+    count,
+    use_json,
+):
+    # Create filter set for tests
+    filter_set = FilterSet()
+    filter_set.add_filter(StatusFilter(status_filter))
+    filter_set.add_filter(DateRangeFilter(start_date, end_date))
+    filter_set.add_filter(CompilerFilter(compiler))
+    filter_set.add_filter(ConfigFilter(config))
+    filter_set.add_filter(HardwareFilter(hardware))
+    filter_set.add_filter(PathFilter(test_path))
+    filter_set.add_filter(GitBranchFilter(git_branch))
+    filter_set.add_filter(CompatibleFilter(compatible))
+    filter_set.add_filter(DurationFilter(min_duration, max_duration))
+
+    # Parse YAML filter file if provided
     filter_data = parse_filter_file(filter)
+    if filter_data:
+        if "hardware" in filter_data:
+            filter_set.add_filter(HardwareRegexFilter(filter_data["hardware"]))
+        if "test" in filter_data:
+            filter_set.add_filter(TestRegexFilter(filter_data["test"]))
+        if "tree" in filter_data:
+            filter_set.add_filter(TreeFilter(filter_data["tree"]))
+
     filtered_tests = 0
     tests = []
     for test in data:
-        if filter_out_by_status(test["status"], status_filter):
-            continue
-
-        if filter_data and filter_out_by_hardware(test, filter_data):
-            continue
-
-        if filter_data and filter_out_by_test(test, filter_data):
+        if not filter_set.matches(test):
             continue
 
         log_path = test["log_url"]

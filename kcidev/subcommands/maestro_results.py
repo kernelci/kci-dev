@@ -5,6 +5,7 @@ import click
 from git import Repo
 
 from kcidev.libs.common import *
+from kcidev.libs.filter_options import add_filter_options
 from kcidev.libs.maestro_common import *
 
 
@@ -57,11 +58,32 @@ Examples:
     multiple=True,
     help="Display only specific field(s) from node data (e.g., 'name', 'status'). Can be used multiple times",
 )
+@click.option(
+    "--tree",
+    required=False,
+    help="Filter results by tree name",
+)
+@add_filter_options
 @click.pass_context
-def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
-    config = ctx.obj.get("CFG")
+def maestro_results(
+    ctx,
+    nodeid,
+    nodes,
+    limit,
+    offset,
+    filter,
+    field,
+    tree,
+    status,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    git_branch,
+):
+    config_data = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
-    url = config[instance]["api"]
+    url = config_data[instance]["api"]
     if not nodeid and not nodes:
         ctx = click.get_current_context()
         click.echo(ctx.get_help())
@@ -69,6 +91,14 @@ def maestro_results(ctx, nodeid, nodes, limit, offset, filter, field):
     if nodeid:
         results = maestro_get_node(url, nodeid)
     if nodes:
+        # Add tree filter if provided
+        filter = list(filter) if filter else []
+        if tree:
+            filter.append(f"data.kernel_revision.tree::{tree}")
+        if start_date:
+            filter.append(f"created__gte={start_date}")
+        if end_date:
+            filter.append(f"created__lte={end_date}")
         results = maestro_get_nodes(url, limit, offset, filter)
     maestro_print_nodes(results, field)
 

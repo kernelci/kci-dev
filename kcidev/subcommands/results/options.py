@@ -41,6 +41,7 @@ def common_options(func):
         help="Select latest results available",
     )
     @click.option("--arch", help="Filter by arch")
+    @click.option("--tree", help="Filter by tree name")
     @results_display_options
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -65,6 +66,48 @@ def builds_and_tests_options(func):
         "--filter",
         type=click.File("r"),
         help="Pass filter file for builds, boot and tests results.",
+    )
+    @click.option(
+        "--start-date",
+        help="Filter results after this date (YYYY-MM-DD format)",
+    )
+    @click.option(
+        "--end-date",
+        help="Filter results before this date (YYYY-MM-DD format)",
+    )
+    @click.option(
+        "--compiler",
+        help="Filter by compiler (e.g., gcc, clang)",
+    )
+    @click.option(
+        "--config",
+        help="Filter by kernel configuration (e.g., defconfig, allmodconfig)",
+    )
+    @click.option(
+        "--hardware",
+        help="Filter by hardware platform name or compatible",
+    )
+    @click.option(
+        "--test-path",
+        help="Filter by test path (e.g., baseline.login)",
+    )
+    @click.option(
+        "--git-branch",
+        help="Filter by git branch name",
+    )
+    @click.option(
+        "--compatible",
+        help="Filter by device tree compatible string",
+    )
+    @click.option(
+        "--min-duration",
+        type=float,
+        help="Filter tests with duration >= this value (in seconds)",
+    )
+    @click.option(
+        "--max-duration",
+        type=float,
+        help="Filter tests with duration <= this value (in seconds)",
     )
     @click.option(
         "--count", is_flag=True, help="Display the number of matching results"
