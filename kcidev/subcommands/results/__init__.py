@@ -120,6 +120,11 @@ def builds(
     git_branch,
     count,
     use_json,
+    hardware,
+    test_path,
+    compatible,
+    min_duration,
+    max_duration,
 ):
     """Display build results."""
     giturl, branch, commit = set_giturl_branch_commit(
