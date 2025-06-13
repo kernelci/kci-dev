@@ -138,8 +138,8 @@ def get_command_summary(command_data):
     return inconclusive_cmd, pass_cmd, fail_cmd
 
 
-def cmd_list_trees(origin, use_json):
-    trees = dashboard_fetch_tree_list(origin, use_json)
+def cmd_list_trees(origin, use_json, days):
+    trees = dashboard_fetch_tree_list(origin, use_json, days)
     if use_json:
         kci_msg(json.dumps(list(map(lambda t: create_tree_json(t), trees))))
         return
