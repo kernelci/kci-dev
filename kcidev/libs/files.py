@@ -25,18 +25,18 @@ def download_logs_to_file(log_url, log_file):
         logging.debug("Fetching compressed log file")
         response = requests.get(log_url)
         response.raise_for_status()
-        
+
         # Decompress log
         logging.debug(f"Downloaded {len(response.content)} bytes, decompressing")
         log = gzip.decompress(response.content)
         logging.debug(f"Decompressed to {len(log)} bytes")
-        
+
         # Save to file
         log_file = to_valid_filename(log_file)
         logging.debug(f"Writing log to: {log_file}")
         with open(log_file, mode="wb") as file:
             file.write(log)
-        
+
         log_path = "file://" + os.path.join(os.getcwd(), log_file)
         logging.info(f"Log saved successfully: {log_path}")
         return log_path

@@ -1,5 +1,6 @@
 import gzip
 import json
+import logging
 import re
 
 import requests
@@ -104,16 +105,20 @@ def create_test_json(test, log_path):
 
 
 def cmd_summary(data, use_json):
+    logging.info("Generating results summary")
     summary = data["summary"]
 
     builds = summary["builds"]["status"]
     inconclusive_builds, pass_builds, fail_builds = get_command_summary(builds)
+    logging.debug(f"Builds summary - pass: {pass_builds}, fail: {fail_builds}, inconclusive: {inconclusive_builds}")
 
     boots = summary["boots"]["status"]
     inconclusive_boots, pass_boots, fail_boots = get_command_summary(boots)
+    logging.debug(f"Boots summary - pass: {pass_boots}, fail: {fail_boots}, inconclusive: {inconclusive_boots}")
 
     tests = summary["tests"]["status"]
     inconclusive_tests, pass_tests, fail_tests = get_command_summary(tests)
+    logging.debug(f"Tests summary - pass: {pass_tests}, fail: {fail_tests}, inconclusive: {inconclusive_tests}")
 
     if use_json:
         builds_json = create_summary_json(pass_builds, fail_builds, inconclusive_builds)
@@ -139,11 +144,15 @@ def get_command_summary(command_data):
 
 
 def cmd_list_trees(origin, use_json):
+    logging.info(f"Listing trees for origin: {origin}")
     trees = dashboard_fetch_tree_list(origin, use_json)
+    logging.debug(f"Found {len(trees)} trees")
+    
     if use_json:
         kci_msg(json.dumps(list(map(lambda t: create_tree_json(t), trees))))
         return
     for t in trees:
+        logging.debug(f"Tree: {t['tree_name']}/{t['git_repository_branch']} - {t['git_commit_hash']}")
         kci_msg_green_nonl(f"- {t['tree_name']}/{t['git_repository_branch']}:\n")
         kci_msg(f"  giturl: {t['git_repository_url']}")
         kci_msg(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
@@ -153,6 +162,8 @@ def cmd_list_trees(origin, use_json):
 def cmd_builds(
     data, commit, download_logs, status, compiler, config, git_branch, count, use_json
 ):
+    logging.info(f"Processing builds with filters - status: {status}, compiler: {compiler}, config: {config}, branch: {git_branch}")
+    
     if status == "inconclusive" and use_json:
         kci_msg('{"message":"No information about inconclusive builds."}')
         return
@@ -166,9 +177,14 @@ def cmd_builds(
     filter_set.add_filter(CompilerFilter(compiler))
     filter_set.add_filter(ConfigFilter(config))
     filter_set.add_filter(GitBranchFilter(git_branch))
+    
+    logging.debug(f"Created filter set with {len(filter_set.filters)} filters")
 
     filtered_builds = 0
     builds = []
+    total_builds = len(data["builds"])
+    logging.debug(f"Processing {total_builds} builds")
+    
     for build in data["builds"]:
         if not filter_set.matches(build):
             continue
@@ -177,8 +193,10 @@ def cmd_builds(
         if download_logs:
             try:
                 log_file = f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{commit}.log"
+                logging.debug(f"Downloading log for build {build['id']}")
                 log_path = download_logs_to_file(build["log_url"], log_file)
-            except:
+            except Exception as e:
+                logging.error(f"Failed to download log for build {build['id']}: {e}")
                 kci_err(f"Failed to fetch log {build['log_url']}.")
                 pass
         if count:
@@ -187,6 +205,8 @@ def cmd_builds(
             builds.append(create_build_json(build, log_path))
         else:
             print_build(build, log_path)
+    logging.info(f"Filtered {filtered_builds} builds from {total_builds} total")
+    
     if count and use_json:
         kci_msg(f'{{"count":{filtered_builds}}}')
     elif count:
@@ -229,16 +249,31 @@ def filter_array2regex(filter_array):
 
 
 def parse_filter_file(filter):
-    filter_data = yaml.safe_load(filter) if filter else None
+    if not filter:
+        return None
+    
+    logging.debug("Parsing filter file")
+    try:
+        filter_data = yaml.safe_load(filter)
+    except yaml.YAMLError as e:
+        logging.error(f"Failed to parse YAML filter file: {e}")
+        return None
+    
     if filter_data is None:
         return None
+    
     parsed_filter = {}
     if "hardware" in filter_data:
         parsed_filter["hardware"] = filter_array2regex(filter_data["hardware"])
+        logging.debug(f"Hardware filter regex: {parsed_filter['hardware']}")
     if "test" in filter_data:
         parsed_filter["test"] = filter_array2regex(filter_data["test"])
+        logging.debug(f"Test filter regex: {parsed_filter['test']}")
     if "tree" in filter_data:
         parsed_filter["tree"] = filter_array2regex(filter_data["tree"])
+        logging.debug(f"Tree filter regex: {parsed_filter['tree']}")
+    
+    logging.info(f"Parsed filter file with {len(parsed_filter)} filter types")
     return parsed_filter
 
 
@@ -261,6 +296,10 @@ def cmd_tests(
     count,
     use_json,
 ):
+    logging.info("Processing tests with filters")
+    logging.debug(f"Test filters - status: {status_filter}, hardware: {hardware}, path: {test_path}")
+    logging.debug(f"Date range: {start_date} to {end_date}, duration: {min_duration}-{max_duration}s")
+    
     # Create filter set for tests
     filter_set = FilterSet()
     filter_set.add_filter(StatusFilter(status_filter))
@@ -285,6 +324,9 @@ def cmd_tests(
 
     filtered_tests = 0
     tests = []
+    total_tests = len(data)
+    logging.debug(f"Processing {total_tests} tests")
+    
     for test in data:
         if not filter_set.matches(test):
             continue
@@ -297,13 +339,19 @@ def cmd_tests(
                 else "(Unknown platform)"
             )
             log_file = f"{platform}__{test['path']}__{test['config']}-{test['architecture']}-{test['compiler']}-{id}.log"
-            log_path = download_logs_to_file(test["log_url"], log_file)
+            try:
+                logging.debug(f"Downloading log for test {test['id']} on {platform}")
+                log_path = download_logs_to_file(test["log_url"], log_file)
+            except Exception as e:
+                logging.error(f"Failed to download log for test {test['id']}: {e}")
         if count:
             filtered_tests += 1
         elif use_json:
             tests.append(create_test_json(test, log_path))
         else:
             print_test(test, log_path)
+    logging.info(f"Filtered {filtered_tests} tests from {total_tests} total")
+    
     if count and use_json:
         kci_msg(f'{{"count":{filtered_tests}}}')
     elif count:
@@ -356,10 +404,15 @@ def print_test(test, log_path):
 
 
 def cmd_single_test(test, download_logs, use_json):
+    logging.info(f"Processing single test {test['id']} - {test['path']}")
     log_path = test["log_url"]
     if download_logs:
         log_file = f"{test['environment_misc']['platform']}__{test['path']}__{test['config_name']}-{test['architecture']}-{test['compiler']}-{test['id']}.log"
-        log_path = download_logs_to_file(test["log_url"], log_file)
+        try:
+            logging.debug(f"Downloading log for test {test['id']}")
+            log_path = download_logs_to_file(test["log_url"], log_file)
+        except Exception as e:
+            logging.error(f"Failed to download log: {e}")
     if use_json:
         kci_msg(create_test_json(test, log_path))
     else:
@@ -367,12 +420,17 @@ def cmd_single_test(test, download_logs, use_json):
 
 
 def cmd_single_build(build, download_logs, use_json):
+    logging.info(f"Processing single build {build['id']} - {build['config_name']}")
     log_path = build["log_url"]
     if download_logs:
         log_file = log_file = (
             f"{build['config_name']}-{build['architecture']}-{build['compiler']}-{build['git_commit_hash']}-{build['id']}.log"
         )
-        log_path = download_logs_to_file(build["log_url"], log_file)
+        try:
+            logging.debug(f"Downloading log for build {build['id']}")
+            log_path = download_logs_to_file(build["log_url"], log_file)
+        except Exception as e:
+            logging.error(f"Failed to download log: {e}")
     if use_json:
         kci_msg(create_build_json(build, log_path))
     else:
@@ -380,6 +438,9 @@ def cmd_single_build(build, download_logs, use_json):
 
 
 def cmd_hardware_list(data, use_json):
+    hardware_count = len(data["hardware"])
+    logging.info(f"Listing {hardware_count} hardware platforms")
+    
     if use_json:
         hardware = [
             {"name": hardware["hardware_name"], "compatibles": hardware["platform"]}
@@ -388,6 +449,7 @@ def cmd_hardware_list(data, use_json):
         kci_msg(hardware)
     else:
         for hardware in data["hardware"]:
+            logging.debug(f"Hardware: {hardware['hardware_name']} - {hardware['platform']}")
             kci_msg_nonl("- name: ")
             kci_msg_cyan_nonl(hardware["hardware_name"])
             kci_msg("")

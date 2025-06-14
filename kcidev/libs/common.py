@@ -16,7 +16,7 @@ else:
 def load_toml(settings, subcommand):
     fname = "kci-dev.toml"
     config = None
-    
+
     logging.debug(f"Loading config for subcommand: {subcommand}")
     logging.debug(f"Settings path: {settings}")
 
@@ -82,7 +82,7 @@ def load_toml(settings, subcommand):
 
 def config_path(settings):
     fname = "kci-dev.toml"
-    
+
     logging.debug(f"Looking for config file, settings: {settings}")
 
     if os.path.exists(settings):
@@ -99,7 +99,7 @@ def config_path(settings):
     if os.path.exists(global_path):
         logging.debug(f"Found config at global path: {global_path}")
         return global_path
-    
+
     logging.debug("No config file found in any location")
     return None
 
