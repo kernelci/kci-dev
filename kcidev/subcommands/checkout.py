@@ -31,10 +31,12 @@ def send_checkout_full(baseurl, token, **kwargs):
     }
     if "platform_filter" in kwargs:
         data["platformfilter"] = kwargs["platform_filter"]
-    
-    logging.info(f"Sending checkout request for {kwargs['giturl']} branch {kwargs['branch']} commit {kwargs['commit']}")
+
+    logging.info(
+        f"Sending checkout request for {kwargs['giturl']} branch {kwargs['branch']} commit {kwargs['commit']}"
+    )
     logging.debug(f"Checkout data: {json.dumps(data, indent=2)}")
-    
+
     jdata = json.dumps(data)
     maestro_print_api_call(url, data)
     try:
@@ -50,7 +52,7 @@ def send_checkout_full(baseurl, token, **kwargs):
         logging.error(f"Checkout failed with status {response.status_code}")
         maestro_api_error(response)
         return None
-    
+
     result = response.json()
     logging.info(f"Checkout successful - tree ID: {result.get('treeid', 'unknown')}")
     return result
@@ -66,16 +68,14 @@ def retrieve_tot_commit(repourl, branch):
     cmd = ["git", "ls-remote", repourl, f"refs/heads/{branch}"]
     logging.info(f"Retrieving tip-of-tree commit for {repourl} branch {branch}")
     logging.debug(f"Running command: {' '.join(cmd)}")
-    
-    process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
-    
+
     if process.returncode != 0:
         logging.error(f"Failed to retrieve tip-of-tree: {stderr.decode('utf-8')}")
         return None
-    
+
     sha = re.split(r"\t+", stdout.decode("ascii"))[0]
     logging.info(f"Retrieved tip-of-tree commit: {sha}")
     return sha
@@ -165,16 +165,20 @@ def checkout(
         sys.exit(0)
 
     logging.info("Starting checkout command")
-    logging.debug(f"Parameters: giturl={giturl}, branch={branch}, commit={commit}, tipoftree={tipoftree}")
-    logging.debug(f"Filters: job_filter={job_filter}, platform_filter={platform_filter}")
+    logging.debug(
+        f"Parameters: giturl={giturl}, branch={branch}, commit={commit}, tipoftree={tipoftree}"
+    )
+    logging.debug(
+        f"Filters: job_filter={job_filter}, platform_filter={platform_filter}"
+    )
     logging.debug(f"Options: watch={watch}, test={test}")
-    
+
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = cfg[instance]["pipeline"]
     apiurl = cfg[instance]["api"]
     token = cfg[instance]["token"]
-    
+
     logging.debug(f"Using instance: {instance}")
     logging.debug(f"Pipeline URL: {url}")
     logging.debug(f"API URL: {apiurl}")
@@ -223,8 +227,10 @@ def checkout(
         treeid = node.get("treeid")
         checkout_nodeid = node.get("id")
 
-        logging.info(f"Checkout triggered successfully - treeid: {treeid}, nodeid: {checkout_nodeid}")
-        
+        logging.info(
+            f"Checkout triggered successfully - treeid: {treeid}, nodeid: {checkout_nodeid}"
+        )
+
         if treeid:
             click.secho(f"treeid: {treeid}", fg="green")
         if checkout_nodeid:

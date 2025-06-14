@@ -32,11 +32,11 @@ def is_inside_work_tree():
     )
     std_out, std_err = process.communicate()
     is_inside_work_tree = std_out.strip()
-    
+
     if process.returncode != 0:
         logging.debug(f"Not in git work tree: {std_err.strip()}")
         return False
-    
+
     logging.debug(f"Git work tree check result: {is_inside_work_tree}")
     if is_inside_work_tree:
         return True
@@ -50,7 +50,7 @@ def get_folder_repository(git_folder, branch):
         current_folder = git_folder
     else:
         current_folder = os.getcwd()
-    
+
     logging.debug(f"Current folder: {current_folder}")
 
     previous_folder = os.getcwd()
@@ -80,7 +80,7 @@ def get_folder_repository(git_folder, branch):
         logging.debug(f"Raw git URL from config: {git_url}")
         # A way of standardize git url for API call
         git_url = repository_url_cleaner(git_url)
-        
+
         # Get current branch name
         cmd = ["git", "branch", "--show-current"]
         logging.debug(f"Running command: {' '.join(cmd)}")
@@ -93,7 +93,7 @@ def get_folder_repository(git_folder, branch):
             logging.error(f"Failed to get branch name: {branch_err}")
         else:
             logging.debug(f"Current branch: {branch_name}")
-        
+
         if branch:
             logging.info(f"Overriding branch from {branch_name} to {branch}")
             branch_name = branch
@@ -112,7 +112,9 @@ def get_folder_repository(git_folder, branch):
             logging.debug(f"Current commit: {last_commit_hash}")
 
         os.chdir(previous_folder)
-        logging.info(f"Repository info - URL: {git_url}, Branch: {branch_name}, Commit: {last_commit_hash}")
+        logging.info(
+            f"Repository info - URL: {git_url}, Branch: {branch_name}, Commit: {last_commit_hash}"
+        )
         kci_msg("tree: " + git_url)
         kci_msg("branch: " + branch_name)
         kci_msg("commit: " + last_commit_hash)
@@ -241,10 +243,12 @@ def get_repository_url(git_folder):
 
 
 def get_latest_commit(origin, giturl, branch):
-    logging.info(f"Fetching latest commit for {giturl} branch {branch} from origin {origin}")
+    logging.info(
+        f"Fetching latest commit for {giturl} branch {branch} from origin {origin}"
+    )
     trees = dashboard_fetch_tree_list(origin, False)
     logging.debug(f"Retrieved {len(trees)} trees from dashboard")
-    
+
     for t in trees:
         if t["git_repository_url"] == giturl and t["git_repository_branch"] == branch:
             commit = t["git_commit_hash"]
@@ -260,7 +264,9 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
     logging.info("Setting git URL, branch, and commit parameters")
     # Fill in any missing parameters from local git repository
     if not giturl:
-        logging.debug("No git URL provided, attempting to determine from local repository")
+        logging.debug(
+            "No git URL provided, attempting to determine from local repository"
+        )
         giturl = get_repository_url(git_folder)
         if not giturl:
             logging.error("Failed to determine git URL from local repository")
@@ -268,7 +274,9 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
             raise click.Abort()
 
     if not branch:
-        logging.debug("No branch provided, attempting to determine from local repository")
+        logging.debug(
+            "No branch provided, attempting to determine from local repository"
+        )
         branch = get_current_branch_name(git_folder)
         if not branch:
             logging.error("Failed to determine branch from local repository")
@@ -276,7 +284,9 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
             raise click.Abort()
 
     if not commit and not latest:
-        logging.debug("No commit provided, attempting to determine from local repository")
+        logging.debug(
+            "No commit provided, attempting to determine from local repository"
+        )
         commit = get_current_commit_hash(git_folder)
         if not commit:
             logging.error("Failed to determine commit from local repository")
@@ -284,7 +294,9 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
             raise click.Abort()
 
     # Print the final values
-    logging.info(f"Final parameters - URL: {giturl}, Branch: {branch}, Commit: {commit if commit else 'latest'}")
+    logging.info(
+        f"Final parameters - URL: {giturl}, Branch: {branch}, Commit: {commit if commit else 'latest'}"
+    )
     kci_msg("git folder: " + str(git_folder))
     kci_msg("tree: " + giturl)
     kci_msg("branch: " + branch)
