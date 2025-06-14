@@ -30,16 +30,20 @@ def _dashboard_request(func):
             try:
                 logging.debug(f"Attempt {retries + 1}/{max_retries + 1} for {endpoint}")
                 r = func(url, params, use_json, body)
-                
+
                 logging.debug(f"Response status code: {r.status_code}")
-                
+
                 if r.status_code in RETRY_STATUS_CODES:
                     retries += 1
                     if retries <= max_retries:
-                        logging.warning(f"Retrying request due to status {r.status_code} (attempt {retries}/{max_retries})")
+                        logging.warning(
+                            f"Retrying request due to status {r.status_code} (attempt {retries}/{max_retries})"
+                        )
                         continue
                     else:
-                        logging.error(f"Failed after {max_retries} retries with status {r.status_code}")
+                        logging.error(
+                            f"Failed after {max_retries} retries with status {r.status_code}"
+                        )
                         kci_err(f"Failed after {max_retries} retries with 500 error.")
                         raise click.Abort()
 
@@ -47,7 +51,7 @@ def _dashboard_request(func):
 
                 data = r.json()
                 logging.debug(f"Response data size: {len(json.dumps(data))} bytes")
-                
+
                 if "error" in data:
                     logging.error(f"API returned error: {data.get('error')}")
                     if use_json:
@@ -55,7 +59,7 @@ def _dashboard_request(func):
                     else:
                         kci_msg("json error: " + str(data["error"]))
                     raise click.Abort()
-                
+
                 logging.info(f"Successfully completed {func.__name__} request")
                 return data
 
@@ -90,7 +94,7 @@ def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):
     }
     if arch is not None:
         params["filter_architecture"] = arch
-    
+
     logging.info(f"Fetching summary for commit {commit} on {branch} branch")
     logging.debug(f"Parameters: origin={origin}, git_url={giturl}, arch={arch}")
     return dashboard_api_fetch(endpoint, params, use_json)
@@ -113,9 +117,11 @@ def dashboard_fetch_builds(
         params["filter_start_date"] = start_date
     if end_date is not None:
         params["filter_end_date"] = end_date
-    
+
     logging.info(f"Fetching builds for commit {commit} on {branch} branch")
-    logging.debug(f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}")
+    logging.debug(
+        f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
+    )
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
@@ -136,9 +142,11 @@ def dashboard_fetch_boots(
         params["filter_start_date"] = start_date
     if end_date is not None:
         params["filter_end_date"] = end_date
-    
+
     logging.info(f"Fetching boots for commit {commit} on {branch} branch")
-    logging.debug(f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}")
+    logging.debug(
+        f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
+    )
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
@@ -159,9 +167,11 @@ def dashboard_fetch_tests(
         params["filter_start_date"] = start_date
     if end_date is not None:
         params["filter_end_date"] = end_date
-    
+
     logging.info(f"Fetching tests for commit {commit} on {branch} branch")
-    logging.debug(f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}")
+    logging.debug(
+        f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
+    )
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
@@ -195,7 +205,9 @@ def dashboard_fetch_hardware_list(origin, use_json):
         "startTimestampInSeconds": int(last_week.timestamp()),
     }
     logging.info(f"Fetching hardware list for origin: {origin}")
-    logging.debug(f"Date range: {last_week.strftime('%Y-%m-%d')} to {now.strftime('%Y-%m-%d')}")
+    logging.debug(
+        f"Date range: {last_week.strftime('%Y-%m-%d')} to {now.strftime('%Y-%m-%d')}"
+    )
     return dashboard_api_fetch("hardware/", params, use_json)
 
 
