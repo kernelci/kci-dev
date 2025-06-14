@@ -55,13 +55,13 @@ def watch(ctx, nodeid, job_filter, test):
         logging.debug(f"Job filters: {job_filter}")
     if test:
         logging.debug(f"Watching for test: {test}")
-    
+
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = cfg[instance]["pipeline"]
     apiurl = cfg[instance]["api"]
     token = cfg[instance]["token"]
-    
+
     logging.debug(f"Using instance: {instance}")
     logging.debug(f"API URL: {apiurl}")
 
@@ -71,11 +71,11 @@ def watch(ctx, nodeid, job_filter, test):
         logging.error(f"Node {nodeid} not found")
         kci_err(f"node id {nodeid} not found.")
         sys.exit(errno.ENOENT)
-    
+
     tree_id = node["treeid"]
     logging.info(f"Found node {nodeid} with tree ID: {tree_id}")
     logging.info(f"Starting job watch for tree {tree_id}")
-    
+
     maestro_watch_jobs(apiurl, token, tree_id, job_filter, test)
 
 
