@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
+
 import click
 
 from kcidev.libs.common import *
@@ -48,17 +50,33 @@ Examples:
 )
 @click.pass_context
 def watch(ctx, nodeid, job_filter, test):
+    logging.info(f"Starting watch command for node {nodeid}")
+    if job_filter:
+        logging.debug(f"Job filters: {job_filter}")
+    if test:
+        logging.debug(f"Watching for test: {test}")
+    
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = cfg[instance]["pipeline"]
     apiurl = cfg[instance]["api"]
     token = cfg[instance]["token"]
+    
+    logging.debug(f"Using instance: {instance}")
+    logging.debug(f"API URL: {apiurl}")
 
+    logging.info(f"Fetching node details for {nodeid}")
     node = maestro_get_node(apiurl, nodeid)
     if not node:
+        logging.error(f"Node {nodeid} not found")
         kci_err(f"node id {nodeid} not found.")
         sys.exit(errno.ENOENT)
-    maestro_watch_jobs(apiurl, token, node["treeid"], job_filter, test)
+    
+    tree_id = node["treeid"]
+    logging.info(f"Found node {nodeid} with tree ID: {tree_id}")
+    logging.info(f"Starting job watch for tree {tree_id}")
+    
+    maestro_watch_jobs(apiurl, token, tree_id, job_filter, test)
 
 
 if __name__ == "__main__":

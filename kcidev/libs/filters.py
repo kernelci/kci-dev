@@ -76,7 +76,9 @@ class DateRangeFilter(BaseFilter):
                         self.start_date.replace("Z", "+00:00")
                     )
                 if item_date < start_dt:
-                    logging.debug(f"DateRangeFilter: {timestamp_field} before start date {self.start_date}")
+                    logging.debug(
+                        f"DateRangeFilter: {timestamp_field} before start date {self.start_date}"
+                    )
                     return False
 
             if self.end_date:
@@ -88,12 +90,16 @@ class DateRangeFilter(BaseFilter):
                         self.end_date.replace("Z", "+00:00")
                     )
                 if item_date > end_dt:
-                    logging.debug(f"DateRangeFilter: {timestamp_field} after end date {self.end_date}")
+                    logging.debug(
+                        f"DateRangeFilter: {timestamp_field} after end date {self.end_date}"
+                    )
                     return False
 
         except Exception as e:
             # If we can't parse the date, include the item
-            logging.debug(f"DateRangeFilter: Failed to parse date {timestamp_field}: {e}")
+            logging.debug(
+                f"DateRangeFilter: Failed to parse date {timestamp_field}: {e}"
+            )
             return True
 
         return True
@@ -112,7 +118,9 @@ class CompilerFilter(BaseFilter):
 
         result = item["compiler"].lower() == self.value.lower()
         if not result:
-            logging.debug(f"CompilerFilter: {item['compiler']} does not match {self.value}")
+            logging.debug(
+                f"CompilerFilter: {item['compiler']} does not match {self.value}"
+            )
         return result
 
 
@@ -133,7 +141,9 @@ class ConfigFilter(BaseFilter):
         # Support wildcards
         result = fnmatch.fnmatch(config_value, self.value)
         if not result:
-            logging.debug(f"ConfigFilter: {config_value} does not match pattern {self.value}")
+            logging.debug(
+                f"ConfigFilter: {config_value} does not match pattern {self.value}"
+            )
         return result
 
 
@@ -151,7 +161,9 @@ class GitBranchFilter(BaseFilter):
         # Support wildcards
         result = fnmatch.fnmatch(item["git_repository_branch"], self.value)
         if not result:
-            logging.debug(f"GitBranchFilter: {item['git_repository_branch']} does not match pattern {self.value}")
+            logging.debug(
+                f"GitBranchFilter: {item['git_repository_branch']} does not match pattern {self.value}"
+            )
         return result
 
 
@@ -192,7 +204,9 @@ class PathFilter(BaseFilter):
         # Support wildcards
         result = fnmatch.fnmatch(item["path"], self.value)
         if not result:
-            logging.debug(f"PathFilter: {item['path']} does not match pattern {self.value}")
+            logging.debug(
+                f"PathFilter: {item['path']} does not match pattern {self.value}"
+            )
         return result
 
 
@@ -249,10 +263,14 @@ class DurationFilter(BaseFilter):
 
         # Apply min/max filters
         if self.min_duration and duration < self.min_duration:
-            logging.debug(f"DurationFilter: {duration}s below minimum {self.min_duration}s")
+            logging.debug(
+                f"DurationFilter: {duration}s below minimum {self.min_duration}s"
+            )
             return False
         if self.max_duration and duration > self.max_duration:
-            logging.debug(f"DurationFilter: {duration}s above maximum {self.max_duration}s")
+            logging.debug(
+                f"DurationFilter: {duration}s above maximum {self.max_duration}s"
+            )
             return False
 
         return True
@@ -282,5 +300,7 @@ class FilterSet:
         """Filter a list of items."""
         original_count = len(items)
         filtered = [item for item in items if self.matches(item)]
-        logging.info(f"FilterSet: {len(filtered)} items passed from {original_count} total")
+        logging.info(
+            f"FilterSet: {len(filtered)} items passed from {original_count} total"
+        )
         return filtered

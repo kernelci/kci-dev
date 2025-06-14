@@ -20,7 +20,9 @@ class TreeFilter(BaseFilter):
         tree_name = item.get("tree_name", "")
         result = bool(self.pattern.match(tree_name))
         if not result:
-            logging.debug(f"TreeFilter: {tree_name} does not match pattern {self.pattern.pattern}")
+            logging.debug(
+                f"TreeFilter: {tree_name} does not match pattern {self.pattern.pattern}"
+            )
         return result
 
 
@@ -46,10 +48,14 @@ class HardwareRegexFilter(BaseFilter):
         if "environment_compatible" in item and item["environment_compatible"]:
             for compatible in item["environment_compatible"]:
                 if self.pattern.match(compatible):
-                    logging.debug(f"HardwareRegexFilter: Matched compatible {compatible}")
+                    logging.debug(
+                        f"HardwareRegexFilter: Matched compatible {compatible}"
+                    )
                     return True
 
-        logging.debug(f"HardwareRegexFilter: No match for pattern {self.pattern.pattern}")
+        logging.debug(
+            f"HardwareRegexFilter: No match for pattern {self.pattern.pattern}"
+        )
         return False
 
 
@@ -67,5 +73,7 @@ class TestRegexFilter(BaseFilter):
         test_path = item.get("path", "")
         result = bool(self.pattern.match(test_path))
         if not result:
-            logging.debug(f"TestRegexFilter: {test_path} does not match pattern {self.pattern.pattern}")
+            logging.debug(
+                f"TestRegexFilter: {test_path} does not match pattern {self.pattern.pattern}"
+            )
         return result
