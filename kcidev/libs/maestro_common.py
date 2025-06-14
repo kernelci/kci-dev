@@ -19,7 +19,9 @@ def maestro_print_api_call(host, data=None):
 
 
 def maestro_api_error(response):
-    logging.error(f"Maestro API error - Status: {response.status_code}, URL: {response.url}")
+    logging.error(
+        f"Maestro API error - Status: {response.status_code}, URL: {response.url}"
+    )
     kci_err(f"API response error code: {response.status_code}")
     try:
         error_data = response.json()
@@ -57,7 +59,7 @@ def maestro_get_node(url, nodeid):
     logging.info(f"Fetching Maestro node: {nodeid}")
     logging.debug(f"Node URL: {url}")
     maestro_print_api_call(url)
-    
+
     try:
         response = requests.get(url, headers=headers)
         logging.debug(f"Node request status: {response.status_code}")
@@ -72,7 +74,9 @@ def maestro_get_node(url, nodeid):
         sys.exit(errno.ENOENT)
 
     node_data = response.json()
-    logging.debug(f"Node {nodeid} data received, state: {node_data.get('state', 'unknown')}")
+    logging.debug(
+        f"Node {nodeid} data received, state: {node_data.get('state', 'unknown')}"
+    )
     return node_data
 
 
@@ -81,7 +85,7 @@ def maestro_get_nodes(url, limit, offset, filter):
         "Content-Type": "application/json; charset=utf-8",
     }
     url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
-    
+
     logging.info(f"Fetching Maestro nodes - limit: {limit}, offset: {offset}")
     if filter:
         logging.debug(f"Applying filters: {filter}")
@@ -89,7 +93,7 @@ def maestro_get_nodes(url, limit, offset, filter):
             # TBD: We need to add translate filter to API
             # if we need anything more complex than eq(=)
             url = url + "&" + f
-    
+
     logging.debug(f"Full nodes URL: {url}")
     maestro_print_api_call(url)
 
@@ -119,9 +123,11 @@ def maestro_check_node(node):
     name = node["name"]
     state = node["state"]
     result = node["result"]
-    
-    logging.debug(f"Checking node status - name: {name}, state: {state}, result: {result}")
-    
+
+    logging.debug(
+        f"Checking node status - name: {name}, state: {state}, result: {result}"
+    )
+
     if name == "checkout":
         if state == "running":
             status = "RUNNING"
@@ -138,7 +144,7 @@ def maestro_check_node(node):
             status = "DONE"
         else:
             status = "FAIL"
-    
+
     logging.debug(f"Node {name} status determined: {status}")
     return status
 
@@ -149,10 +155,10 @@ def maestro_retrieve_treeid_nodes(baseurl, token, treeid):
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": f"{token}",
     }
-    
+
     logging.info(f"Retrieving nodes for tree ID: {treeid}")
     logging.debug(f"Tree nodes URL: {url}")
-    
+
     try:
         response = requests.get(url, headers=headers, timeout=30)
         logging.debug(f"Tree nodes request status: {response.status_code}")
@@ -256,7 +262,9 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
                         kci_msg("")
                         job_info[node["name"]]["running"] = False
                     if not job_info[node["name"]]["done"]:
-                        logging.info(f"Job {node['name']} completed with result: {node['result']}")
+                        logging.info(
+                            f"Job {node['name']} completed with result: {node['result']}"
+                        )
                         maestro_node_result(node)
                         job_info[node["name"]]["done"] = True
                     if isinstance(joblist, list) and node["name"] in joblist:
@@ -272,11 +280,15 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
                     # if test is same as job, dont indicate infra-failure if test job fail
                     if test and test != node["name"]:
                         # if we have a test, and prior job failed, we should indicate that
-                        logging.error(f"Job {node['name']} failed, test cannot be executed")
+                        logging.error(
+                            f"Job {node['name']} failed, test cannot be executed"
+                        )
                         kci_err(f"Job {node['name']} failed, test can't be executed")
                         sys.exit(2)
         if isinstance(joblist, list) and len(joblist) == 0 and inprogress == 0:
-            logging.info(f"All jobs completed. Remaining in queue: {len(joblist)}, in progress: {inprogress}")
+            logging.info(
+                f"All jobs completed. Remaining in queue: {len(joblist)}, in progress: {inprogress}"
+            )
             kci_info("All jobs completed")
             if not test:
                 return
@@ -287,7 +299,9 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test):
                 # if all jobs done, usually test results must be available
                 # max within 60s. Safeguard in case of test node is not available
                 if not test_result and time.time() - jobs_done_ts < 60:
-                    logging.debug(f"Waiting for test results ({int(time.time() - jobs_done_ts)}s elapsed)")
+                    logging.debug(
+                        f"Waiting for test results ({int(time.time() - jobs_done_ts)}s elapsed)"
+                    )
                     continue
 
                 if test_result and test_result == "pass":

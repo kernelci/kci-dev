@@ -3,6 +3,7 @@
 
 import datetime
 import json
+import logging
 import re
 import subprocess
 import sys
@@ -30,18 +31,29 @@ def send_checkout_full(baseurl, token, **kwargs):
     }
     if "platform_filter" in kwargs:
         data["platformfilter"] = kwargs["platform_filter"]
+    
+    logging.info(f"Sending checkout request for {kwargs['giturl']} branch {kwargs['branch']} commit {kwargs['commit']}")
+    logging.debug(f"Checkout data: {json.dumps(data, indent=2)}")
+    
     jdata = json.dumps(data)
     maestro_print_api_call(url, data)
     try:
+        logging.debug(f"POST request to: {url}")
         response = requests.post(url, headers=headers, data=jdata, timeout=30)
+        logging.debug(f"Checkout response status: {response.status_code}")
     except requests.exceptions.RequestException as e:
+        logging.error(f"Checkout API request failed: {e}")
         kci_err(f"API connection error: {e}")
         return None
 
     if response.status_code != 200:
+        logging.error(f"Checkout failed with status {response.status_code}")
         maestro_api_error(response)
         return None
-    return response.json()
+    
+    result = response.json()
+    logging.info(f"Checkout successful - tree ID: {result.get('treeid', 'unknown')}")
+    return result
 
 
 def retrieve_tot_commit(repourl, branch):
@@ -51,11 +63,21 @@ def retrieve_tot_commit(repourl, branch):
     Unfortunately, gitpython does not support fetching the latest commit
     on a branch without having to clone the repo.
     """
+    cmd = ["git", "ls-remote", repourl, f"refs/heads/{branch}"]
+    logging.info(f"Retrieving tip-of-tree commit for {repourl} branch {branch}")
+    logging.debug(f"Running command: {' '.join(cmd)}")
+    
     process = subprocess.Popen(
-        ["git", "ls-remote", repourl, f"refs/heads/{branch}"], stdout=subprocess.PIPE
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     stdout, stderr = process.communicate()
+    
+    if process.returncode != 0:
+        logging.error(f"Failed to retrieve tip-of-tree: {stderr.decode('utf-8')}")
+        return None
+    
     sha = re.split(r"\t+", stdout.decode("ascii"))[0]
+    logging.info(f"Retrieved tip-of-tree commit: {sha}")
     return sha
 
 
@@ -142,11 +164,20 @@ def checkout(
         click.echo(ctx.get_help())
         sys.exit(0)
 
+    logging.info("Starting checkout command")
+    logging.debug(f"Parameters: giturl={giturl}, branch={branch}, commit={commit}, tipoftree={tipoftree}")
+    logging.debug(f"Filters: job_filter={job_filter}, platform_filter={platform_filter}")
+    logging.debug(f"Options: watch={watch}, test={test}")
+    
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = cfg[instance]["pipeline"]
     apiurl = cfg[instance]["api"]
     token = cfg[instance]["token"]
+    
+    logging.debug(f"Using instance: {instance}")
+    logging.debug(f"Pipeline URL: {url}")
+    logging.debug(f"API URL: {apiurl}")
     if not job_filter:
         job_filter = None
         click.secho("No job filter defined. All jobs will be triggered!", fg="yellow")
@@ -163,8 +194,10 @@ def checkout(
         click.secho(
             f"Retrieving latest commit on tree: {giturl} branch: {branch}", fg="green"
         )
+        logging.info("Retrieving tip-of-tree commit")
         commit = retrieve_tot_commit(giturl, branch)
         if not commit or len(commit) != 40:
+            logging.error(f"Invalid commit retrieved: {commit}")
             kci_err("Unable to retrieve latest commit. Wrong tree/branch?")
             return
         click.secho(f"Commit to checkout: {commit}", fg="green")
@@ -190,6 +223,8 @@ def checkout(
         treeid = node.get("treeid")
         checkout_nodeid = node.get("id")
 
+        logging.info(f"Checkout triggered successfully - treeid: {treeid}, nodeid: {checkout_nodeid}")
+        
         if treeid:
             click.secho(f"treeid: {treeid}", fg="green")
         if checkout_nodeid:
@@ -199,6 +234,7 @@ def checkout(
         node = resp.get("node")
         treeid = node.get("treeid")
         if not treeid:
+            logging.error("No treeid in response, cannot watch jobs")
             kci_err("No treeid returned. Can't watch for a job(s)!")
             return
         click.secho(f"Watching for jobs on treeid: {treeid}", fg="green")
