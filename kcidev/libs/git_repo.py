@@ -260,6 +260,111 @@ def get_latest_commit(origin, giturl, branch):
     raise click.Abort()
 
 
+def resolve_git_reference(git_folder, reference, giturl=None):
+    """Resolve a git reference (tag, branch, short commit) to a full SHA1 hash.
+
+    Args:
+        git_folder: Path to the git repository
+        reference: Git reference to resolve (tag, branch name, short commit, etc.)
+        giturl: Remote git URL to use for fetching if reference not found locally
+
+    Returns:
+        Full SHA1 commit hash, or None if resolution fails
+    """
+    logging.info(f"Resolving git reference: {reference}")
+
+    if not reference:
+        return None
+
+    # If reference already looks like a full SHA1, return it as-is
+    if len(reference) == 40 and all(c in "0123456789abcdef" for c in reference.lower()):
+        logging.debug(f"Reference {reference} already appears to be a full SHA1")
+        return reference
+
+    if git_folder:
+        current_folder = git_folder
+    else:
+        current_folder = os.getcwd()
+
+    previous_folder = os.getcwd()
+
+    # Try to resolve using git ls-remote if we have a giturl
+    # Note: ls-remote only works for refs (tags, branches), not short commits
+    if giturl and not (
+        len(reference) < 40 and all(c in "0123456789abcdef" for c in reference.lower())
+    ):
+        logging.info(f"Attempting to resolve {reference} from remote {giturl}")
+        # First try with the reference as-is
+        cmd = ["git", "ls-remote", giturl, reference]
+        logging.debug(f"Running command: {' '.join(cmd)}")
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        output, err = process.communicate()
+
+        if process.returncode == 0 and output:
+            # ls-remote output format: "<sha1>\t<ref>"
+            commit_hash = output.strip().split("\t")[0]
+            if commit_hash:
+                logging.debug(f"Found reference {reference} pointing to {commit_hash}")
+
+                # If this looks like a tag, we need to dereference it to get the commit
+                # Try with ^{} to get the commit the tag points to
+                cmd_deref = ["git", "ls-remote", giturl, f"{reference}^{{}}"]
+                logging.debug(f"Dereferencing tag with command: {' '.join(cmd_deref)}")
+                process_deref = subprocess.Popen(
+                    cmd_deref, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                )
+                output_deref, err_deref = process_deref.communicate()
+
+                if process_deref.returncode == 0 and output_deref:
+                    dereferenced_hash = output_deref.strip().split("\t")[0]
+                    if dereferenced_hash and dereferenced_hash != commit_hash:
+                        logging.info(
+                            f"Resolved tag {reference} to commit {dereferenced_hash}"
+                        )
+                        return dereferenced_hash
+
+                # If dereferencing failed or returned same hash, use original
+                logging.info(f"Resolved {reference} to {commit_hash} from remote")
+                return commit_hash
+        else:
+            logging.debug(f"Failed to resolve from remote: {err}")
+
+    # Try local resolution if we have a local git directory
+    if os.path.isdir(current_folder):
+        os.chdir(current_folder)
+
+        if is_inside_work_tree():
+            # Try to resolve the reference to a commit SHA1
+            cmd = ["git", "rev-parse", reference]
+            logging.debug(f"Running command: {' '.join(cmd)}")
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
+            commit_hash, err = process.communicate()
+            commit_hash = commit_hash.strip()
+
+            if process.returncode == 0:
+                logging.info(f"Resolved {reference} to {commit_hash} locally")
+                os.chdir(previous_folder)
+                return commit_hash
+            else:
+                logging.debug(f"Failed to resolve reference locally: {err.strip()}")
+
+        os.chdir(previous_folder)
+
+    # If it looks like a short commit hash, we'll let the API try to handle it
+    if len(reference) < 40 and all(c in "0123456789abcdef" for c in reference.lower()):
+        logging.info(
+            f"Reference {reference} appears to be a short commit hash, cannot resolve remotely"
+        )
+    else:
+        logging.warning(f"Could not resolve git reference: {reference}")
+
+    return None
+
+
 def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder):
     logging.info("Setting git URL, branch, and commit parameters")
     # Fill in any missing parameters from local git repository
@@ -302,6 +407,18 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
     kci_msg("branch: " + branch)
     if commit:
         kci_msg("commit: " + commit)
+        # If commit looks like a tag or short hash (not 40 chars), try to resolve it
+        if len(commit) != 40 or not all(
+            c in "0123456789abcdef" for c in commit.lower()
+        ):
+            logging.info(f"Attempting to resolve git reference: {commit}")
+            resolved_commit = resolve_git_reference(git_folder, commit, giturl)
+            if resolved_commit:
+                logging.info(f"Resolved {commit} to {resolved_commit}")
+                kci_msg(f"resolved to: {resolved_commit}")
+                commit = resolved_commit
+            else:
+                logging.warning(f"Could not resolve {commit}, will try API as-is")
 
     if latest:
         logging.info("Fetching latest commit from dashboard")
