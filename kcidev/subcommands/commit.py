@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 import sys
 
 import click
@@ -10,21 +11,32 @@ from git import Repo
 
 
 def api_connection(host):
+    logging.info(f"Connecting to API at: {host}")
     click.secho("api connect: " + host, fg="green")
     return host
 
 
 def find_diff(path, branch, origin, repository):
+    logging.info(f"Finding diff between {origin} and {branch} in {path}")
     repo = Repo(path)
     assert not repo.bare
-    hcommit = repo.iter_commits(origin + ".." + branch)
+
+    commit_range = f"{origin}..{branch}"
+    logging.debug(f"Checking commits in range: {commit_range}")
+
+    hcommit = repo.iter_commits(commit_range)
     commits = []
     for i in hcommit:
         commits.append(repo.git.show(i))
-    return commits[0]
+
+    logging.info(f"Found {len(commits)} commits to test")
+    if commits:
+        logging.debug(f"First commit size: {len(commits[0])} bytes")
+    return commits[0] if commits else None
 
 
 def send_build(url, patch, branch, treeurl, token):
+    logging.info(f"Preparing to send build for branch {branch} to {url}")
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": "Bearer {}".format(token),
@@ -36,11 +48,18 @@ def send_build(url, patch, branch, treeurl, token):
         "kbuildname": "example",
         "testname": "example",
     }
+
+    logging.debug(f"Request headers: {headers}")
+    logging.debug(f"Request values: {values}")
+
     # temporary disabled as API not working yet
+    logging.warning("API integration is currently disabled - request not sent")
     click.secho(url, fg="green")
     click.secho(headers, fg="green")
     click.secho(values, fg="green")
     # response = requests.post(url, headers=headers, files={"patch": patch}, data=values)
+    # logging.info(f"Response status: {response.status_code}")
+    # logging.debug(f"Response: {response.json()}")
     # click.secho(response.status_code, fg="green")
     # click.secho(response.json(), fg="green")
 
@@ -96,6 +115,12 @@ Examples:
 )
 @click.pass_context
 def commit(ctx, repository, branch, origin, private, path):
+    logging.info("Starting commit command")
+    logging.debug(
+        f"Parameters - repository: {repository}, branch: {branch}, origin: {origin}"
+    )
+    logging.debug(f"Options - private: {private}, path: {path}")
+
     # Check if user provided no custom options (all defaults)
     # Show help if running with all defaults and no explicit path
     if (
@@ -109,17 +134,29 @@ def commit(ctx, repository, branch, origin, private, path):
         # Check if running in a git repo
         try:
             Repo(".")
+            logging.debug("Running in git repository with default parameters")
         except:
             # Not in a git repo, show help
+            logging.debug("Not in a git repository, showing help")
             ctx = click.get_current_context()
             click.echo(ctx.get_help())
             sys.exit(0)
 
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
+    logging.debug(f"Using instance: {instance}")
+
     url = api_connection(config[instance]["pipeline"])
     diff = find_diff(path, branch, origin, repository)
-    send_build(url, diff, branch, repository, config[instance]["token"])
+
+    if diff:
+        logging.info("Sending build with local commits")
+        send_build(url, diff, branch, repository, config[instance]["token"])
+    else:
+        logging.warning("No commits found to test")
+        click.secho(
+            "No commits found between {} and {}".format(origin, branch), fg="yellow"
+        )
 
 
 if __name__ == "__main__":

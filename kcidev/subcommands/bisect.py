@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 import os
 import re
 import subprocess
@@ -40,10 +41,14 @@ default_state = {
 
 
 def load_state(file="state.json"):
+    logging.debug(f"Loading bisection state from {file}")
     if os.path.exists(file):
         with open(file, "r") as f:
-            return json.load(f)
+            state = json.load(f)
+            logging.info(f"Loaded bisection state from {file}")
+            return state
     else:
+        logging.debug(f"No state file found at {file}")
         return None
 
 
@@ -64,32 +69,44 @@ def print_state(state):
 
 
 def save_state(state, file="state.json"):
+    logging.debug(f"Saving bisection state to {file}")
     with open(file, "w") as f:
         json.dump(state, f)
+    logging.info(f"Bisection state saved to {file}")
 
 
 def git_exec_getcommit(cmd):
     click.secho("Executing git command: " + " ".join(cmd), fg="green")
+    logging.info(f"Executing git bisect command: {' '.join(cmd)}")
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
+        logging.error(f"Git command failed with return code {result.returncode}")
+        logging.error(f"stderr: {result.stderr}")
+        logging.error(f"stdout: {result.stdout}")
         kci_err("git command return failed. Error:")
         kci_err(result.stderr)
         kci_err(result.stdout)
         sys.exit(1)
     lines = result.stdout.split(b"\n")
+    logging.debug(f"Git output lines: {len(lines)}")
     if len(lines) < 2:
+        logging.error(f"Unexpected git output: {lines}")
         kci_err(f"git command answer length failed: {lines}")
         sys.exit(1)
     # is it last bisect?: "is the first bad commit"
     if "is the first bad commit" in str(lines[1]):
+        logging.info("Bisection complete - found first bad commit")
         click.secho(f"git command: {lines}", fg="green")
         # TBD save state somehow?
         sys.exit(0)
     re_commit = re.search(r"\[([a-f0-9]+)\]", str(lines[1]))
     if not re_commit:
+        logging.error(f"Could not parse commit from git output: {lines}")
         kci_err(f"git command regex failed: {lines}")
         sys.exit(1)
-    return re_commit.group(1)
+    commit = re_commit.group(1)
+    logging.info(f"Next commit to test: {commit}")
+    return commit
 
 
 def kcidev_exec(cmd):
@@ -98,6 +115,7 @@ def kcidev_exec(cmd):
     """
     process = None
     click.secho("Executing kci-dev command: " + " " + str(cmd), fg="green")
+    logging.info(f"Executing kci-dev command: {' '.join(cmd)}")
     with subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     ) as process:
@@ -105,7 +123,11 @@ def kcidev_exec(cmd):
             for line in process.stdout:
                 click.echo(line, nl=False)
             process.wait()
+            logging.debug(
+                f"kci-dev command completed with return code: {process.returncode}"
+            )
         except Exception as e:
+            logging.error(f"Error executing kci-dev: {e}")
             kci_err(f"Error executing kci-dev: {e}")
             sys.exit(1)
 
@@ -124,16 +146,27 @@ def init_bisect(repo, state):
     olddir = os.getcwd()
     os.chdir(state["workdir"])
     click.secho("Initiating bisection...", fg="green")
+    logging.info(f"Initializing bisection - good: {state['good']}, bad: {state['bad']}")
+
     execute_cmdline(["git", "bisect", "start"], subprocess.DEVNULL)
     execute_cmdline(["git", "bisect", "good", state["good"]], subprocess.DEVNULL)
     execute_cmdline(["git", "bisect", "bad", state["bad"]], subprocess.DEVNULL)
+
     results = execute_cmdline(["git", "bisect", "log"])
     if results.stdout:
+        logging.debug("Git bisect log:")
+        logging.debug(
+            results.stdout.decode()
+            if isinstance(results.stdout, bytes)
+            else results.stdout
+        )
         kci_log("---")
         kci_log(results.stdout)
 
+    commit_sha = repo.head.commit.hexsha
+    logging.info(f"Starting bisection at commit: {commit_sha}")
     os.chdir(olddir)
-    return repo.head.commit.hexsha
+    return commit_sha
 
 
 def update_tree(workdir, branch, giturl):
@@ -141,13 +174,17 @@ def update_tree(workdir, branch, giturl):
         click.secho(
             "Cloning repository (this might take significant time!)...", fg="green"
         )
+        logging.info(f"Cloning repository {giturl} to {workdir}")
         repo = Repo.clone_from(giturl, workdir)
         repo.git.checkout(branch)
+        logging.info(f"Cloned and checked out branch {branch}")
     else:
         click.secho("Pulling repository...", fg="green")
+        logging.info(f"Updating existing repository in {workdir}")
         repo = Repo(workdir)
         repo.git.fetch("origin", branch)
         repo.git.reset("--hard", f"origin/{branch}")
+        logging.info(f"Updated to latest {branch} branch")
     return repo
 
 
@@ -156,9 +193,13 @@ def bisection_loop(state):
     os.chdir(state["workdir"])
     commit = state["next_commit"]
     if commit is None:
+        logging.error(
+            "No next commit to test - bisection may be complete or in error state"
+        )
         click.secho("Bisection error?", fg="green")
         return
     click.secho("Testing commit: " + commit, fg="green")
+    logging.info(f"Testing commit {commit} for regression")
     cmd = [
         "kci-dev",
         "checkout",
@@ -183,21 +224,30 @@ def bisection_loop(state):
     try:
         testret = result.returncode
     except Exception as e:
+        logging.error(f"Error getting return code from kci-dev: {e}")
         kci_err(f"Error executing kci-dev, no returncode: {e}")
         sys.exit
+
+    logging.info(f"Test completed with return code: {testret}")
+
     if testret == 0:
         bisect_result = "good"
+        logging.info(f"Commit {commit} marked as GOOD (test passed)")
     elif testret == 1:
         # TBD: Retry failed test to make sure it is not a flaky test
         bisect_result = "bad"
+        logging.info(f"Commit {commit} marked as BAD (test failed)")
     elif testret == 2:
         # TBD: Retry failed test to make sure it is not a flaky test
         bisect_result = "skip"
+        logging.info(f"Commit {commit} marked as SKIP (test inconclusive)")
     elif testret == 3:
+        logging.warning("Maestro internal error - will retry")
         kci_err(f"Maestro failed to execute the test.")
         # Internal maestro error, retry procesure
         return None
     else:
+        logging.error(f"Unexpected return code {testret} from kci-dev")
         kci_err(
             f"Unknown or critical return code from kci-dev: {testret}. Try to run last command manually and inspect the output:"
         )
@@ -206,10 +256,13 @@ def bisection_loop(state):
     cmd = ["git", "bisect", bisect_result]
     commitid = git_exec_getcommit(cmd)
     if not commitid:
+        logging.error("Git bisect returned empty commit")
         kci_err("git bisect failed, commit return is empty")
         sys.exit(1)
+
     state["history"].append({commit: bisect_result})
     state["next_commit"] = commitid
+    logging.info(f"Bisection history updated - {len(state['history'])} commits tested")
     os.chdir(olddir)
     return state
 
@@ -290,16 +343,30 @@ def bisect(
     platform_filter,
     test,
 ):
+    logging.info("Starting bisect command")
+    logging.debug(
+        f"Parameters - giturl: {giturl}, branch: {branch}, good: {good}, bad: {bad}"
+    )
+    logging.debug(
+        f"Filters - job: {job_filter}, platform: {platform_filter}, test: {test}"
+    )
+    logging.debug(f"Options - workdir: {workdir}, ignore_state: {ignore_state}")
+
     config = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
 
     state_file = os.path.join(workdir, state_file)
     state = load_state(state_file)
     if state is None or ignore_state:
+        if ignore_state:
+            logging.info("Ignoring saved state, starting fresh bisection")
+        else:
+            logging.info("No saved state found, starting new bisection")
         state = default_state
         # Check if user provided any required parameters
         if not any([giturl, branch, good, bad, job_filter, platform_filter, test]):
             # No parameters provided and no state file - show help
+            logging.debug("No parameters provided and no state file - showing help")
             ctx = click.get_current_context()
             click.echo(ctx.get_help())
             sys.exit(0)
@@ -336,21 +403,28 @@ def bisect(
         state["platform_filter"] = platform_filter
         state["test"] = test
         state["workdir"] = workdir
+        logging.info("Initialized new bisection state")
         repo = update_tree(workdir, branch, giturl)
         save_state(state, state_file)
     else:
+        logging.info("Resuming bisection from saved state")
         print_state(state)
-        repo = update_tree(workdir, branch, giturl)
+        repo = update_tree(state["workdir"], state["branch"], state["giturl"])
 
     if not state["bisect_init"]:
+        logging.info("Initializing git bisect")
         state["next_commit"] = init_bisect(repo, state)
         state["bisect_init"] = True
         save_state(state, state_file)
 
     while True:
         click.secho("Bisection loop", fg="green")
+        logging.info(
+            f"Starting bisection iteration - commits tested: {len(state.get('history', []))}"
+        )
         new_state = bisection_loop(state)
         if new_state is None:
+            logging.warning("Test failed, retrying")
             click.secho("Retry failed test", fg="green")
             continue
         state = new_state
