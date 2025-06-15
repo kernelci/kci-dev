@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 
 import click
 import requests
@@ -19,17 +20,28 @@ def send_jobretry(baseurl, jobid, token):
     }
     data = {"nodeid": jobid}
     jdata = json.dumps(data)
+
+    logging.info(f"Sending job retry request for node: {jobid}")
+    logging.debug(f"Retry URL: {url}")
     maestro_print_api_call(url, data)
+
     try:
+        logging.debug("Sending POST request for job retry")
         response = requests.post(url, headers=headers, data=jdata)
+        logging.debug(f"Response status: {response.status_code}")
     except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to send job retry request: {e}")
         kci_err(f"API connection error: {e}")
         return
 
     if response.status_code != 200:
+        logging.error(f"Job retry failed with status {response.status_code}")
         maestro_api_error(response)
         return None
-    return response.json()
+
+    result = response.json()
+    logging.info(f"Job retry request successful: {result.get('message', 'No message')}")
+    return result
 
 
 @click.command(
@@ -58,12 +70,21 @@ Examples:
 )
 @click.pass_context
 def testretry(ctx, nodeid):
+    logging.info(f"Starting testretry command for node: {nodeid}")
+
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = cfg[instance]["pipeline"]
+
+    logging.debug(f"Using instance: {instance}")
+    logging.debug(f"Pipeline URL: {url}")
+
     resp = send_jobretry(url, nodeid, cfg[instance]["token"])
     if resp and "message" in resp:
+        logging.info("Test retry initiated successfully")
         click.secho(resp["message"], fg="green")
+    else:
+        logging.warning("No response message from retry request")
 
 
 if __name__ == "__main__":

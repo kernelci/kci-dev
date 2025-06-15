@@ -1,4 +1,5 @@
 import json
+import logging
 import urllib
 from datetime import datetime, timedelta
 from functools import wraps
@@ -20,32 +21,54 @@ def _dashboard_request(func):
         # Status codes that should trigger a retry
         RETRY_STATUS_CODES = [429, 500, 502, 503, 504, 507]
 
+        logging.info(f"Dashboard API request: {func.__name__} to {endpoint}")
+        logging.debug(f"Full URL: {url}")
+        if body:
+            logging.debug(f"Request body: {json.dumps(body, indent=2)}")
+
         while retries <= max_retries:
             try:
+                logging.debug(f"Attempt {retries + 1}/{max_retries + 1} for {endpoint}")
                 r = func(url, params, use_json, body)
+
+                logging.debug(f"Response status code: {r.status_code}")
+
                 if r.status_code in RETRY_STATUS_CODES:
                     retries += 1
                     if retries <= max_retries:
+                        logging.warning(
+                            f"Retrying request due to status {r.status_code} (attempt {retries}/{max_retries})"
+                        )
                         continue
                     else:
+                        logging.error(
+                            f"Failed after {max_retries} retries with status {r.status_code}"
+                        )
                         kci_err(f"Failed after {max_retries} retries with 500 error.")
                         raise click.Abort()
 
                 r.raise_for_status()
 
                 data = r.json()
+                logging.debug(f"Response data size: {len(json.dumps(data))} bytes")
+
                 if "error" in data:
+                    logging.error(f"API returned error: {data.get('error')}")
                     if use_json:
                         kci_msg(data)
                     else:
                         kci_msg("json error: " + str(data["error"]))
                     raise click.Abort()
+
+                logging.info(f"Successfully completed {func.__name__} request")
                 return data
 
             except requests.exceptions.RequestException as e:
+                logging.error(f"Request exception for {endpoint}: {str(e)}")
                 kci_err(f"Failed to fetch from {DASHBOARD_API}: {str(e)}.")
                 raise click.Abort()
 
+        logging.error("Unexpected failure in API request - exhausted all attempts")
         kci_err("Unexpected failure in API request")
         raise click.Abort()
 
@@ -71,6 +94,9 @@ def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):
     }
     if arch is not None:
         params["filter_architecture"] = arch
+
+    logging.info(f"Fetching summary for commit {commit} on {branch} branch")
+    logging.debug(f"Parameters: origin={origin}, git_url={giturl}, arch={arch}")
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
@@ -91,6 +117,11 @@ def dashboard_fetch_builds(
         params["filter_start_date"] = start_date
     if end_date is not None:
         params["filter_end_date"] = end_date
+
+    logging.info(f"Fetching builds for commit {commit} on {branch} branch")
+    logging.debug(
+        f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
+    )
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
@@ -111,6 +142,11 @@ def dashboard_fetch_boots(
         params["filter_start_date"] = start_date
     if end_date is not None:
         params["filter_end_date"] = end_date
+
+    logging.info(f"Fetching boots for commit {commit} on {branch} branch")
+    logging.debug(
+        f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
+    )
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
@@ -131,16 +167,23 @@ def dashboard_fetch_tests(
         params["filter_start_date"] = start_date
     if end_date is not None:
         params["filter_end_date"] = end_date
+
+    logging.info(f"Fetching tests for commit {commit} on {branch} branch")
+    logging.debug(
+        f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
+    )
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
 def dashboard_fetch_test(test_id, use_json):
     endpoint = f"test/{test_id}"
+    logging.info(f"Fetching test details for test ID: {test_id}")
     return dashboard_api_fetch(endpoint, {}, use_json)
 
 
 def dashboard_fetch_build(build_id, use_json):
     endpoint = f"build/{build_id}"
+    logging.info(f"Fetching build details for build ID: {build_id}")
     return dashboard_api_fetch(endpoint, {}, use_json)
 
 
@@ -148,6 +191,7 @@ def dashboard_fetch_tree_list(origin, use_json):
     params = {
         "origin": origin,
     }
+    logging.info(f"Fetching tree list for origin: {origin}")
     return dashboard_api_fetch("tree-fast", params, use_json)
 
 
@@ -160,6 +204,10 @@ def dashboard_fetch_hardware_list(origin, use_json):
         "endTimeStampInSeconds": int(now.timestamp()),
         "startTimestampInSeconds": int(last_week.timestamp()),
     }
+    logging.info(f"Fetching hardware list for origin: {origin}")
+    logging.debug(
+        f"Date range: {last_week.strftime('%Y-%m-%d')} to {now.strftime('%Y-%m-%d')}"
+    )
     return dashboard_api_fetch("hardware/", params, use_json)
 
 
@@ -179,6 +227,7 @@ def _create_hardware_request_body(origin):
 def dashboard_fetch_hardware_summary(name, origin, use_json):
     # TODO: add extra filters: Commits, date, filter, origin
     body = _create_hardware_request_body(origin)
+    logging.info(f"Fetching hardware summary for: {name} (origin: {origin})")
     return dashboard_api_post(
         f"hardware/{urllib.parse.quote_plus(name)}/summary", {}, use_json, body
     )
@@ -186,6 +235,7 @@ def dashboard_fetch_hardware_summary(name, origin, use_json):
 
 def dashboard_fetch_hardware_boots(name, origin, use_json):
     body = _create_hardware_request_body(origin)
+    logging.info(f"Fetching hardware boots for: {name} (origin: {origin})")
     return dashboard_api_post(
         f"hardware/{urllib.parse.quote_plus(name)}/boots", {}, use_json, body
     )
@@ -193,6 +243,7 @@ def dashboard_fetch_hardware_boots(name, origin, use_json):
 
 def dashboard_fetch_hardware_builds(name, origin, use_json):
     body = _create_hardware_request_body(origin)
+    logging.info(f"Fetching hardware builds for: {name} (origin: {origin})")
     return dashboard_api_post(
         f"hardware/{urllib.parse.quote_plus(name)}/builds", {}, use_json, body
     )
@@ -200,6 +251,7 @@ def dashboard_fetch_hardware_builds(name, origin, use_json):
 
 def dashboard_fetch_hardware_tests(name, origin, use_json):
     body = _create_hardware_request_body(origin)
+    logging.info(f"Fetching hardware tests for: {name} (origin: {origin})")
     return dashboard_api_post(
         f"hardware/{urllib.parse.quote_plus(name)}/tests", {}, use_json, body
     )
