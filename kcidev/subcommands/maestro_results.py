@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
+
 import click
 from git import Repo
 
@@ -81,25 +83,51 @@ def maestro_results(
     config,
     git_branch,
 ):
+    logging.info("Starting maestro-results command")
+    logging.debug(
+        f"Parameters - nodeid: {nodeid}, nodes: {nodes}, limit: {limit}, offset: {offset}"
+    )
+    logging.debug(
+        f"Filters - tree: {tree}, status: {status}, dates: {start_date} to {end_date}"
+    )
+
     config_data = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
     url = config_data[instance]["api"]
+
+    logging.debug(f"Using instance: {instance}")
+    logging.debug(f"API URL: {url}")
+
     if not nodeid and not nodes:
+        logging.debug("No nodeid or nodes flag provided, showing help")
         ctx = click.get_current_context()
         click.echo(ctx.get_help())
         sys.exit(0)
+
     if nodeid:
+        logging.info(f"Fetching single node: {nodeid}")
         results = maestro_get_node(url, nodeid)
+
     if nodes:
         # Add tree filter if provided
         filter = list(filter) if filter else []
+
         if tree:
             filter.append(f"data.kernel_revision.tree::{tree}")
+            logging.debug(f"Added tree filter: {tree}")
         if start_date:
             filter.append(f"created__gte={start_date}")
+            logging.debug(f"Added start date filter: {start_date}")
         if end_date:
             filter.append(f"created__lte={end_date}")
+            logging.debug(f"Added end date filter: {end_date}")
+
+        logging.info(
+            f"Fetching nodes with {len(filter)} filters, limit: {limit}, offset: {offset}"
+        )
         results = maestro_get_nodes(url, limit, offset, filter)
+
+    logging.debug(f"Displaying results with fields: {field if field else 'all'}")
     maestro_print_nodes(results, field)
 
 
