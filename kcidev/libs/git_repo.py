@@ -402,11 +402,11 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
     logging.info(
         f"Final parameters - URL: {giturl}, Branch: {branch}, Commit: {commit if commit else 'latest'}"
     )
-    kci_msg("git folder: " + str(git_folder))
-    kci_msg("tree: " + giturl)
-    kci_msg("branch: " + branch)
+    logging.info("git folder: " + str(git_folder))
+    logging.info("tree: " + giturl)
+    logging.info("branch: " + branch)
     if commit:
-        kci_msg("commit: " + commit)
+        logging.info("commit: " + commit)
         # If commit looks like a tag or short hash (not 40 chars), try to resolve it
         if len(commit) != 40 or not all(
             c in "0123456789abcdef" for c in commit.lower()
@@ -423,6 +423,6 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
     if latest:
         logging.info("Fetching latest commit from dashboard")
         commit = get_latest_commit(origin, giturl, branch)
-        kci_msg("commit: " + commit)
+        logging.info("commit: " + commit)
 
     return giturl, branch, commit
