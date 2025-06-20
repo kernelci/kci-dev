@@ -2,6 +2,7 @@ import sys
 
 import click
 
+from kcidev.subcommands.validate.boots import boots
 from kcidev.subcommands.validate.builds import builds
 
 
@@ -11,12 +12,16 @@ from kcidev.subcommands.validate.builds import builds
 \b
 Subcommands:
     builds - Validate build results
+    boots  - Validate boot results
 
 \b
 Examples:
     # Validate builds
     kci-dev validate builds --all-checkouts --days <number-of-days>
     kci-dev validate builds -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    # Validate boots
+    kci-dev validate boots --all-checkouts --days <number-of-days>
+    kci-dev validate boots -commit <git-commit> --giturl <git-url> --branch <git-branch>
 """,
     invoke_without_command=True,
 )
@@ -30,6 +35,7 @@ def validate(ctx):
 
 # Add subcommands to the validate group
 validate.add_command(builds)
+validate.add_command(boots)
 
 
 if __name__ == "__main__":

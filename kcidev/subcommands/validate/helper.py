@@ -5,7 +5,7 @@ from tabulate import tabulate
 
 from kcidev.libs.common import kci_msg, kci_msg_json, kci_msg_red
 from kcidev.subcommands.maestro.results import results
-from kcidev.subcommands.results import builds
+from kcidev.subcommands.results import boots, builds
 
 
 def get_builds(ctx, giturl, branch, commit, arch=None):
@@ -125,3 +125,111 @@ def print_stats(data, headers, max_col_width, table_fmt):
     print(
         tabulate(data, headers=headers, maxcolwidths=max_col_width, tablefmt=table_fmt)
     )
+
+
+def validate_boot_status(maestro_boots, dashboard_boots):
+    """
+    Validate if the boot status of dashboard pulled boot
+    matches with the maestro boot status
+    """
+    MISSED_TEST_CODES = (
+        "Bug",
+        "Configuration",
+        "invalid_job_params",
+        "Job",
+        "job_generation_error",
+        "ObjectNotPersisted",
+        "RequestBodyTooLarge",
+        "submit_error",
+        "Unexisting permission codename.",
+        "kbuild_internal_error",
+    )
+
+    ERRORED_TEST_CODES = (
+        "Canceled",
+        "Infrastructure",
+        "LAVATimeout",
+        "MultinodeTimeout",
+        "Test",
+    )
+
+    status_map = {
+        "pass": "PASS",
+        "fail": "FAIL",
+    }
+
+    boots_with_status_mismatch = []
+    dashboard_boot_status_dict = {
+        b["id"].split(":")[1]: b["status"] for b in dashboard_boots
+    }
+    for b in maestro_boots:
+        boot_id = b["id"]
+        if boot_id in dashboard_boot_status_dict:
+            if b["result"] == "incomplete":
+                result = None
+                if b["data"].get("error_code") in MISSED_TEST_CODES:
+                    result = "MISS"
+                elif b["data"].get("error_code") in ERRORED_TEST_CODES:
+                    result = "ERROR"
+                if dashboard_boot_status_dict[boot_id] != result:
+                    boots_with_status_mismatch.append(boot_id)
+            elif dashboard_boot_status_dict[boot_id] != status_map.get(b["result"]):
+                boots_with_status_mismatch.append(boot_id)
+    return boots_with_status_mismatch
+
+
+def get_boots(ctx, giturl, branch, commit):
+    """Get boots matching git URL, branch, and commit"""
+    maestro_boots = []
+    dashboard_boots = []
+    filters = [
+        "name__re=^baseline",
+        "data.kernel_revision.url=" + giturl,
+        "data.kernel_revision.branch=" + branch,
+        "data.kernel_revision.commit=" + commit,
+    ]
+
+    maestro_boots = ctx.invoke(
+        results,
+        count=True,
+        nodes=True,
+        filter=filters,
+        paginate=False,
+    )
+    try:
+        dashboard_boots = ctx.invoke(
+            boots,
+            giturl=giturl,
+            branch=branch,
+            commit=commit,
+            count=True,
+            verbose=False,
+        )
+    except click.Abort:
+        kci_msg_red("Aborted while fetching dashboard boots")
+        return maestro_boots, None
+    return maestro_boots, dashboard_boots
+
+
+def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch=None):
+    """Get boot stats"""
+    maestro_boots, dashboard_boots = get_boots(ctx, giturl, branch, commit)
+    if dashboard_boots is None:
+        return []
+    missing_boot_ids = []
+    if len(dashboard_boots) == len(maestro_boots):
+        count_comparison_flag = "✅"
+    else:
+        count_comparison_flag = "❌"
+        missing_boot_ids = find_missing_items(maestro_boots, dashboard_boots, verbose)
+    boots_with_status_mismatch = validate_boot_status(maestro_boots, dashboard_boots)
+    stats = [
+        f"{tree_name}/{branch}",
+        commit,
+        len(maestro_boots),
+        len(dashboard_boots),
+        count_comparison_flag,
+        missing_boot_ids,
+        boots_with_status_mismatch,
+    ]
+    return stats

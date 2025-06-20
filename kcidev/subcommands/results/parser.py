@@ -317,6 +317,7 @@ def cmd_tests(
     max_duration,
     count,
     use_json,
+    verbose=True,
 ):
     logging.info("Processing tests with filters")
     logging.debug(
@@ -380,10 +381,11 @@ def cmd_tests(
 
     if count and use_json:
         kci_msg(f'{{"count":{filtered_tests}}}')
-    elif count:
+    elif count and verbose:
         kci_msg(filtered_tests)
     elif use_json:
         kci_msg(json.dumps(tests))
+    return data
 
 
 def print_test(test, log_path):
