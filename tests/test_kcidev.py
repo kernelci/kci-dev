@@ -54,7 +54,8 @@ def test_kcidev_results_help(kcidev_config):
         "kci-dev",
         "--settings",
         kcidev_config,
-        "maestro-results",
+        "maestro",
+        "results",
         "--help",
     ]
     result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)

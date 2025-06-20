@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import sys
 
 import click
 from git import Repo
@@ -12,6 +13,7 @@ from kcidev.libs.maestro_common import *
 
 
 @click.command(
+    name="results",
     help="""Query test results from KernelCI's Maestro API.
 
 This command allows you to retrieve test results either by specific node ID
@@ -19,11 +21,11 @@ or by fetching the latest nodes with pagination and filtering options.
 
 \b
 Examples:
-  kci-dev maestro-results --nodeid <NODE_ID>
-  kci-dev maestro-results --nodes --limit 10
-  kci-dev maestro-results --nodes --filter "status=fail"
-  kci-dev maestro-results --nodes --field name --field status
-"""
+  kci-dev maestro results --nodeid <NODE_ID>
+  kci-dev maestro results --nodes --limit 10
+  kci-dev maestro results --nodes --filter "status=fail"
+  kci-dev maestro results --nodes --field name --field status
+""",
 )
 @click.option(
     "--nodeid",
@@ -67,7 +69,7 @@ Examples:
 )
 @add_filter_options
 @click.pass_context
-def maestro_results(
+def results(
     ctx,
     nodeid,
     nodes,
@@ -83,7 +85,7 @@ def maestro_results(
     config,
     git_branch,
 ):
-    logging.info("Starting maestro-results command")
+    logging.info("Starting maestro results command")
     logging.debug(
         f"Parameters - nodeid: {nodeid}, nodes: {nodes}, limit: {limit}, offset: {offset}"
     )

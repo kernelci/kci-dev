@@ -11,7 +11,7 @@ from kcidev.subcommands import (
     checkout,
     commit,
     config,
-    maestro_results,
+    maestro,
     results,
     testretry,
     watch,
@@ -60,7 +60,7 @@ def run():
     cli.add_command(checkout.checkout)
     cli.add_command(commit.commit)
     cli.add_command(config.config)
-    cli.add_command(maestro_results.maestro_results)
+    cli.add_command(maestro.maestro)
     cli.add_command(testretry.testretry)
     cli.add_command(results.results)
     cli.add_command(watch.watch)
