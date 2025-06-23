@@ -187,9 +187,10 @@ def dashboard_fetch_build(build_id, use_json):
     return dashboard_api_fetch(endpoint, {}, use_json)
 
 
-def dashboard_fetch_tree_list(origin, use_json):
+def dashboard_fetch_tree_list(origin, use_json, days=7):
     params = {
         "origin": origin,
+        "interval_in_days": days,
     }
     logging.info(f"Fetching tree list for origin: {origin}")
     return dashboard_api_fetch("tree-fast", params, use_json)

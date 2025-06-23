@@ -92,10 +92,16 @@ def summary(origin, git_folder, giturl, branch, commit, latest, arch, tree, use_
     help="Select KCIDB origin",
     default="maestro",
 )
+@click.option(
+    "--days",
+    help="Provide a period of time in days to get results for",
+    type=int,
+    default=7,
+)
 @results_display_options
-def trees(origin, use_json):
+def trees(origin, use_json, days):
     """List trees from a give origin."""
-    cmd_list_trees(origin, use_json)
+    cmd_list_trees(origin, use_json, days)
 
 
 @results.command()
