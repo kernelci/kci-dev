@@ -126,13 +126,23 @@ def dashboard_fetch_builds(
 
 
 def dashboard_fetch_boots(
-    origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    origin,
+    giturl,
+    branch,
+    commit,
+    arch,
+    tree,
+    start_date,
+    end_date,
+    use_json,
+    test_origin="maestro",
 ):
     endpoint = f"tree/{commit}/boots"
     params = {
         "origin": origin,
         "git_url": giturl,
         "git_branch": branch,
+        "filter_boot.origin": test_origin,
     }
     if arch is not None:
         params["filter_architecture"] = arch
