@@ -169,6 +169,12 @@ def builds(
 @results.command()
 @common_options
 @builds_and_tests_options
+@click.option(
+    "--verbose",
+    is_flag=True,
+    default=True,
+    help="Print boot details",
+)
 def boots(
     origin,
     git_folder,
@@ -193,6 +199,7 @@ def boots(
     max_duration,
     count,
     use_json,
+    verbose,
 ):
     """Display boot results."""
     giturl, branch, commit = set_giturl_branch_commit(
@@ -201,7 +208,7 @@ def boots(
     data = dashboard_fetch_boots(
         origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
     )
-    cmd_tests(
+    return cmd_tests(
         data["boots"],
         commit,
         download_logs,
@@ -219,6 +226,7 @@ def boots(
         max_duration,
         count,
         use_json,
+        verbose,
     )
 
 
