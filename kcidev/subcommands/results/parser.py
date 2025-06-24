@@ -27,12 +27,12 @@ from kcidev.libs.job_filters import HardwareRegexFilter, TestRegexFilter, TreeFi
 def print_summary(type, n_pass, n_fail, n_inconclusive):
 
     kci_msg_nonl(f"{type}:\t")
-    kci_msg_green_nonl(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}")
+    kci_msg_green(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}", nl=False)
     kci_msg_nonl("/")
-    kci_msg_red_nonl(f"{n_fail}") if n_fail else kci_msg_nonl(f"{n_fail}")
+    kci_msg_red(f"{n_fail}") if n_fail else kci_msg_nonl(f"{n_fail}", nl=False)
     kci_msg_nonl("/")
     (
-        kci_msg_yellow_nonl(f"{n_inconclusive}")
+        kci_msg_yellow(f"{n_inconclusive}", nl=False)
         if n_inconclusive
         else kci_msg_nonl(f"{n_inconclusive}")
     )
@@ -149,25 +149,37 @@ def get_command_summary(command_data):
     return inconclusive_cmd, pass_cmd, fail_cmd
 
 
-def cmd_list_trees(origin, use_json, days):
+def cmd_list_trees(origin, use_json, days, verbose):
     logging.info(f"Listing trees for origin: {origin}")
     trees = dashboard_fetch_tree_list(origin, use_json, days)
     logging.debug(f"Found {len(trees)} trees")
     if use_json:
         kci_msg(json.dumps(list(map(lambda t: create_tree_json(t), trees))))
         return
+
     for t in trees:
         logging.debug(
             f"Tree: {t['tree_name']}/{t['git_repository_branch']} - {t['git_commit_hash']}"
         )
-        kci_msg_green_nonl(f"- {t['tree_name']}/{t['git_repository_branch']}:\n")
-        kci_msg(f"  giturl: {t['git_repository_url']}")
-        kci_msg(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
-        kci_msg(f"  latest: {t['start_time']}")
+        if verbose:
+            kci_msg_green(f"- {t['tree_name']}/{t['git_repository_branch']}:")
+            kci_msg(f"  giturl: {t['git_repository_url']}")
+            kci_msg(f"  latest: {t['git_commit_hash']} ({t['git_commit_name']})")
+            kci_msg(f"  latest: {t['start_time']}")
+    return trees
 
 
 def cmd_builds(
-    data, commit, download_logs, status, compiler, config, git_branch, count, use_json
+    data,
+    commit,
+    download_logs,
+    status,
+    compiler,
+    config,
+    git_branch,
+    count,
+    use_json,
+    verbose=True,
 ):
     logging.info(
         f"Processing builds with filters - status: {status}, compiler: {compiler}, config: {config}, branch: {git_branch}"
@@ -218,28 +230,29 @@ def cmd_builds(
 
     if count and use_json:
         kci_msg(f'{{"count":{filtered_builds}}}')
-    elif count:
+    elif count and verbose:
         kci_msg(filtered_builds)
     elif use_json:
         kci_msg(json.dumps(builds))
+    return data["builds"]
 
 
 def print_build(build, log_path):
     kci_msg_nonl("- config:")
-    kci_msg_cyan_nonl(build["config_name"])
+    kci_msg_cyan(build["config_name"], nl=False)
     kci_msg_nonl(" arch: ")
-    kci_msg_cyan_nonl(build["architecture"])
+    kci_msg_cyan(build["architecture"], nl=False)
     kci_msg_nonl(" compiler: ")
-    kci_msg_cyan_nonl(build["compiler"])
+    kci_msg_cyan(build["compiler"], nl=False)
     kci_msg("")
 
     kci_msg_nonl("  status:")
     if build["status"] == "PASS":
-        kci_msg_green_nonl("PASS")
+        kci_msg_green("PASS", nl=False)
     elif build["status"] == "FAIL":
-        kci_msg_red_nonl("FAIL")
+        kci_msg_red("FAIL", nl=False)
     else:
-        kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {build['status']})")
+        kci_msg_yellow(f"INCONCLUSIVE (status: {build['status']})", nl=False)
     kci_msg("")
 
     kci_msg(f"  config_url: {build['config_url']}")
@@ -375,38 +388,38 @@ def cmd_tests(
 
 def print_test(test, log_path):
     kci_msg_nonl("- test path: ")
-    kci_msg_cyan_nonl(test["path"])
+    kci_msg_cyan(test["path"], nl=False)
     kci_msg("")
 
     kci_msg_nonl("  hardware: ")
-    kci_msg_cyan_nonl(test["environment_misc"]["platform"])
+    kci_msg_cyan(test["environment_misc"]["platform"], nl=False)
     kci_msg("")
 
     if test["environment_compatible"]:
         kci_msg_nonl("  compatibles: ")
-        kci_msg_cyan_nonl(" | ".join(test["environment_compatible"]))
+        kci_msg_cyan(" | ".join(test["environment_compatible"]), nl=False)
         kci_msg("")
 
     kci_msg_nonl("  config: ")
     if "config" in test:
-        kci_msg_cyan_nonl(test["config"])
+        kci_msg_cyan(test["config"], nl=False)
     elif "config_name" in test:
-        kci_msg_cyan_nonl(test["config_name"])
+        kci_msg_cyan(test["config_name"], nl=False)
     else:
-        kci_msg_cyan_nonl("No config available")
+        kci_msg_cyan("No config available", nl=False)
     kci_msg_nonl(" arch: ")
-    kci_msg_cyan_nonl(test["architecture"])
+    kci_msg_cyan(test["architecture"], nl=False)
     kci_msg_nonl(" compiler: ")
-    kci_msg_cyan_nonl(test["compiler"])
+    kci_msg_cyan(test["compiler"], nl=False)
     kci_msg("")
 
     kci_msg_nonl("  status:")
     if test["status"] == "PASS":
-        kci_msg_green_nonl("PASS")
+        kci_msg_green("PASS", nl=False)
     elif test["status"] == "FAIL":
-        kci_msg_red_nonl("FAIL")
+        kci_msg_red("FAIL", nl=False)
     else:
-        kci_msg_yellow_nonl(f"INCONCLUSIVE (status: {test['status']})")
+        kci_msg_yellow(f"INCONCLUSIVE (status: {test['status']})", nl=False)
     kci_msg("")
 
     kci_msg(f"  log: {log_path}")
@@ -466,10 +479,10 @@ def cmd_hardware_list(data, use_json):
                 f"Hardware: {hardware['hardware_name']} - {hardware['platform']}"
             )
             kci_msg_nonl("- name: ")
-            kci_msg_cyan_nonl(hardware["hardware_name"])
+            kci_msg_cyan(hardware["hardware_name"], nl=False)
             kci_msg("")
 
             kci_msg_nonl("  compatibles: ")
-            kci_msg_cyan_nonl(hardware["platform"])
+            kci_msg_cyan(hardware["platform"], nl=False)
             kci_msg("")
             kci_msg("")

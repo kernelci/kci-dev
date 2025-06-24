@@ -1,0 +1,36 @@
+import sys
+
+import click
+
+from kcidev.subcommands.validate.builds import builds
+
+
+@click.group(
+    help="""Get results from the dashboard and validate them with maestro.
+
+\b
+Subcommands:
+    builds - Validate build results
+
+\b
+Examples:
+    # Validate builds
+    kci-dev validate builds --all-checkouts --days <number-of-days>
+    kci-dev validate builds -commit <git-commit> --giturl <git-url> --branch <git-branch>
+""",
+    invoke_without_command=True,
+)
+@click.pass_context
+def validate(ctx):
+    """Commands related to results validation"""
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        sys.exit(0)
+
+
+# Add subcommands to the validate group
+validate.add_command(builds)
+
+
+if __name__ == "__main__":
+    main_kcidev()

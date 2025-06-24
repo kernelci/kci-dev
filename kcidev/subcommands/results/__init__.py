@@ -98,15 +98,27 @@ def summary(origin, git_folder, giturl, branch, commit, latest, arch, tree, use_
     type=int,
     default=7,
 )
+@click.option(
+    "--verbose",
+    is_flag=True,
+    default=True,
+    help="Print tree details",
+)
 @results_display_options
-def trees(origin, use_json, days):
+def trees(origin, use_json, days, verbose):
     """List trees from a give origin."""
-    cmd_list_trees(origin, use_json, days)
+    return cmd_list_trees(origin, use_json, days, verbose)
 
 
 @results.command()
 @common_options
 @builds_and_tests_options
+@click.option(
+    "--verbose",
+    is_flag=True,
+    default=True,
+    help="Print build details",
+)
 def builds(
     origin,
     git_folder,
@@ -131,6 +143,7 @@ def builds(
     compatible,
     min_duration,
     max_duration,
+    verbose,
 ):
     """Display build results."""
     giturl, branch, commit = set_giturl_branch_commit(
@@ -139,7 +152,7 @@ def builds(
     data = dashboard_fetch_builds(
         origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
     )
-    cmd_builds(
+    return cmd_builds(
         data,
         commit,
         download_logs,
@@ -149,6 +162,7 @@ def builds(
         git_branch,
         count,
         use_json,
+        verbose,
     )
 
 
