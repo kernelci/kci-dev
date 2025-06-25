@@ -27,9 +27,9 @@ from kcidev.libs.job_filters import HardwareRegexFilter, TestRegexFilter, TreeFi
 def print_summary(type, n_pass, n_fail, n_inconclusive):
 
     kci_msg_nonl(f"{type}:\t")
-    kci_msg_green(f"{n_pass}") if n_pass else kci_msg_nonl(f"{n_pass}", nl=False)
+    kci_msg_green(f"{n_pass}", nl=False) if n_pass else kci_msg_nonl(f"{n_pass}")
     kci_msg_nonl("/")
-    kci_msg_red(f"{n_fail}") if n_fail else kci_msg_nonl(f"{n_fail}", nl=False)
+    kci_msg_red(f"{n_fail}", nl=False) if n_fail else kci_msg_nonl(f"{n_fail}")
     kci_msg_nonl("/")
     (
         kci_msg_yellow(f"{n_inconclusive}", nl=False)
