@@ -428,15 +428,11 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
     return giturl, branch, commit
 
 
-def get_tree_name(origin, giturl, branch, commit):
-    """Get tree name from git URL, branch, and commit"""
+def get_tree_name(origin, giturl, branch):
+    """Get tree name from git URL, and branch"""
     trees = dashboard_fetch_tree_list(origin, False)
 
     for t in trees:
-        if (
-            t["git_repository_url"] == giturl
-            and t["git_repository_branch"] == branch
-            and t["git_commit_hash"] == commit
-        ):
+        if t["git_repository_url"] == giturl and t["git_repository_branch"] == branch:
             return t["tree_name"]
     return None
