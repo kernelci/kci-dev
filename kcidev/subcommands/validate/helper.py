@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from datetime import datetime, timedelta
+
 import click
 from tabulate import tabulate
 
@@ -233,3 +235,82 @@ def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch=None):
         boots_with_status_mismatch,
     ]
     return stats
+
+
+def get_builds_history_stats(ctx, giturl, branch, tree_name, arch, days, verbose):
+    checkouts = get_checkouts(ctx, giturl, branch, days)
+    final_stats = []
+    builds_history = get_builds_history(ctx, checkouts, arch)
+    for b in builds_history:
+        missing_build_ids = find_missing_items(b[1], b[2], verbose)
+        total_maestro_builds = len(b[1])
+        total_dashboard_builds = len(b[2])
+        stats = [
+            f"{tree_name}/{branch}",
+            b[0],
+            total_maestro_builds,
+            total_dashboard_builds,
+            "✅" if total_maestro_builds == total_dashboard_builds else "❌",
+            missing_build_ids,
+        ]
+        final_stats.append(stats)
+    return final_stats
+
+
+def get_checkouts(ctx, giturl, branch, days):
+    """Get checkouts upto last specified days for a particular git
+    URL and branch"""
+    now = datetime.now()
+    start_timestamp = now - timedelta(days=days)
+    filters = [
+        "kind=checkout",
+        "data.kernel_revision.url=" + giturl,
+        "data.kernel_revision.branch=" + branch,
+        "state=done",
+        "created__gte=" + start_timestamp.isoformat(),
+    ]
+    checkouts = ctx.invoke(
+        results,
+        count=True,
+        nodes=True,
+        filter=filters,
+        paginate=False,
+    )
+    return checkouts
+
+
+def get_builds_history(ctx, checkouts, arch):
+    """Get builds from maestro and dashboard for provided checkouts"""
+    builds_history = []
+    for c in checkouts:
+        commit = c["data"]["kernel_revision"].get("commit")
+        filters = [
+            "kind=kbuild",
+            "data.error_code__ne=node_timeout",
+            "parent=" + c["id"],
+            "state__in=done,available",
+        ]
+        if arch:
+            filters.append(f"data.arch={arch}")
+        maestro_builds = ctx.invoke(
+            results,
+            count=True,
+            nodes=True,
+            filter=filters,
+            paginate=False,
+        )
+
+        try:
+            dashboard_builds = ctx.invoke(
+                builds,
+                giturl=c["data"]["kernel_revision"].get("url"),
+                branch=c["data"]["kernel_revision"].get("branch"),
+                commit=commit,
+                count=True,
+                verbose=False,
+                arch=arch,
+            )
+            builds_history.append([commit, maestro_builds, dashboard_builds])
+        except click.Abort:
+            kci_msg_red("Aborted while fetching dashboard builds")
+    return builds_history
