@@ -8,7 +8,7 @@ from kcidev.subcommands.maestro.results import results
 from kcidev.subcommands.results import boots, builds
 
 
-def get_builds(ctx, giturl, branch, commit, arch=None):
+def get_builds(ctx, giturl, branch, commit, arch):
     """Get builds matching git URL, branch, and commit
     Architecture can also be provided for filtering"""
     maestro_builds = []
@@ -38,6 +38,7 @@ def get_builds(ctx, giturl, branch, commit, arch=None):
             commit=commit,
             count=True,
             verbose=False,
+            arch=arch,
         )
     except click.Abort:
         kci_msg_red("Aborted while fetching dashboard builds")
@@ -91,7 +92,7 @@ def validate_build_status(maestro_builds, dashboard_builds):
     return builds_with_status_mismatch
 
 
-def get_build_stats(ctx, giturl, branch, commit, tree_name, verbose, arch=None):
+def get_build_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     """Get build stats"""
     maestro_builds, dashboard_builds = get_builds(ctx, giturl, branch, commit, arch)
     if dashboard_builds is None:
@@ -178,7 +179,7 @@ def validate_boot_status(maestro_boots, dashboard_boots):
     return boots_with_status_mismatch
 
 
-def get_boots(ctx, giturl, branch, commit):
+def get_boots(ctx, giturl, branch, commit, arch):
     """Get boots matching git URL, branch, and commit"""
     maestro_boots = []
     dashboard_boots = []
@@ -188,7 +189,8 @@ def get_boots(ctx, giturl, branch, commit):
         "data.kernel_revision.branch=" + branch,
         "data.kernel_revision.commit=" + commit,
     ]
-
+    if arch:
+        filters.append(f"data.arch={arch}")
     maestro_boots = ctx.invoke(
         results,
         count=True,
@@ -204,6 +206,7 @@ def get_boots(ctx, giturl, branch, commit):
             commit=commit,
             count=True,
             verbose=False,
+            arch=arch,
         )
     except click.Abort:
         kci_msg_red("Aborted while fetching dashboard boots")
@@ -211,9 +214,9 @@ def get_boots(ctx, giturl, branch, commit):
     return maestro_boots, dashboard_boots
 
 
-def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch=None):
+def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     """Get boot stats"""
-    maestro_boots, dashboard_boots = get_boots(ctx, giturl, branch, commit)
+    maestro_boots, dashboard_boots = get_boots(ctx, giturl, branch, commit, arch)
     if dashboard_boots is None:
         return []
     missing_boot_ids = []
