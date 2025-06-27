@@ -26,6 +26,7 @@ from kcidev.subcommands.results.parser import (
     cmd_builds,
     cmd_commits_history,
     cmd_list_trees,
+    cmd_regressions,
     cmd_single_build,
     cmd_single_test,
     cmd_summary,
@@ -51,6 +52,7 @@ Available subcommands:
   boot      - Display details for a specific boot test
   test      - Display details for a specific test
   hardware  - Query hardware-specific results
+  regressions - Find test regressions between commits
 
 \b
 Examples:
@@ -321,6 +323,60 @@ def build(op_id, download_logs, use_json):
 def boot(op_id, download_logs, use_json):
     data = dashboard_fetch_test(op_id, use_json)
     cmd_single_test(data, download_logs, use_json)
+
+
+@results.command()
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+    default="maestro",
+)
+@click.option(
+    "--giturl",
+    help="Git repository URL or alias (e.g., mainline, linux-next)",
+    required=True,
+)
+@click.option(
+    "--branch",
+    help="Git branch name",
+    required=True,
+)
+@click.option(
+    "--latest",
+    is_flag=True,
+    help="Use latest commits from history (default: compare latest 2 commits)",
+    default=True,
+)
+@click.argument("commits", nargs=-1, required=False)
+@results_display_options
+def regressions(origin, giturl, branch, latest, commits, use_json):
+    """Find test regressions (PASS->FAIL transitions) between commits.
+
+    Compares test results between commits and identifies tests that
+    transitioned from PASS to FAIL status. This helps identify genuine
+    regressions while distinguishing them from boot-related infrastructure
+    issues.
+
+    By default, compares the latest two commits from history. You can also
+    specify two specific commit hashes to compare.
+
+    \b
+    Examples:
+      # Find regressions between latest two commits
+      kci-dev results regressions --giturl https://git.kernel.org/...
+
+      # Find regressions between specific commits
+      kci-dev results regressions --giturl https://git.kernel.org/... abc123 def456
+    """
+    if latest and not commits:
+        # Use latest commits from history
+        cmd_regressions(origin, giturl, branch, None, use_json)
+    elif len(commits) == 2:
+        # Use specific commits provided
+        cmd_regressions(origin, giturl, branch, list(commits), use_json)
+    else:
+        click.echo("Error: Provide either --latest flag or exactly 2 commit hashes")
+        raise click.Abort()
 
 
 if __name__ == "__main__":
