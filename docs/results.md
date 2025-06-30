@@ -28,6 +28,29 @@ Example:
 kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git' --branch master --commit  d1486dca38afd08ca279ae94eb3a397f10737824
 ```
 
+#### --history
+
+Show commit history with test results for multiple recent commits in a table format. This displays historical data showing pass/fail/inconclusive counts for builds, boots, and tests across recent commits.
+
+Example:
+
+```sh
+kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master --history
+```
+
+Output:
+```
++--------------+-------------------------------------+----------+-----------+-----------------+
+| Commit       | Name                                | Builds   | Boots     | Tests           |
++==============+=====================================+==========+===========+=================+
+| c4dce0c094a8 | spi-fix-v6.16-rc3-58-gc4dce0c094a89 | 47/1/0   | 100/0/47  | 8853/1677/3016  |
++--------------+-------------------------------------+----------+-----------+-----------------+
+| 92ca6c498a5e | v6.16-rc3-57-g92ca6c498a5e6         | 48/0/0   | 130/1/53  | 8856/1456/3111  |
++--------------+-------------------------------------+----------+-----------+-----------------+
+```
+
+The format shows pass/fail/inconclusive counts with color coding (green for pass, red for fail, yellow for inconclusive).
+
 ### <a id="result-builds"></a>builds
 
 List builds results.
