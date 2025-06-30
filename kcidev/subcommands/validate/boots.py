@@ -105,7 +105,7 @@ def boots(
         giturl, branch, commit = set_giturl_branch_commit(
             origin, giturl, branch, commit, latest, git_folder
         )
-        tree_name = get_tree_name(origin, giturl, branch, commit)
+        tree_name = get_tree_name(origin, giturl, branch)
         stats = get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch)
         if stats:
             final_stats.append(stats)
