@@ -58,7 +58,7 @@ def _dashboard_request(func):
                         kci_msg(data)
                     else:
                         kci_msg("json error: " + str(data["error"]))
-                    raise click.Abort()
+                    raise click.ClickException(data.get("error"))
 
                 logging.info(f"Successfully completed {func.__name__} request")
                 return data
@@ -266,3 +266,15 @@ def dashboard_fetch_hardware_tests(name, origin, use_json):
     return dashboard_api_post(
         f"hardware/{urllib.parse.quote_plus(name)}/tests", {}, use_json, body
     )
+
+
+def dashboard_fetch_build_issues(build_id, use_json):
+    endpoint = f"build/{build_id}/issues"
+    logging.info(f"Fetching build issues for build ID: {build_id}")
+    return dashboard_api_fetch(endpoint, {}, use_json)
+
+
+def dashboard_fetch_boot_issues(test_id, use_json):
+    endpoint = f"test/{test_id}/issues"
+    logging.info(f"Fetching test issues for test ID: {test_id}")
+    return dashboard_api_fetch(endpoint, {}, use_json)
