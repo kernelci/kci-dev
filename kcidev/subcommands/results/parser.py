@@ -488,3 +488,99 @@ def cmd_hardware_list(data, use_json):
             kci_msg_cyan(hardware["platform"], nl=False)
             kci_msg("")
             kci_msg("")
+
+
+def format_colored_summary(pass_count, fail_count, inconclusive_count):
+    """Format pass/fail/inconclusive with colors like print_summary"""
+    import click
+
+    # Format with colors using click.style directly for table display
+    pass_str = (
+        click.style(str(pass_count), fg="green") if pass_count else str(pass_count)
+    )
+    fail_str = click.style(str(fail_count), fg="red") if fail_count else str(fail_count)
+    inconclusive_str = (
+        click.style(str(inconclusive_count), fg="yellow")
+        if inconclusive_count
+        else str(inconclusive_count)
+    )
+
+    return f"{pass_str}/{fail_str}/{inconclusive_str}"
+
+
+def cmd_commits_history(data, use_json):
+    """Display commit history data from /commits endpoint"""
+    logging.info("Displaying commit history")
+
+    if use_json:
+        kci_msg(json.dumps(data))
+    else:
+        # Handle both list and dict responses
+        if isinstance(data, list):
+            commits = data
+        else:
+            commits = data.get("commits", [])
+
+        if not commits:
+            kci_msg("No commits found")
+            return
+
+        # Format as table with shortened pass/fail/inconclusive format
+        from tabulate import tabulate
+
+        table_data = []
+
+        for commit in commits:
+            # Get summaries
+            builds = commit.get("builds", {})
+            boots = commit.get("boots", {})
+            tests = commit.get("tests", {})
+
+            # Calculate totals in same format as regular summary
+            builds_pass = builds.get("PASS", 0)
+            builds_fail = builds.get("FAIL", 0)
+            builds_inconclusive = (
+                builds.get("ERROR", 0)
+                + builds.get("SKIP", 0)
+                + builds.get("MISS", 0)
+                + builds.get("DONE", 0)
+                + builds.get("NULL", 0)
+            )
+
+            boots_pass = boots.get("pass", 0)
+            boots_fail = boots.get("fail", 0)
+            boots_inconclusive = (
+                boots.get("miss", 0)
+                + boots.get("error", 0)
+                + boots.get("null", 0)
+                + boots.get("skip", 0)
+                + boots.get("done", 0)
+            )
+
+            tests_pass = tests.get("pass", 0)
+            tests_fail = tests.get("fail", 0)
+            tests_inconclusive = (
+                tests.get("error", 0)
+                + tests.get("skip", 0)
+                + tests.get("miss", 0)
+                + tests.get("done", 0)
+                + tests.get("null", 0)
+            )
+
+            table_data.append(
+                [
+                    commit.get("git_commit_hash", "unknown")[:12],
+                    commit.get("git_commit_name", "unknown"),
+                    format_colored_summary(
+                        builds_pass, builds_fail, builds_inconclusive
+                    ),
+                    format_colored_summary(boots_pass, boots_fail, boots_inconclusive),
+                    format_colored_summary(tests_pass, tests_fail, tests_inconclusive),
+                ]
+            )
+
+        headers = ["Commit", "Name", "Builds", "Boots", "Tests"]
+        # Use click.secho to preserve colors in the table
+        import click
+
+        click.secho(tabulate(table_data, headers=headers, tablefmt="grid"), color=True)

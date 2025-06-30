@@ -9,6 +9,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_boots,
     dashboard_fetch_build,
     dashboard_fetch_builds,
+    dashboard_fetch_commits_history,
     dashboard_fetch_summary,
     dashboard_fetch_test,
     dashboard_fetch_tests,
@@ -23,6 +24,7 @@ from kcidev.subcommands.results.options import (
 )
 from kcidev.subcommands.results.parser import (
     cmd_builds,
+    cmd_commits_history,
     cmd_list_trees,
     cmd_single_build,
     cmd_single_test,
@@ -77,13 +79,24 @@ def results(ctx):
 
 @results.command()
 @common_options
-def summary(origin, git_folder, giturl, branch, commit, latest, arch, tree, use_json):
+@click.option("--history", is_flag=True, help="Show commit history data")
+def summary(
+    origin, git_folder, giturl, branch, commit, latest, arch, tree, history, use_json
+):
     """Display a summary of results."""
-    giturl, branch, commit = set_giturl_branch_commit(
-        origin, giturl, branch, commit, latest, git_folder
-    )
-    data = dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json)
-    cmd_summary(data, use_json)
+    if history:
+        # For history, always use latest commit
+        giturl, branch, commit = set_giturl_branch_commit(
+            origin, giturl, branch, commit, True, git_folder
+        )
+        data = dashboard_fetch_commits_history(origin, giturl, branch, commit, use_json)
+        cmd_commits_history(data, use_json)
+    else:
+        giturl, branch, commit = set_giturl_branch_commit(
+            origin, giturl, branch, commit, latest, git_folder
+        )
+        data = dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json)
+        cmd_summary(data, use_json)
 
 
 @results.command()
