@@ -17,7 +17,6 @@ def get_builds(ctx, giturl, branch, commit, arch):
     dashboard_builds = []
     filters = [
         "kind=kbuild",
-        "data.error_code__ne=node_timeout",  # maestro doesn't submit timed-out nodes
         "data.kernel_revision.url=" + giturl,
         "data.kernel_revision.branch=" + branch,
         "data.kernel_revision.commit=" + commit,
