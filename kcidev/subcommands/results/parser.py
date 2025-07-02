@@ -567,10 +567,14 @@ def cmd_commits_history(data, use_json):
                 + tests.get("null", 0)
             )
 
+            # Get tags or fallback to empty string if no tags
+            tags = commit.get("git_commit_tags", [])
+            tags_str = ", ".join(tags) if tags else ""
+
             table_data.append(
                 [
                     commit.get("git_commit_hash", "unknown"),
-                    commit.get("git_commit_name", "unknown"),
+                    tags_str,
                     format_colored_summary(
                         builds_pass, builds_fail, builds_inconclusive
                     ),
@@ -579,7 +583,7 @@ def cmd_commits_history(data, use_json):
                 ]
             )
 
-        headers = ["Commit", "Name", "Builds", "Boots", "Tests"]
+        headers = ["Commit", "Tags", "Builds", "Boots", "Tests"]
         # Use click.secho to preserve colors in the table
         import click
 
