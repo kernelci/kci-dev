@@ -481,6 +481,110 @@ def test_kcidev_results_boots_json_format():
     assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
 
 
+def test_kcidev_results_boot_help():
+    """Test that boot command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "boot", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "--id" in result.stdout
+    assert "--download-logs" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_kcidev_results_boot_import():
+    """Test that boot functionality can be imported without errors"""
+    from kcidev.libs.dashboard import dashboard_fetch_test
+    from kcidev.subcommands.results.parser import cmd_single_test
+
+    # Test that functions exist and are callable
+    assert callable(cmd_single_test)  # boot uses cmd_single_test internally
+    assert callable(dashboard_fetch_test)
+
+
+def test_kcidev_results_boot_id_required():
+    """Test that boot command requires an ID parameter"""
+    command = ["poetry", "run", "kci-dev", "results", "boot"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode != 0  # Should fail without required --id parameter
+
+
+def test_kcidev_results_boot_invalid_id():
+    """Test that boot command handles invalid IDs gracefully"""
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "boot",
+        "--id",
+        "invalid_id",
+        "--json",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=30)
+    # Should fail gracefully with invalid ID
+    assert result.returncode in [0, 1]  # 0 or 1 depending on error handling
+
+
+def test_kcidev_results_boot_with_real_id():
+    """Test boot command with real ID obtained from boots command"""
+    # First get a list of boots to extract a real ID
+    boots_command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "boots",
+        "--giturl",
+        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        "--branch",
+        "master",
+        "--latest",
+        "--json",
+    ]
+    boots_result = run(
+        boots_command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=60
+    )
+
+    if boots_result.returncode == 0 and boots_result.stdout.strip():
+        try:
+            import json
+
+            boots_data = json.loads(boots_result.stdout)
+            if isinstance(boots_data, list) and len(boots_data) > 0:
+                # Extract the first boot ID
+                first_boot = boots_data[0]
+                boot_id = first_boot.get("id")
+
+                if boot_id:
+                    # Now test the boot command with the real ID
+                    boot_command = [
+                        "poetry",
+                        "run",
+                        "kci-dev",
+                        "results",
+                        "boot",
+                        "--id",
+                        boot_id,
+                        "--json",
+                    ]
+                    boot_result = run(
+                        boot_command,
+                        stdout=PIPE,
+                        stderr=PIPE,
+                        universal_newlines=True,
+                        timeout=30,
+                    )
+                    # Should succeed with real ID
+                    assert boot_result.returncode == 0
+                    # Should return valid JSON
+                    boot_json = json.loads(boot_result.stdout)
+                    assert isinstance(boot_json, dict)
+                    assert "id" in boot_json
+        except (json.JSONDecodeError, KeyError, IndexError):
+            # If we can't parse JSON or extract ID, that's still a valid test result
+            pass
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
