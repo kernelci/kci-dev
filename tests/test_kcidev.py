@@ -338,8 +338,87 @@ def test_kcidev_results_trees_import():
 
 def test_kcidev_results_trees_default_params():
     """Test that trees command accepts default parameters"""
-    command = ["poetry", "run", "kci-dev", "results", "trees", "--origin", "maestro", "--days", "1", "--json"]
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "trees",
+        "--origin",
+        "maestro",
+        "--days",
+        "1",
+        "--json",
+    ]
     result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=30)
+    # Command should execute without syntax errors (may fail due to network/API issues)
+    assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
+
+
+def test_kcidev_results_summary_help():
+    """Test that summary command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "summary", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "Display a summary of results" in result.stdout
+    assert "--origin" in result.stdout
+    assert "--giturl" in result.stdout
+    assert "--branch" in result.stdout
+    assert "--commit" in result.stdout
+    assert "--latest" in result.stdout
+    assert "--history" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_kcidev_results_summary_import():
+    """Test that summary functionality can be imported without errors"""
+    from kcidev.subcommands.results.parser import cmd_summary
+
+    # Test that function exists and is callable
+    assert callable(cmd_summary)
+
+
+def test_kcidev_results_summary_history_functionality():
+    """Test that summary --history command functionality works"""
+    from kcidev.subcommands.results.parser import (
+        cmd_commits_history,
+        format_colored_summary,
+    )
+
+    # Test that history-related functions exist and are callable
+    assert callable(cmd_commits_history)
+    assert callable(format_colored_summary)
+
+    # Test format_colored_summary with various scenarios
+    result_all_zero = format_colored_summary(0, 0, 0)
+    assert isinstance(result_all_zero, str)
+    assert result_all_zero == "0/0/0"
+
+    result_with_values = format_colored_summary(10, 5, 2)
+    assert isinstance(result_with_values, str)
+    assert "/" in result_with_values
+    assert "10" in result_with_values
+    assert "5" in result_with_values
+    assert "2" in result_with_values
+
+
+def test_kcidev_results_summary_json_format():
+    """Test that summary command accepts JSON output format"""
+    # Test with known repository that should be available
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "summary",
+        "--giturl",
+        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        "--branch",
+        "master",
+        "--latest",
+        "--json",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=60)
     # Command should execute without syntax errors (may fail due to network/API issues)
     assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
 
