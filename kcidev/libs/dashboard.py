@@ -100,6 +100,20 @@ def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):
     return dashboard_api_fetch(endpoint, params, use_json)
 
 
+def dashboard_fetch_commits_history(origin, giturl, branch, commit, use_json):
+    """Fetch commit history data from /commits endpoint"""
+    endpoint = f"tree/{commit}/commits"
+    params = {
+        "origin": origin,
+        "git_url": giturl,
+        "git_branch": branch,
+    }
+
+    logging.info(f"Fetching commit history for commit {commit} on {branch} branch")
+    logging.debug(f"Parameters: origin={origin}, git_url={giturl}")
+    return dashboard_api_fetch(endpoint, params, use_json)
+
+
 def dashboard_fetch_builds(
     origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
 ):
