@@ -569,7 +569,7 @@ def cmd_commits_history(data, use_json):
 
             table_data.append(
                 [
-                    commit.get("git_commit_hash", "unknown")[:12],
+                    commit.get("git_commit_hash", "unknown"),
                     commit.get("git_commit_name", "unknown"),
                     format_colored_summary(
                         builds_pass, builds_fail, builds_inconclusive
