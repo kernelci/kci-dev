@@ -210,6 +210,92 @@ def test_kcidev_results_summary_history_import():
     assert "/" in result  # Should contain separators
 
 
+def test_kcidev_results_hardware_list():
+    """Test that hardware list command works and returns expected output format"""
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "hardware",
+        "list",
+        "--origin",
+        "maestro",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+
+    # Test should succeed
+    assert result.returncode == 0
+
+    # Should contain hardware entries with expected format
+    output_lines = result.stdout.strip().split("\n")
+
+    # Should have at least some hardware entries
+    assert len(output_lines) > 0
+
+    # Check format: lines should contain "- name:" and "compatibles:"
+    name_lines = [line for line in output_lines if line.strip().startswith("- name:")]
+    compatible_lines = [
+        line for line in output_lines if line.strip().startswith("compatibles:")
+    ]
+
+    # Should have matching number of name and compatible lines
+    assert len(name_lines) > 0
+    assert len(compatible_lines) > 0
+    assert len(name_lines) == len(compatible_lines)
+
+
+def test_kcidev_results_hardware_list_json():
+    """Test that hardware list command works with JSON output"""
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "hardware",
+        "list",
+        "--origin",
+        "maestro",
+        "--json",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout[:500] + "..." if len(result.stdout) > 500 else result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+
+    # Test should succeed
+    assert result.returncode == 0
+
+    # Should be valid JSON
+    import json
+
+    try:
+        data = json.loads(result.stdout)
+        assert isinstance(data, list)
+
+        # Should have at least some hardware entries
+        assert len(data) > 0
+
+        # Each entry should have 'name' and 'compatibles' fields
+        for entry in data[:5]:  # Check first 5 entries
+            assert "name" in entry
+            assert "compatibles" in entry
+            assert isinstance(entry["name"], str)
+            assert isinstance(entry["compatibles"], str)
+
+    except json.JSONDecodeError:
+        pytest.fail("Output is not valid JSON")
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
