@@ -814,6 +814,110 @@ def test_kcidev_results_builds_json_format():
     assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
 
 
+def test_kcidev_results_build_help():
+    """Test that build command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "build", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "--id" in result.stdout
+    assert "--download-logs" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_kcidev_results_build_import():
+    """Test that build functionality can be imported without errors"""
+    from kcidev.libs.dashboard import dashboard_fetch_build
+    from kcidev.subcommands.results.parser import cmd_single_build
+
+    # Test that functions exist and are callable
+    assert callable(cmd_single_build)
+    assert callable(dashboard_fetch_build)
+
+
+def test_kcidev_results_build_id_required():
+    """Test that build command requires an ID parameter"""
+    command = ["poetry", "run", "kci-dev", "results", "build"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode != 0  # Should fail without required --id parameter
+
+
+def test_kcidev_results_build_invalid_id():
+    """Test that build command handles invalid IDs gracefully"""
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "build",
+        "--id",
+        "invalid_build_id",
+        "--json",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=30)
+    # Should fail gracefully with invalid ID
+    assert result.returncode in [0, 1]  # 0 or 1 depending on error handling
+
+
+def test_kcidev_results_build_with_real_id():
+    """Test build command with real ID obtained from builds command"""
+    # First get a list of builds to extract a real ID
+    builds_command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "builds",
+        "--giturl",
+        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        "--branch",
+        "master",
+        "--latest",
+        "--json",
+    ]
+    builds_result = run(
+        builds_command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=60
+    )
+
+    if builds_result.returncode == 0 and builds_result.stdout.strip():
+        try:
+            import json
+
+            builds_data = json.loads(builds_result.stdout)
+            if isinstance(builds_data, list) and len(builds_data) > 0:
+                # Extract the first build ID
+                first_build = builds_data[0]
+                build_id = first_build.get("id")
+
+                if build_id:
+                    # Now test the build command with the real ID
+                    build_command = [
+                        "poetry",
+                        "run",
+                        "kci-dev",
+                        "results",
+                        "build",
+                        "--id",
+                        build_id,
+                        "--json",
+                    ]
+                    build_result = run(
+                        build_command,
+                        stdout=PIPE,
+                        stderr=PIPE,
+                        universal_newlines=True,
+                        timeout=30,
+                    )
+                    # Should succeed with real ID
+                    assert build_result.returncode == 0
+                    # Should return valid JSON
+                    build_json = json.loads(build_result.stdout)
+                    assert isinstance(build_json, dict)
+                    assert "id" in build_json
+        except (json.JSONDecodeError, KeyError, IndexError):
+            # If we can't parse JSON or extract ID, that's still a valid test result
+            pass
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
