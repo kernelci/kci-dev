@@ -3,7 +3,7 @@ import click
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results import trees
 
-from .helper import get_build_stats, print_stats
+from .helper import get_build_stats, get_builds_history_stats, print_stats
 
 
 @click.command(
@@ -19,10 +19,18 @@ using all three options: --giturl, --branch, and --commit
 If above options are not provided, if will take latest/provided commit
 checkout from the git folder specified.
 
+Builds history validation, i.e. checking if number of builds is consistent
+for different checkouts of the same git tree/branch, can be performed by the command
+by providing --history option.
+
 \b
 Examples:
+    # Build validation
     kci-dev validate builds --all-checkouts --days <number-of-days>
     kci-dev validate builds -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    # Build history validation
+    kci-dev validate builds --history --all-checkouts --days <number-of-days>
+    kci-dev validate builds --history --giturl <git-url> --branch <git-branch> --days <number-of-days>
 """,
 )
 @click.option(
@@ -64,6 +72,11 @@ Examples:
 )
 @click.option("--arch", help="Filter by arch")
 @click.option(
+    "--history",
+    is_flag=True,
+    help="Check if number of builds is consistent for different checkouts of the same git tree/branch",
+)
+@click.option(
     "--verbose",
     is_flag=True,
     default=False,
@@ -81,6 +94,7 @@ def builds(
     latest,
     arch,
     days,
+    history,
     verbose,
 ):
     final_stats = []
@@ -90,17 +104,34 @@ def builds(
             raise click.UsageError(
                 "Cannot use --all-checkouts with --giturl, --branch, or --commit"
             )
-        trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
-        for tree in trees_list:
-            giturl = tree["git_repository_url"]
-            branch = tree["git_repository_branch"]
-            commit = tree["git_commit_hash"]
-            tree_name = tree["tree_name"]
-            stats = get_build_stats(
-                ctx, giturl, branch, commit, tree_name, verbose, arch
-            )
-            if stats:
-                final_stats.append(stats)
+        if history:
+            trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            for tree in trees_list:
+                giturl = tree["git_repository_url"]
+                branch = tree["git_repository_branch"]
+                tree_name = tree["tree_name"]
+                stats = get_builds_history_stats(
+                    ctx, giturl, branch, tree_name, arch, days, verbose
+                )
+                if stats:
+                    final_stats.extend(stats)
+        else:
+            trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            for tree in trees_list:
+                giturl = tree["git_repository_url"]
+                branch = tree["git_repository_branch"]
+                commit = tree["git_commit_hash"]
+                tree_name = tree["tree_name"]
+                stats = get_build_stats(
+                    ctx, giturl, branch, commit, tree_name, verbose, arch
+                )
+                if stats:
+                    final_stats.append(stats)
+    elif history:
+        tree_name = get_tree_name(origin, giturl, branch)
+        final_stats = get_builds_history_stats(
+            ctx, giturl, branch, tree_name, arch, days, verbose
+        )
     else:
         giturl, branch, commit = set_giturl_branch_commit(
             origin, giturl, branch, commit, latest, git_folder
@@ -110,15 +141,27 @@ def builds(
         if stats:
             final_stats.append(stats)
     if final_stats:
-        headers = [
-            "tree/branch",
-            "Commit",
-            "Maestro\nbuilds",
-            "Dashboard\nbuilds",
-            "Build count\ncomparison",
-            "Missing build IDs",
-            "Builds with\nstatus mismatch",
-        ]
-        max_col_width = [None, 40, 3, 3, 2, 30, 30]
+        if history:
+            headers = [
+                "tree/branch",
+                "Commit",
+                "Maestro\nbuilds",
+                "Dashboard\nbuilds",
+                "Build count\ncomparison",
+                "Missing build IDs",
+            ]
+            max_col_width = [None, 40, 3, 3, 2, 30]
+
+        else:
+            headers = [
+                "tree/branch",
+                "Commit",
+                "Maestro\nbuilds",
+                "Dashboard\nbuilds",
+                "Build count\ncomparison",
+                "Missing build IDs",
+                "Builds with\nstatus mismatch",
+            ]
+            max_col_width = [None, 40, 3, 3, 2, 30, 30]
         table_fmt = "simple_grid"
         print_stats(final_stats, headers, max_col_width, table_fmt)
