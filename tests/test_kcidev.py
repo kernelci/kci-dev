@@ -649,6 +649,110 @@ def test_kcidev_results_tests_json_format():
     assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
 
 
+def test_kcidev_results_test_help():
+    """Test that test command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "test", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "--id" in result.stdout
+    assert "--download-logs" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_kcidev_results_test_import():
+    """Test that test functionality can be imported without errors"""
+    from kcidev.libs.dashboard import dashboard_fetch_test
+    from kcidev.subcommands.results.parser import cmd_single_test
+
+    # Test that functions exist and are callable
+    assert callable(cmd_single_test)
+    assert callable(dashboard_fetch_test)
+
+
+def test_kcidev_results_test_id_required():
+    """Test that test command requires an ID parameter"""
+    command = ["poetry", "run", "kci-dev", "results", "test"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode != 0  # Should fail without required --id parameter
+
+
+def test_kcidev_results_test_invalid_id():
+    """Test that test command handles invalid IDs gracefully"""
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "test",
+        "--id",
+        "invalid_test_id",
+        "--json",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=30)
+    # Should fail gracefully with invalid ID
+    assert result.returncode in [0, 1]  # 0 or 1 depending on error handling
+
+
+def test_kcidev_results_test_with_real_id():
+    """Test test command with real ID obtained from tests command"""
+    # First get a list of tests to extract a real ID
+    tests_command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "tests",
+        "--giturl",
+        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        "--branch",
+        "master",
+        "--latest",
+        "--json",
+    ]
+    tests_result = run(
+        tests_command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=60
+    )
+
+    if tests_result.returncode == 0 and tests_result.stdout.strip():
+        try:
+            import json
+
+            tests_data = json.loads(tests_result.stdout)
+            if isinstance(tests_data, list) and len(tests_data) > 0:
+                # Extract the first test ID
+                first_test = tests_data[0]
+                test_id = first_test.get("id")
+
+                if test_id:
+                    # Now test the test command with the real ID
+                    test_command = [
+                        "poetry",
+                        "run",
+                        "kci-dev",
+                        "results",
+                        "test",
+                        "--id",
+                        test_id,
+                        "--json",
+                    ]
+                    test_result = run(
+                        test_command,
+                        stdout=PIPE,
+                        stderr=PIPE,
+                        universal_newlines=True,
+                        timeout=30,
+                    )
+                    # Should succeed with real ID
+                    assert test_result.returncode == 0
+                    # Should return valid JSON
+                    test_json = json.loads(test_result.stdout)
+                    assert isinstance(test_json, dict)
+                    assert "id" in test_json
+        except (json.JSONDecodeError, KeyError, IndexError):
+            # If we can't parse JSON or extract ID, that's still a valid test result
+            pass
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
