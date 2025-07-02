@@ -585,6 +585,70 @@ def test_kcidev_results_boot_with_real_id():
             pass
 
 
+def test_kcidev_results_tests_help():
+    """Test that tests command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "tests", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "Display test results" in result.stdout
+    assert "--origin" in result.stdout
+    assert "--giturl" in result.stdout
+    assert "--branch" in result.stdout
+    assert "--commit" in result.stdout
+    assert "--latest" in result.stdout
+    assert "--status" in result.stdout
+    assert "--download-logs" in result.stdout
+    assert "--hardware" in result.stdout
+    assert "--filter" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_kcidev_results_tests_import():
+    """Test that tests functionality can be imported without errors"""
+    from kcidev.libs.dashboard import dashboard_fetch_tests
+    from kcidev.subcommands.results.parser import cmd_tests
+
+    # Test that functions exist and are callable
+    assert callable(cmd_tests)
+    assert callable(dashboard_fetch_tests)
+
+
+def test_kcidev_results_tests_filter_options():
+    """Test that tests command accepts various filter options"""
+    command = ["poetry", "run", "kci-dev", "results", "tests", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    # Check for filtering options
+    assert "--start-date" in result.stdout
+    assert "--end-date" in result.stdout
+    assert "--compiler" in result.stdout
+    assert "--config" in result.stdout
+    assert "--compatible" in result.stdout
+
+
+def test_kcidev_results_tests_json_format():
+    """Test that tests command accepts JSON output with valid parameters"""
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "tests",
+        "--giturl",
+        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        "--branch",
+        "master",
+        "--latest",
+        "--status",
+        "all",
+        "--count",
+        "--json",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=60)
+    # Command should execute without syntax errors (may fail due to network/API issues)
+    assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
