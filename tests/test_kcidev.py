@@ -296,6 +296,26 @@ def test_kcidev_results_hardware_list_json():
         pytest.fail("Output is not valid JSON")
 
 
+def test_kcidev_results_compare_help():
+    """Test that compare command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "compare", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "Compare test results" in result.stdout
+    assert "summary statistics" in result.stdout
+    assert "--giturl" in result.stdout
+    assert "--branch" in result.stdout
+    assert "--latest" in result.stdout
+
+
+def test_kcidev_results_compare_import():
+    """Test that compare functionality can be imported without errors"""
+    from kcidev.subcommands.results.parser import cmd_compare
+
+    # Test that function exists and is callable
+    assert callable(cmd_compare)
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")

@@ -114,6 +114,49 @@ Example:
 kci-dev results build --id 'maestro:67d409f9f378f0c5986dc7df' --download-logs --json
 ```
 
+### compare
+
+Compare test results between commits with summary statistics and regressions.
+
+This command compares test results between commits showing summary statistics for both commits and identifying tests that transitioned from PASS to FAIL status. This helps identify genuine regressions while distinguishing them from boot-related infrastructure issues.
+
+By default, it compares the latest two commits from history. You can also specify two specific commit hashes to compare.
+
+Example:
+
+```sh
+# Compare latest two commits with summary stats
+kci-dev results compare --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master
+
+# Compare specific commits
+kci-dev results compare --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master <older> <newer>
+
+# JSON output format
+kci-dev results compare --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master --json
+```
+
+Output shows:
+- Summary statistics table comparing both commits (pass/fail/inconclusive counts)
+- Regressions categorized by type (builds, boots, tests) with details including:
+  - Configuration and architecture information
+  - Hardware platform details
+  - Dashboard links for further investigation
+  - Log file locations
+
+Example output:
+```
+Summary comparison:
++--------+----------------------+------------------------+
+| Type   | Latest (66701750d556) | Previous (d0b3b7b22dfa) |
++========+======================+========================+
+| builds | 59/0/0               | 59/0/0                 |
++--------+----------------------+------------------------+
+| boots  | 148/11/78            | 156/1/80               |
++--------+----------------------+------------------------+
+| tests  | 17446/6283/4252      | 17857/6016/4936        |
++--------+----------------------+------------------------+
+```
+
 ### hardware
 
 Displays hardware related information
