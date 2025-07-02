@@ -2,8 +2,8 @@ import sys
 
 import click
 
-from kcidev.subcommands.validate.boots import boots
-from kcidev.subcommands.validate.builds import builds
+from kcidev.subcommands.maestro.validate.boots import boots
+from kcidev.subcommands.maestro.validate.builds import builds
 
 
 @click.group(

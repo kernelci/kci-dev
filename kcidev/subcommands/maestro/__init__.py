@@ -6,6 +6,7 @@ import sys
 import click
 
 from kcidev.subcommands.maestro.results import results
+from kcidev.subcommands.maestro.validate import validate
 
 
 @click.group(
@@ -37,7 +38,7 @@ def maestro(ctx):
 
 # Add subcommands to the maestro group
 maestro.add_command(results)
-
+maestro.add_command(validate)
 
 if __name__ == "__main__":
     from kcidev.libs.common import main_kcidev
