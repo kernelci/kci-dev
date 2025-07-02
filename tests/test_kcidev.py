@@ -423,6 +423,64 @@ def test_kcidev_results_summary_json_format():
     assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
 
 
+def test_kcidev_results_boots_help():
+    """Test that boots command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "boots", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "Display boot results" in result.stdout
+    assert "--origin" in result.stdout
+    assert "--giturl" in result.stdout
+    assert "--branch" in result.stdout
+    assert "--commit" in result.stdout
+    assert "--latest" in result.stdout
+    assert "--status" in result.stdout
+    assert "--download-logs" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_kcidev_results_boots_import():
+    """Test that boots functionality can be imported without errors"""
+    from kcidev.libs.dashboard import dashboard_fetch_boots
+    from kcidev.subcommands.results.parser import cmd_tests
+
+    # Test that functions exist and are callable
+    assert callable(cmd_tests)  # boots uses cmd_tests internally
+    assert callable(dashboard_fetch_boots)
+
+
+def test_kcidev_results_boots_status_options():
+    """Test that boots command accepts different status filter options"""
+    # Test help contains status options
+    command = ["poetry", "run", "kci-dev", "results", "boots", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "all" in result.stdout or "pass" in result.stdout or "fail" in result.stdout
+
+
+def test_kcidev_results_boots_json_format():
+    """Test that boots command accepts JSON output with valid parameters"""
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "results",
+        "boots",
+        "--giturl",
+        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        "--branch",
+        "master",
+        "--latest",
+        "--status",
+        "all",
+        "--count",
+        "--json",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=60)
+    # Command should execute without syntax errors (may fail due to network/API issues)
+    assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
