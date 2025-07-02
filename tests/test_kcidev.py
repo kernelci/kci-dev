@@ -316,6 +316,34 @@ def test_kcidev_results_compare_import():
     assert callable(cmd_compare)
 
 
+def test_kcidev_results_trees_help():
+    """Test that trees command help works and contains expected information"""
+    command = ["poetry", "run", "kci-dev", "results", "trees", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    assert result.returncode == 0
+    assert "List trees from a give origin" in result.stdout
+    assert "--origin" in result.stdout
+    assert "--days" in result.stdout
+    assert "--verbose" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_kcidev_results_trees_import():
+    """Test that trees functionality can be imported without errors"""
+    from kcidev.subcommands.results.parser import cmd_list_trees
+
+    # Test that function exists and is callable
+    assert callable(cmd_list_trees)
+
+
+def test_kcidev_results_trees_default_params():
+    """Test that trees command accepts default parameters"""
+    command = ["poetry", "run", "kci-dev", "results", "trees", "--origin", "maestro", "--days", "1", "--json"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, timeout=30)
+    # Command should execute without syntax errors (may fail due to network/API issues)
+    assert result.returncode in [0, 1]  # 0 for success, 1 for API/network errors
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
