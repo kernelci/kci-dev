@@ -202,6 +202,7 @@ def cmd_builds(
     logging.debug(f"Created filter set with {len(filter_set.filters)} filters")
 
     filtered_builds = 0
+    filtered_builds_list = []
     builds = []
     total_builds = len(data["builds"])
     logging.debug(f"Processing {total_builds} builds")
@@ -209,7 +210,7 @@ def cmd_builds(
     for build in data["builds"]:
         if not filter_set.matches(build):
             continue
-
+        filtered_builds_list.append(build)
         log_path = build["log_url"]
         if download_logs:
             try:
@@ -234,7 +235,7 @@ def cmd_builds(
         kci_msg(filtered_builds)
     elif use_json:
         kci_msg(json.dumps(builds))
-    return data["builds"]
+    return filtered_builds_list
 
 
 def print_build(build, log_path):
