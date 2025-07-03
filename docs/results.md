@@ -40,16 +40,19 @@ kci-dev results summary --giturl 'https://git.kernel.org/pub/scm/linux/kernel/gi
 
 Output:
 ```
-+--------------+-------------------------------------+----------+-----------+-----------------+
-| Commit       | Name                                | Builds   | Boots     | Tests           |
-+==============+=====================================+==========+===========+=================+
-| c4dce0c094a8 | spi-fix-v6.16-rc3-58-gc4dce0c094a89 | 47/1/0   | 100/0/47  | 8853/1677/3016  |
-+--------------+-------------------------------------+----------+-----------+-----------------+
-| 92ca6c498a5e | v6.16-rc3-57-g92ca6c498a5e6         | 48/0/0   | 130/1/53  | 8856/1456/3111  |
-+--------------+-------------------------------------+----------+-----------+-----------------+
++------------------------------------------+-----------+----------+-----------+-----------------+
+| Commit                                   | Tags      | Builds   | Boots     | Tests           |
++==========================================+===========+==========+===========+=================+
+| c4dce0c094a8f1d2b3e4f5a6b7c8d9e0f1a2b3c4 | v6.16-rc3 | 47/1/0   | 100/0/47  | 8853/1677/3016  |
++------------------------------------------+-----------+----------+-----------+-----------------+
+| 92ca6c498a5e6f1d2b3e4f5a6b7c8d9e0f1a2b3c4 |           | 48/0/0   | 130/1/53  | 8856/1456/3111  |
++------------------------------------------+-----------+----------+-----------+-----------------+
 ```
 
-The format shows pass/fail/inconclusive counts with color coding (green for pass, red for fail, yellow for inconclusive).
+The format shows:
+- Full commit hashes for precise identification
+- Git tags for tagged commits (empty for untagged commits)
+- Pass/fail/inconclusive counts with color coding (green for pass, red for fail, yellow for inconclusive)
 
 ### <a id="result-builds"></a>builds
 
