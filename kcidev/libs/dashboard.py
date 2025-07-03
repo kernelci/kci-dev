@@ -226,8 +226,8 @@ def dashboard_fetch_hardware_list(origin, use_json):
     last_week = now - timedelta(days=7)
     params = {
         "origin": origin,
-        "endTimeStampInSeconds": int(now.timestamp()),
-        "startTimestampInSeconds": int(last_week.timestamp()),
+        "endTimestampInSeconds": str(int(now.timestamp())),
+        "startTimestampInSeconds": str(int(last_week.timestamp())),
     }
     logging.info(f"Fetching hardware list for origin: {origin}")
     logging.debug(

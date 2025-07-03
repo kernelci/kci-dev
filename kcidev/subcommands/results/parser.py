@@ -471,17 +471,19 @@ def cmd_hardware_list(data, use_json):
 
     if use_json:
         hardware = [
-            {"name": hardware["hardware_name"], "compatibles": hardware["platform"]}
+            {
+                "name": hardware.get("hardware") or hardware["platform"],
+                "compatibles": hardware["platform"],
+            }
             for hardware in data["hardware"]
         ]
-        kci_msg(hardware)
+        kci_msg(json.dumps(hardware))
     else:
         for hardware in data["hardware"]:
-            logging.debug(
-                f"Hardware: {hardware['hardware_name']} - {hardware['platform']}"
-            )
+            hardware_name = hardware.get("hardware") or hardware["platform"]
+            logging.debug(f"Hardware: {hardware_name} - {hardware['platform']}")
             kci_msg_nonl("- name: ")
-            kci_msg_cyan(hardware["hardware_name"], nl=False)
+            kci_msg_cyan(hardware_name, nl=False)
             kci_msg("")
 
             kci_msg_nonl("  compatibles: ")
