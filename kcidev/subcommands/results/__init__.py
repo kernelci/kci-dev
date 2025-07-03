@@ -25,6 +25,7 @@ from kcidev.subcommands.results.options import (
 from kcidev.subcommands.results.parser import (
     cmd_builds,
     cmd_commits_history,
+    cmd_compare,
     cmd_list_trees,
     cmd_single_build,
     cmd_single_test,
@@ -51,6 +52,7 @@ Available subcommands:
   boot      - Display details for a specific boot test
   test      - Display details for a specific test
   hardware  - Query hardware-specific results
+  compare   - Compare test results between commits
 
 \b
 Examples:
@@ -321,6 +323,60 @@ def build(op_id, download_logs, use_json):
 def boot(op_id, download_logs, use_json):
     data = dashboard_fetch_test(op_id, use_json)
     cmd_single_test(data, download_logs, use_json)
+
+
+@results.command()
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+    default="maestro",
+)
+@click.option(
+    "--giturl",
+    help="Git repository URL or alias (e.g., mainline, linux-next)",
+    required=True,
+)
+@click.option(
+    "--branch",
+    help="Git branch name",
+    required=True,
+)
+@click.option(
+    "--latest",
+    is_flag=True,
+    help="Use latest commits from history (default: compare latest 2 commits)",
+    default=True,
+)
+@click.argument("commits", nargs=-1, required=False)
+@results_display_options
+def compare(origin, giturl, branch, latest, commits, use_json):
+    """Compare test results between commits with summary and regressions.
+
+    Compares test results between commits showing summary statistics
+    and identifying tests that transitioned from PASS to FAIL status.
+    This helps identify genuine regressions while distinguishing them
+    from boot-related infrastructure issues.
+
+    By default, compares the latest two commits from history. You can also
+    specify two specific commit hashes to compare.
+
+    \b
+    Examples:
+      # Compare latest two commits
+      kci-dev results compare --giturl https://git.kernel.org/...
+
+      # Compare specific commits
+      kci-dev results compare --giturl https://git.kernel.org/... abc123 def456
+    """
+    if latest and not commits:
+        # Use latest commits from history
+        cmd_compare(origin, giturl, branch, None, use_json)
+    elif len(commits) == 2:
+        # Use specific commits provided
+        cmd_compare(origin, giturl, branch, list(commits), use_json)
+    else:
+        click.echo("Error: Provide either --latest flag or exactly 2 commit hashes")
+        raise click.Abort()
 
 
 if __name__ == "__main__":

@@ -591,3 +591,332 @@ def cmd_commits_history(data, use_json):
         import click
 
         click.secho(tabulate(table_data, headers=headers, tablefmt="grid"), color=True)
+
+
+def cmd_compare(origin, giturl, branch, commits, use_json):
+    """Find regressions (PASS->FAIL transitions) between commits"""
+    logging.info("Analyzing regressions between commits")
+
+    if commits is None:
+        # Get latest commits from history
+        from kcidev.libs.dashboard import dashboard_fetch_commits_history
+        from kcidev.libs.git_repo import set_giturl_branch_commit
+
+        # Get latest commit for history query
+        giturl_resolved, branch_resolved, latest_commit = set_giturl_branch_commit(
+            origin, giturl, branch, None, True, None
+        )
+
+        history_data = dashboard_fetch_commits_history(
+            origin, giturl_resolved, branch_resolved, latest_commit, False
+        )
+
+        # Handle both list and dict responses
+        if isinstance(history_data, list):
+            commits_list = history_data
+        else:
+            commits_list = history_data.get("commits", [])
+
+        if len(commits_list) < 2:
+            kci_msg("Not enough commits in history for regression analysis")
+            return
+
+        # Use latest two commits
+        latest_commit = commits_list[0]["git_commit_hash"]
+        previous_commit = commits_list[1]["git_commit_hash"]
+
+        kci_msg(f"Analyzing latest commits from history:")
+        kci_msg(
+            f"  Latest:   {latest_commit[:12]} ({commits_list[0].get('git_commit_name', 'unknown')})"
+        )
+        kci_msg(
+            f"  Previous: {previous_commit[:12]} ({commits_list[1].get('git_commit_name', 'unknown')})"
+        )
+
+    else:
+        if len(commits) != 2:
+            kci_err("Exactly 2 commits required for regression analysis")
+            raise click.Abort()
+
+        previous_commit, latest_commit = commits
+
+    def build_key(build):
+        """Create unique key for build comparison"""
+        config = build.get("config_name", "unknown")
+        arch = build.get("architecture", "unknown")
+        compiler = build.get("compiler", "unknown")
+        return f"{config}|{arch}|{compiler}"
+
+    def test_key(test):
+        """Create unique key for test comparison"""
+        test_path = test.get("test_path", test.get("path", "unknown"))
+        hardware = test.get(
+            "hardware", test.get("environment_misc", {}).get("platform", "unknown")
+        )
+        config = test.get("config", test.get("config_name", "unknown"))
+        arch = test.get("arch", test.get("architecture", "unknown"))
+        return f"{test_path}|{hardware}|{config}|{arch}"
+
+    def get_all_data(commit_hash):
+        """Get builds, boots, and tests for a commit"""
+        from kcidev.libs.dashboard import (
+            dashboard_fetch_boots,
+            dashboard_fetch_builds,
+            dashboard_fetch_tests,
+        )
+
+        try:
+            builds_data = dashboard_fetch_builds(
+                origin, giturl, branch, commit_hash, None, None, None, None, False
+            )
+            boots_data = dashboard_fetch_boots(
+                origin, giturl, branch, commit_hash, None, None, None, None, False
+            )
+            tests_data = dashboard_fetch_tests(
+                origin, giturl, branch, commit_hash, None, None, None, None, False
+            )
+
+            builds = builds_data.get("builds", [])
+            boots = boots_data.get("boots", [])
+            tests = tests_data.get("tests", [])
+
+            return builds, boots, tests
+        except Exception as e:
+            kci_msg(f"Error fetching data for {commit_hash[:12]}: {e}")
+            return [], [], []
+
+    # Get all data for both commits
+    kci_msg(f"Fetching builds, boots, and tests for commit {latest_commit[:12]}...")
+    latest_builds, latest_boots, latest_tests = get_all_data(latest_commit)
+
+    kci_msg(f"Fetching builds, boots, and tests for commit {previous_commit[:12]}...")
+    previous_builds, previous_boots, previous_tests = get_all_data(previous_commit)
+
+    if not any([latest_builds, latest_boots, latest_tests]) or not any(
+        [previous_builds, previous_boots, previous_tests]
+    ):
+        kci_msg("Could not fetch data for one or both commits")
+        return
+
+    # Calculate summary statistics for both commits
+    def calculate_summary_stats(builds, boots, tests):
+        """Calculate pass/fail/inconclusive counts for builds, boots, tests"""
+        # Builds
+        build_pass = sum(1 for b in builds if b.get("status") == "PASS")
+        build_fail = sum(1 for b in builds if b.get("status") == "FAIL")
+        build_inconclusive = len(builds) - build_pass - build_fail
+
+        # Boots
+        boot_pass = sum(1 for b in boots if b.get("status") == "PASS")
+        boot_fail = sum(1 for b in boots if b.get("status") == "FAIL")
+        boot_inconclusive = len(boots) - boot_pass - boot_fail
+
+        # Tests
+        test_pass = sum(1 for t in tests if t.get("status") == "PASS")
+        test_fail = sum(1 for t in tests if t.get("status") == "FAIL")
+        test_inconclusive = len(tests) - test_pass - test_fail
+
+        return (
+            build_pass,
+            build_fail,
+            build_inconclusive,
+            boot_pass,
+            boot_fail,
+            boot_inconclusive,
+            test_pass,
+            test_fail,
+            test_inconclusive,
+        )
+
+    latest_stats = calculate_summary_stats(latest_builds, latest_boots, latest_tests)
+    previous_stats = calculate_summary_stats(
+        previous_builds, previous_boots, previous_tests
+    )
+
+    # Display summary comparison in table format
+    kci_msg(f"\nSummary comparison:")
+
+    import click
+    from tabulate import tabulate
+
+    # Create table data with colored pass/fail/inconclusive format
+    table_data = [
+        [
+            "builds",
+            format_colored_summary(latest_stats[0], latest_stats[1], latest_stats[2]),
+            format_colored_summary(
+                previous_stats[0], previous_stats[1], previous_stats[2]
+            ),
+        ],
+        [
+            "boots",
+            format_colored_summary(latest_stats[3], latest_stats[4], latest_stats[5]),
+            format_colored_summary(
+                previous_stats[3], previous_stats[4], previous_stats[5]
+            ),
+        ],
+        [
+            "tests",
+            format_colored_summary(latest_stats[6], latest_stats[7], latest_stats[8]),
+            format_colored_summary(
+                previous_stats[6], previous_stats[7], previous_stats[8]
+            ),
+        ],
+    ]
+
+    headers = [
+        "Type",
+        f"Latest ({latest_commit[:12]})",
+        f"Previous ({previous_commit[:12]})",
+    ]
+
+    click.secho(tabulate(table_data, headers=headers, tablefmt="grid"), color=True)
+
+    def find_regressions(latest_items, previous_items, key_func, item_type):
+        """Find PASS->FAIL regressions for any item type"""
+        latest_lookup = {key_func(item): item for item in latest_items}
+        previous_lookup = {key_func(item): item for item in previous_items}
+
+        regressions = []
+        for key, latest_item in latest_lookup.items():
+            if key in previous_lookup:
+                previous_item = previous_lookup[key]
+                previous_status = previous_item.get("status", "UNKNOWN")
+                latest_status = latest_item.get("status", "UNKNOWN")
+
+                if previous_status == "PASS" and latest_status == "FAIL":
+                    regressions.append(
+                        {"item": latest_item, "type": item_type, "key": key}
+                    )
+
+        return regressions
+
+    # Find regressions for each category
+    build_regressions = find_regressions(
+        latest_builds, previous_builds, build_key, "build"
+    )
+    boot_regressions = find_regressions(latest_boots, previous_boots, test_key, "boot")
+    test_regressions = find_regressions(latest_tests, previous_tests, test_key, "test")
+
+    total_regressions = (
+        len(build_regressions) + len(boot_regressions) + len(test_regressions)
+    )
+
+    # Output results
+    if use_json:
+
+        def format_item_json(regression):
+            item = regression["item"]
+            item_type = regression["type"]
+
+            if item_type == "build":
+                return {
+                    "type": "build",
+                    "config": item.get("config_name", "unknown"),
+                    "arch": item.get("architecture", "unknown"),
+                    "compiler": item.get("compiler", "unknown"),
+                    "id": item.get("id", "unknown"),
+                    "dashboard": f"https://dashboard.kernelci.org/build/{item.get('id', 'unknown')}",
+                    "log": item.get("log_url", ""),
+                }
+            else:  # boot or test
+                return {
+                    "type": item_type,
+                    "test_path": item.get("test_path", item.get("path", "unknown")),
+                    "hardware": item.get(
+                        "hardware",
+                        item.get("environment_misc", {}).get("platform", "unknown"),
+                    ),
+                    "config": item.get("config", item.get("config_name", "unknown")),
+                    "arch": item.get("arch", item.get("architecture", "unknown")),
+                    "id": item.get("id", "unknown"),
+                    "dashboard": f"https://dashboard.kernelci.org/test/{item.get('id', 'unknown')}",
+                    "log": item.get("log_url", ""),
+                }
+
+        result = {
+            "total_regressions": total_regressions,
+            "build_regressions": len(build_regressions),
+            "boot_regressions": len(boot_regressions),
+            "test_regressions": len(test_regressions),
+            "regressions": {
+                "builds": [format_item_json(reg) for reg in build_regressions],
+                "boots": [format_item_json(reg) for reg in boot_regressions],
+                "tests": [format_item_json(reg) for reg in test_regressions],
+            },
+        }
+        kci_msg(json.dumps(result))
+    else:
+        kci_msg(
+            f"\nRegression analysis: {previous_commit[:12]} -> {latest_commit[:12]}"
+        )
+        kci_msg(f"Total regressions (PASS->FAIL): {total_regressions}")
+
+        if build_regressions:
+            kci_msg(f"\nBuild regressions ({len(build_regressions)}):")
+            for regression in build_regressions:
+                build = regression["item"]
+                kci_msg_nonl("- config: ")
+                kci_msg_cyan(build.get("config_name", "unknown"), nl=False)
+                kci_msg_nonl(" arch: ")
+                kci_msg_cyan(build.get("architecture", "unknown"), nl=False)
+                kci_msg_nonl(" compiler: ")
+                kci_msg_cyan(build.get("compiler", "unknown"), nl=False)
+                kci_msg("")
+                kci_msg(
+                    f"  dashboard: https://dashboard.kernelci.org/build/{build.get('id', 'unknown')}"
+                )
+                kci_msg("")
+
+        if boot_regressions:
+            kci_msg(f"\nBoot regressions ({len(boot_regressions)}):")
+            for regression in boot_regressions:
+                boot = regression["item"]
+                test_path = boot.get("test_path", boot.get("path", "unknown"))
+                hardware = boot.get(
+                    "hardware",
+                    boot.get("environment_misc", {}).get("platform", "unknown"),
+                )
+                config = boot.get("config", boot.get("config_name", "unknown"))
+
+                kci_msg_nonl("- test path: ")
+                kci_msg_cyan(test_path, nl=False)
+                kci_msg("")
+                kci_msg_nonl("  hardware: ")
+                kci_msg_cyan(hardware, nl=False)
+                kci_msg("")
+                kci_msg_nonl("  config: ")
+                kci_msg_cyan(config, nl=False)
+                kci_msg("")
+                kci_msg(
+                    f"  dashboard: https://dashboard.kernelci.org/test/{boot.get('id', 'unknown')}"
+                )
+                kci_msg("")
+
+        if test_regressions:
+            kci_msg(f"\nTest regressions ({len(test_regressions)}):")
+            for regression in test_regressions:
+                test = regression["item"]
+                test_path = test.get("test_path", test.get("path", "unknown"))
+                hardware = test.get(
+                    "hardware",
+                    test.get("environment_misc", {}).get("platform", "unknown"),
+                )
+                config = test.get("config", test.get("config_name", "unknown"))
+
+                kci_msg_nonl("- test path: ")
+                kci_msg_cyan(test_path, nl=False)
+                kci_msg("")
+                kci_msg_nonl("  hardware: ")
+                kci_msg_cyan(hardware, nl=False)
+                kci_msg("")
+                kci_msg_nonl("  config: ")
+                kci_msg_cyan(config, nl=False)
+                kci_msg("")
+                kci_msg(
+                    f"  dashboard: https://dashboard.kernelci.org/test/{test.get('id', 'unknown')}"
+                )
+                kci_msg("")
+
+        if total_regressions == 0:
+            kci_msg("✅ No regressions found - all status changes are expected")
