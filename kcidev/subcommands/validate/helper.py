@@ -43,7 +43,10 @@ def get_builds(ctx, giturl, branch, commit, arch):
             arch=arch,
         )
     except click.Abort:
-        kci_msg_red("Aborted while fetching dashboard builds")
+        kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard builds")
+        return maestro_builds, None
+    except click.ClickException as e:
+        kci_msg_red(f"{branch}/{commit}: {e.message}")
         return maestro_builds, None
     return maestro_builds, dashboard_builds
 
@@ -211,7 +214,10 @@ def get_boots(ctx, giturl, branch, commit, arch):
             arch=arch,
         )
     except click.Abort:
-        kci_msg_red("Aborted while fetching dashboard boots")
+        kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard boots")
+        return maestro_boots, None
+    except click.ClickException as e:
+        kci_msg_red(f"{branch}/{commit}: {e.message}")
         return maestro_boots, None
     return maestro_boots, dashboard_boots
 
@@ -303,11 +309,12 @@ def get_builds_history(ctx, checkouts, arch):
             paginate=False,
         )
 
+        branch = c["data"]["kernel_revision"].get("branch")
         try:
             dashboard_builds = ctx.invoke(
                 builds,
                 giturl=c["data"]["kernel_revision"].get("url"),
-                branch=c["data"]["kernel_revision"].get("branch"),
+                branch=branch,
                 commit=commit,
                 count=True,
                 verbose=False,
@@ -315,5 +322,7 @@ def get_builds_history(ctx, checkouts, arch):
             )
             builds_history.append([commit, maestro_builds, dashboard_builds])
         except click.Abort:
-            kci_msg_red("Aborted while fetching dashboard builds")
+            kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard builds")
+        except click.ClickException as e:
+            kci_msg_red(f"{branch}/{commit}: {e.message}")
     return builds_history
