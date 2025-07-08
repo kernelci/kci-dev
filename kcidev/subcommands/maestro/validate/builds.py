@@ -3,7 +3,12 @@ import click
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results import trees
 
-from .helper import get_build_stats, get_builds_history_stats, print_stats
+from .helper import (
+    get_build_stats,
+    get_builds_history_stats,
+    print_simple_list,
+    print_table_stats,
+)
 
 
 @click.command(
@@ -27,7 +32,7 @@ by providing --history option.
 Examples:
     # Build validation
     kci-dev validate builds --all-checkouts --days <number-of-days>
-    kci-dev validate builds -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    kci-dev validate builds --commit <git-commit> --giturl <git-url> --branch <git-branch>
     # Build history validation
     kci-dev validate builds --history --all-checkouts --days <number-of-days>
     kci-dev validate builds --history --giturl <git-url> --branch <git-branch> --days <number-of-days>
@@ -82,6 +87,12 @@ Examples:
     default=False,
     help="Get detailed output",
 )
+@click.option(
+    "--table-output",
+    is_flag=True,
+    default=False,
+    help="Display results in table format instead of simple list",
+)
 @click.pass_context
 def builds(
     ctx,
@@ -96,6 +107,7 @@ def builds(
     days,
     history,
     verbose,
+    table_output,
 ):
     final_stats = []
     print("Fetching build information...")
@@ -164,4 +176,7 @@ def builds(
             ]
             max_col_width = [None, 40, 3, 3, 2, 30, 30]
         table_fmt = "simple_grid"
-        print_stats(final_stats, headers, max_col_width, table_fmt)
+        if table_output:
+            print_table_stats(final_stats, headers, max_col_width, table_fmt)
+        else:
+            print_simple_list(final_stats, history)

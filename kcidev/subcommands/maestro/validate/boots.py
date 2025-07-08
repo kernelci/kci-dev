@@ -3,7 +3,7 @@ import click
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results import trees
 
-from .helper import get_boot_stats, print_stats
+from .helper import get_boot_stats, print_table_stats
 
 
 @click.command(
@@ -121,4 +121,4 @@ def boots(
         ]
         max_col_width = [None, 40, 3, 3, 2, 30, 30]
         table_fmt = "simple_grid"
-        print_stats(final_stats, headers, max_col_width, table_fmt)
+        print_table_stats(final_stats, headers, max_col_width, table_fmt)
