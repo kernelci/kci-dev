@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kci-dev"
-version = "0.1.7"
+version = "0.1.8"
 description = "Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI"
 authors = ["Arisu Tachibana <arisu.tachibana@miraclelinux.com>"]
 license = "LGPL-2.1-or-later"
@@ -43,7 +43,7 @@ kci-dev = 'kcidev.main:run'
 
 [tool.poetry.urls]
 "Issue Tracker" = "https://github.com/kernelci/kci-dev/issues"
-Documentation = "https://kci.dev/v0.1.7"
+Documentation = "https://kci.dev/v0.1.8"
 Changelog = "https://github.com/kernelci/kci-dev/releases"
 
 [tool.poetry.group.ci.dependencies]
