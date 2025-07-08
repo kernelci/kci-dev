@@ -920,3 +920,19 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
 
         if total_regressions == 0:
             kci_msg("✅ No regressions found - all status changes are expected")
+
+
+def cmd_issue_list(data, use_json):
+    """Display KCIDB issues"""
+    if use_json:
+        kci_msg_json(data["issues"])
+    else:
+        kci_msg(data["issues"])
+
+
+def print_data(data, use_json):
+    """Print a list of dictionary"""
+    if use_json:
+        kci_msg_json(data)
+    else:
+        kci_msg(data)

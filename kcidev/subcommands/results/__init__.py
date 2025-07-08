@@ -16,6 +16,7 @@ from kcidev.libs.dashboard import (
 )
 from kcidev.libs.git_repo import set_giturl_branch_commit
 from kcidev.subcommands.results.hardware import hardware
+from kcidev.subcommands.results.issues import issues
 from kcidev.subcommands.results.options import (
     builds_and_tests_options,
     common_options,
@@ -53,22 +54,22 @@ Available subcommands:
   test      - Display details for a specific test
   hardware  - Query hardware-specific results
   compare   - Compare test results between commits
+  issues    - Query KCIDB issues
 
 \b
 Examples:
   # Show summary for latest mainline commit
   kci-dev results summary --giturl mainline --latest
-
   # List all available trees
   kci-dev results trees
-
   # Show build results for a specific commit
   kci-dev results builds --commit abc123def456
-
   # Show test results with filtering
   kci-dev results tests --status fail --arch x86_64
+  # Display KCIDB issues
+  kci-dev results issues list
 """,
-    commands={"hardware": hardware},
+    commands={"hardware": hardware, "issues": issues},
     invoke_without_command=True,
 )
 @click.pass_context
