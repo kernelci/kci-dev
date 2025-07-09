@@ -318,3 +318,17 @@ def dashboard_fetch_issue_tests(origin, issue_id, use_json):
     logging.info(f"Fetching tests for issue ID: {issue_id}")
     params = {"filter_origin": origin}
     return dashboard_api_fetch(f"issue/{issue_id}/tests", params, use_json)
+
+
+def dashboard_fetch_issues_extra(issues, use_json):
+    """Send POST request to "issues/extras/" endpoint
+    Request body parameter "issues" should be a list containing sub-lists
+    with issue ID and version.
+    for example:
+        [
+            ['maestro:11568c8c555164d721a425c3ee264932a87e9113',1],
+            ['maestro:2779a206c30e0ec91f19f1df949c1b9d65fe1238',1]
+        ]
+    """
+    body = {"issues": issues}
+    return dashboard_api_post("issue/extras/", {}, use_json, body)
