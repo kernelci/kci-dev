@@ -21,6 +21,7 @@ Subcommands:
     results issues get    - Get an issue matching ID
     results issues builds - Get builds associated with an issue
     results issues tests  - Get tests associated with an issue
+    results issues detect - Detect KCIDB issues for builds and boots
 
 \b
 Examples:
@@ -32,6 +33,12 @@ Examples:
     kci-dev results issues builds --id <id> --origin <origin>
     # Get tests associated with an issue ID
     kci-dev results issues tests --id <id> --origin <origin>
+    # Detect build issues
+    kci-dev issues detect --builds --id <build-id>
+    kci-dev issues detect --builds --all-checkouts --days <number-of-days> --origin <origin>
+    # Detect boot issues
+    kci-dev issues detect --boots --id <boot-id>
+    kci-dev issues detect --boots --all-checkouts --days <number-of-days> --origin <origin>
 """,
     invoke_without_command=True,
 )
