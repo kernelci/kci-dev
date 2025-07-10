@@ -6,7 +6,7 @@ from functools import wraps
 import click
 from tabulate import tabulate
 
-from kcidev.libs.common import kci_msg_red
+from kcidev.libs.common import kci_msg_green, kci_msg_red
 from kcidev.libs.dashboard import (
     dashboard_fetch_boot_issues,
     dashboard_fetch_boots,
@@ -14,11 +14,12 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_build_issues,
     dashboard_fetch_builds,
     dashboard_fetch_commits_history,
+    dashboard_fetch_issues_extra,
     dashboard_fetch_summary,
     dashboard_fetch_test,
     dashboard_fetch_tests,
 )
-from kcidev.libs.git_repo import set_giturl_branch_commit
+from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results.hardware import hardware
 from kcidev.subcommands.results.issues import issues
 from kcidev.subcommands.results.options import (
@@ -468,12 +469,48 @@ def print_stats(data, headers, max_col_width, table_fmt):
     )
 
 
+def get_new_issues(origin, tree_name, giturl, branch, commit, arch):
+    """Get new KCIDB issue for a checkout"""
+    try:
+        data = dashboard_fetch_summary(origin, giturl, branch, commit, arch, True)
+        tree_summary = data["summary"]
+        items = ["builds", "boots", "tests"]
+        all_issues = []
+        new_issues = []
+        for item in items:
+            for i in tree_summary[item]["issues"]:
+                all_issues.append([i["id"], i["version"]])
+        if not all_issues:
+            kci_msg_red(f"{tree_name}/{branch}:{commit} No issues found")
+            return
+        issue_extras = dashboard_fetch_issues_extra(all_issues, True)["issues"]
+        for issue_id, extras in issue_extras.items():
+            first_incident = extras.get("first_incident")
+            if first_incident:
+                if all(
+                    [
+                        first_incident["git_commit_hash"] == commit,
+                        first_incident["git_repository_url"] == giturl,
+                        first_incident["git_repository_branch"] == branch,
+                    ]
+                ):
+                    new_issues.append(issue_id)
+        if not new_issues:
+            kci_msg_red(f"{tree_name}/{branch}:{commit} No new issues found")
+        else:
+            kci_msg_green(f"{tree_name}/{branch}:{commit} New issues: {new_issues}")
+    except click.ClickException as e:
+        print("Exception:", e.message)
+
+
 @click.command(
     name="detect",
     help="""Detect KCIDB issues for builds and boots
 
 \b
 The command is used to fetch KCIDB issues associated with builds and boots.
+It can also detect new issues i.e. issues observed for the first time for
+a checkout.
 Provide `--builds` and `--boots` option for builds issue detection and boots
 issue detection respectively.
 `--all-checkouts` option can be used to fetch KCIDB issues for all the
@@ -489,6 +526,9 @@ Examples:
   # Detect boot issues
   kci-dev issues detect --boots --id <boot-id>
   kci-dev issues detect --boots --all-checkouts --days <number-of-days> --origin <origin>
+  # Detect new issues for a checkout
+  kci-dev issues detect --new --all-checkouts --days <number-of-days> --origin <origin>
+  kci-dev issues detect --new --giturl <git-url> --branch <git-branch> --commit <commit> --origin <origin>
 """,
 )
 @click.option(
@@ -507,6 +547,11 @@ Examples:
     help="Fetch KCIDB issues for boots",
 )
 @click.option(
+    "--new",
+    is_flag=True,
+    help="Fetch new KCIDB issues for a checkout",
+)
+@click.option(
     "--id",
     "item_id",
     help="Build/boot id to get issues for",
@@ -523,20 +568,70 @@ Examples:
     type=int,
     default="7",
 )
+@click.option(
+    "--giturl",
+    help="Git URL of kernel tree",
+)
+@click.option(
+    "--branch",
+    help="Branch to get results for",
+)
+@click.option(
+    "--commit",
+    help="Commit or tag to get results for",
+)
+@click.option(
+    "--git-folder",
+    help="Path of git repository folder",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+)
+@click.option(
+    "--latest",
+    is_flag=True,
+    help="Select latest results available",
+)
 @click.pass_context
 def detect(
     ctx,
     origin,
     builds,
     boots,
+    new,
     item_id,
     all_checkouts,
     arch,
     days,
+    giturl,
+    branch,
+    commit,
+    latest,
+    git_folder,
 ):
 
-    if not (builds or boots):
-        raise click.UsageError("Provide --builds or --boots to fetch issues for")
+    if not (builds or boots or new):
+        raise click.UsageError(
+            "Provide --builds or --boots or --new to fetch issues for"
+        )
+
+    if new:
+        if all_checkouts:
+            print("Fetching new issues for all checkouts...")
+            trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            for tree in trees_list:
+                giturl = tree["git_repository_url"]
+                branch = tree["git_repository_branch"]
+                commit = tree["git_commit_hash"]
+                tree_name = tree["tree_name"]
+                get_new_issues(origin, tree_name, giturl, branch, commit, arch)
+            return
+
+        print("Fetching new issues for the checkout...")
+        giturl, branch, commit = set_giturl_branch_commit(
+            origin, giturl, branch, commit, latest, git_folder
+        )
+        tree_name = get_tree_name(origin, giturl, branch)
+        get_new_issues(origin, tree_name, giturl, branch, commit, arch)
+        return
 
     if builds and boots:
         raise click.UsageError("Specify only one option from --builds and --boots")
