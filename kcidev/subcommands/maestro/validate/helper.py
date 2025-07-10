@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import click
 from tabulate import tabulate
 
-from kcidev.libs.common import kci_msg, kci_msg_json, kci_msg_red
+from kcidev.libs.common import kci_msg, kci_msg_bold_nonl, kci_msg_json, kci_msg_red
 from kcidev.subcommands.maestro.results import results
 from kcidev.subcommands.results import boots, builds
 
@@ -124,12 +124,70 @@ def get_build_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     return stats
 
 
-def print_stats(data, headers, max_col_width, table_fmt):
+def print_table_stats(data, headers, max_col_width, table_fmt):
     """Print build statistics in tabular format"""
     print("Creating a stats report...")
     print(
         tabulate(data, headers=headers, maxcolwidths=max_col_width, tablefmt=table_fmt)
     )
+
+
+def print_simple_list(data, history=False):
+    """Print a simple list format showing tree/branch with status and missing IDs"""
+
+    if history:
+        # For history mode, group by tree/branch and show overall status
+        from collections import defaultdict
+
+        tree_groups = defaultdict(list)
+
+        for row in data:
+            tree_branch = row[0]  # tree/branch
+            comparison = row[4]  # Build count comparison (✅ or ❌)
+            missing_ids = row[5]  # Missing build IDs
+            commit = row[1]  # Commit hash
+
+            tree_groups[tree_branch].append(
+                {"commit": commit, "status": comparison, "missing_ids": missing_ids}
+            )
+
+        for tree_branch, commits in tree_groups.items():
+            # Check if any commit has issues
+            has_issues = any(commit["status"] == "❌" for commit in commits)
+            status_icon = "❌" if has_issues else "✅"
+
+            kci_msg_bold_nonl(f"{tree_branch}: ")
+            kci_msg(f"{status_icon}")
+
+            if has_issues:
+                for commit in commits:
+                    if commit["status"] == "❌" and commit["missing_ids"]:
+                        kci_msg(f"  Commit {commit['commit'][:12]}:")
+                        for id in commit["missing_ids"]:
+                            kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                    elif commit["status"] == "❌":
+                        kci_msg(
+                            f"  Commit {commit['commit'][:12]}: Has mismatch but no missing IDs listed"
+                        )
+    else:
+        # For non-history mode, show each individual result
+        for row in data:
+            tree_branch = row[0]  # tree/branch
+            commit = row[1]  # commit
+            comparison = row[4]  # Build count comparison (✅ or ❌)
+            missing_ids = row[5]  # Missing build IDs
+
+            kci_msg_bold_nonl(f"• {tree_branch}: ")
+            kci_msg(f"{comparison}")
+            kci_msg(f"  Commit: {commit}")
+
+            if comparison == "❌" and missing_ids:
+                kci_msg("  Missing builds:")
+                for id in missing_ids:
+                    kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+            elif comparison == "❌":
+                kci_msg(f"  Has mismatch but no missing IDs listed")
+            kci_msg("")
 
 
 def validate_boot_status(maestro_boots, dashboard_boots):

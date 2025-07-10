@@ -129,6 +129,10 @@ def kci_msg_nonl(content):
     click.echo(content, nl=False)
 
 
+def kci_msg_bold_nonl(content):
+    click.secho(content, bold=True, nl=False)
+
+
 def kci_msg_green(content, nl=True):
     click.secho(content, fg="green", nl=nl)
 
