@@ -179,4 +179,4 @@ def builds(
         if table_output:
             print_table_stats(final_stats, headers, max_col_width, table_fmt)
         else:
-            print_simple_list(final_stats, history)
+            print_simple_list(final_stats, "builds", history)
