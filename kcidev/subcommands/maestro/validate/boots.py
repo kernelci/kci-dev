@@ -3,7 +3,7 @@ import click
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results import trees
 
-from .helper import get_boot_stats, print_table_stats
+from .helper import get_boot_stats, print_simple_list, print_table_stats
 
 
 @click.command(
@@ -69,6 +69,12 @@ Examples:
     default=False,
     help="Get detailed output",
 )
+@click.option(
+    "--table-output",
+    is_flag=True,
+    default=False,
+    help="Display results in table format",
+)
 @click.pass_context
 def boots(
     ctx,
@@ -82,6 +88,7 @@ def boots(
     arch,
     days,
     verbose,
+    table_output,
 ):
     final_stats = []
     print("Fetching boot information...")
@@ -121,4 +128,7 @@ def boots(
         ]
         max_col_width = [None, 40, 3, 3, 2, 30, 30]
         table_fmt = "simple_grid"
-        print_table_stats(final_stats, headers, max_col_width, table_fmt)
+        if table_output:
+            print_table_stats(final_stats, headers, max_col_width, table_fmt)
+        else:
+            print_simple_list(final_stats, "boots", False)
