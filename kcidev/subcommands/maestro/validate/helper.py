@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import click
 from tabulate import tabulate
 
-from kcidev.libs.common import kci_msg, kci_msg_bold_nonl, kci_msg_json, kci_msg_red
+from kcidev.libs.common import kci_msg, kci_msg_bold, kci_msg_json, kci_msg_red
 from kcidev.subcommands.maestro.results import results
 from kcidev.subcommands.results import boots, builds
 
@@ -46,6 +46,8 @@ def get_builds(ctx, giturl, branch, commit, arch):
         return maestro_builds, None
     except click.ClickException as e:
         kci_msg_red(f"{branch}/{commit}: {e.message}")
+        if "No builds available" in e.message:
+            return maestro_builds, []
         return maestro_builds, None
     return maestro_builds, dashboard_builds
 
@@ -132,7 +134,20 @@ def print_table_stats(data, headers, max_col_width, table_fmt):
     )
 
 
-def print_simple_list(data, history=False):
+def extract_validation_data(row: list):
+    """Extract information from validation stats"""
+    try:
+        tree_branch = row[0]
+        commit = row[1]  # Commit hash
+        comparison = row[4]  # Build/boot count comparison (✅ or ❌)
+        missing_ids = row[5]  # Missing build/boot IDs
+        return tree_branch, commit, comparison, missing_ids
+    except IndexError:
+        kci_msg_red("Failed to extract data for list view report")
+        raise ValueError()
+
+
+def print_simple_list(data, item_type, history=False):
     """Print a simple list format showing tree/branch with status and missing IDs"""
 
     if history:
@@ -142,47 +157,42 @@ def print_simple_list(data, history=False):
         tree_groups = defaultdict(list)
 
         for row in data:
-            tree_branch = row[0]  # tree/branch
-            comparison = row[4]  # Build count comparison (✅ or ❌)
-            missing_ids = row[5]  # Missing build IDs
-            commit = row[1]  # Commit hash
-
+            try:
+                tree_branch, commit, comparison, missing_ids = extract_validation_data(
+                    row
+                )
+            except ValueError:
+                continue
             tree_groups[tree_branch].append(
                 {"commit": commit, "status": comparison, "missing_ids": missing_ids}
             )
 
         for tree_branch, commits in tree_groups.items():
-            # Check if any commit has issues
-            has_issues = any(commit["status"] == "❌" for commit in commits)
-            status_icon = "❌" if has_issues else "✅"
+            kci_msg_bold(f"{tree_branch}: ")
+            for commit in commits:
+                if commit["status"] == "❌" and commit["missing_ids"]:
+                    kci_msg(f"  Commit {commit['commit'][:12]}: ❌")
+                    kci_msg(f"  Missing {item_type}: {len(commit['missing_ids'])}")
+                    for id in commit["missing_ids"]:
+                        kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                elif commit["status"] == "✅":
+                    kci_msg(f"  Commit {commit['commit'][:12]}: ✅")
 
-            kci_msg_bold_nonl(f"{tree_branch}: ")
-            kci_msg(f"{status_icon}")
-
-            if has_issues:
-                for commit in commits:
-                    if commit["status"] == "❌" and commit["missing_ids"]:
-                        kci_msg(f"  Commit {commit['commit'][:12]}:")
-                        for id in commit["missing_ids"]:
-                            kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
-                    elif commit["status"] == "❌":
-                        kci_msg(
-                            f"  Commit {commit['commit'][:12]}: Has mismatch but no missing IDs listed"
-                        )
     else:
         # For non-history mode, show each individual result
         for row in data:
-            tree_branch = row[0]  # tree/branch
-            commit = row[1]  # commit
-            comparison = row[4]  # Build count comparison (✅ or ❌)
-            missing_ids = row[5]  # Missing build IDs
-
-            kci_msg_bold_nonl(f"• {tree_branch}: ")
+            try:
+                tree_branch, commit, comparison, missing_ids = extract_validation_data(
+                    row
+                )
+            except ValueError:
+                continue
+            kci_msg_bold(f"• {tree_branch}: ", nl=False)
             kci_msg(f"{comparison}")
             kci_msg(f"  Commit: {commit}")
 
             if comparison == "❌" and missing_ids:
-                kci_msg("  Missing builds:")
+                kci_msg(f"  Missing {item_type}: {len(missing_ids)}")
                 for id in missing_ids:
                     kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
             elif comparison == "❌":
@@ -382,4 +392,6 @@ def get_builds_history(ctx, checkouts, arch):
             kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard builds")
         except click.ClickException as e:
             kci_msg_red(f"{branch}/{commit}: {e.message}")
+            if "No builds available" in e.message:
+                builds_history.append([commit, maestro_builds, []])
     return builds_history
