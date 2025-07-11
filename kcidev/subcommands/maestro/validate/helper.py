@@ -285,6 +285,8 @@ def get_boots(ctx, giturl, branch, commit, arch):
         return maestro_boots, None
     except click.ClickException as e:
         kci_msg_red(f"{branch}/{commit}: {e.message}")
+        if "No boots available" in e.message:
+            return maestro_boots, []
         return maestro_boots, None
     return maestro_boots, dashboard_boots
 
