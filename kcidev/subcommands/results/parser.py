@@ -90,7 +90,12 @@ def create_test_json(test, log_path):
         config_name = test["config"]
     elif "config_name" in test:
         config_name = test["config_name"]
-    return {
+
+    runtime = None
+    if "misc" in test.keys():
+        runtime = test["misc"].get("runtime")
+
+    json_output = {
         "test_path": test["path"],
         "hardware": test["environment_misc"]["platform"],
         "compatibles": test.get("environment_compatible", []),
@@ -102,6 +107,11 @@ def create_test_json(test, log_path):
         "id": test["id"],
         "dashboard": f"https://dashboard.kernelci.org/build/{test['id']}",
     }
+
+    if runtime:
+        json_output["runtime"] = runtime
+
+    return json_output
 
 
 def cmd_summary(data, use_json):
@@ -427,6 +437,13 @@ def print_test(test, log_path):
 
     kci_msg(f"  log: {log_path}")
     kci_msg(f"  start time: {test['start_time']}")
+
+    if "misc" in test.keys():
+        runtime = test["misc"].get("runtime")
+        kci_msg_nonl("  runtime: ")
+        kci_msg_cyan(runtime, nl=False)
+        kci_msg("")
+
     kci_msg(f"  id: {test['id']}")
     kci_msg(f"  dashboard: https://dashboard.kernelci.org/test/{test['id']}")
     kci_msg("")
