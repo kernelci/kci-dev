@@ -279,6 +279,7 @@ def get_boots(ctx, giturl, branch, commit, arch):
             count=True,
             verbose=False,
             arch=arch,
+            boot_origin="maestro",
         )
     except click.Abort:
         kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard boots")
