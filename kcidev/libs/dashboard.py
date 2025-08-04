@@ -149,14 +149,13 @@ def dashboard_fetch_boots(
     start_date,
     end_date,
     use_json,
-    test_origin="maestro",
+    boot_origin,
 ):
     endpoint = f"tree/{commit}/boots"
     params = {
         "origin": origin,
         "git_url": giturl,
         "git_branch": branch,
-        "filter_boot.origin": test_origin,
     }
     if arch is not None:
         params["filter_architecture"] = arch
@@ -166,6 +165,8 @@ def dashboard_fetch_boots(
         params["filter_start_date"] = start_date
     if end_date is not None:
         params["filter_end_date"] = end_date
+    if boot_origin:
+        params["filter_boot.origin"] = boot_origin
 
     logging.info(f"Fetching boots for commit {commit} on {branch} branch")
     logging.debug(

@@ -196,6 +196,10 @@ def builds(
     default=True,
     help="Print boot details",
 )
+@click.option(
+    "--boot-origin",
+    help="Select KCIDB boot origin",
+)
 def boots(
     origin,
     git_folder,
@@ -221,13 +225,23 @@ def boots(
     count,
     use_json,
     verbose,
+    boot_origin,
 ):
     """Display boot results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_boots(
-        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+        origin,
+        giturl,
+        branch,
+        commit,
+        arch,
+        tree,
+        start_date,
+        end_date,
+        use_json,
+        boot_origin,
     )
     return cmd_tests(
         data["boots"],
