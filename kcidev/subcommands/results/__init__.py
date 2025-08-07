@@ -6,7 +6,7 @@ from functools import wraps
 import click
 from tabulate import tabulate
 
-from kcidev.libs.common import kci_msg_green, kci_msg_red
+from kcidev.libs.common import kci_msg, kci_msg_bold, kci_msg_green, kci_msg_red
 from kcidev.libs.dashboard import (
     dashboard_fetch_boot_issues,
     dashboard_fetch_boots,
@@ -14,6 +14,10 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_build_issues,
     dashboard_fetch_builds,
     dashboard_fetch_commits_history,
+    dashboard_fetch_issue,
+    dashboard_fetch_issue_builds,
+    dashboard_fetch_issue_list,
+    dashboard_fetch_issue_tests,
     dashboard_fetch_issues_extra,
     dashboard_fetch_summary,
     dashboard_fetch_test,
@@ -21,7 +25,6 @@ from kcidev.libs.dashboard import (
 )
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results.hardware import hardware
-from kcidev.subcommands.results.issues import issues
 from kcidev.subcommands.results.options import (
     builds_and_tests_options,
     common_options,
@@ -37,6 +40,8 @@ from kcidev.subcommands.results.parser import (
     cmd_single_test,
     cmd_summary,
     cmd_tests,
+    print_issues,
+    print_missing_data,
 )
 
 
@@ -74,7 +79,7 @@ Examples:
   # Display KCIDB issues
   kci-dev results issues list
 """,
-    commands={"hardware": hardware, "issues": issues},
+    commands={"hardware": hardware},
     invoke_without_command=True,
 )
 @click.pass_context
@@ -486,6 +491,7 @@ def print_stats(data, headers, max_col_width, table_fmt):
 def get_new_issues(origin, tree_name, giturl, branch, commit, arch):
     """Get new KCIDB issue for a checkout"""
     try:
+        kci_msg_bold(f"{tree_name}/{branch}:{commit}")
         data = dashboard_fetch_summary(origin, giturl, branch, commit, arch, True)
         tree_summary = data["summary"]
         items = ["builds", "boots", "tests"]
@@ -495,7 +501,7 @@ def get_new_issues(origin, tree_name, giturl, branch, commit, arch):
             for i in tree_summary[item]["issues"]:
                 all_issues.append([i["id"], i["version"]])
         if not all_issues:
-            kci_msg_red(f"{tree_name}/{branch}:{commit} No issues found")
+            kci_msg("No issues found")
             return
         issue_extras = dashboard_fetch_issues_extra(all_issues, True)["issues"]
         for issue_id, extras in issue_extras.items():
@@ -510,9 +516,10 @@ def get_new_issues(origin, tree_name, giturl, branch, commit, arch):
                 ):
                     new_issues.append(issue_id)
         if not new_issues:
-            kci_msg_red(f"{tree_name}/{branch}:{commit} No new issues found")
+            kci_msg("No new issues found")
         else:
-            kci_msg_green(f"{tree_name}/{branch}:{commit} New issues: {new_issues}")
+            for issue in new_issues:
+                kci_msg(f"- {issue}")
     except click.ClickException as e:
         print("Exception:", e.message)
 
@@ -692,7 +699,262 @@ def detect(
             print_stats(stats, headers, max_col_width, table_fmt)
 
 
-issues.add_command(detect)
+def get_missing_issue_items(
+    ctx, origin, item_type, giturl, branch, commit, tree_name, arch
+):
+    """Get information of failed or inconclusive builds/boots for which KCIDB
+    issues don't exist"""
+    try:
+        if item_type == "builds":
+            results_cmd = builds
+            dashboard_func = dashboard_fetch_build_issues
+        elif item_type == "boots":
+            results_cmd = boots
+            dashboard_func = dashboard_fetch_boot_issues
+        else:
+            kci_msg_red("Please specify 'builds' or 'boots' as items type")
+            return []
+
+        dashboard_items = ctx.invoke(
+            results_cmd,
+            origin=origin,
+            giturl=giturl,
+            branch=branch,
+            commit=commit,
+            status="all",
+            count=True,
+            verbose=False,
+            arch=arch,
+        )
+
+        missing_ids = []
+        for item in dashboard_items:
+            # Exclude passed builds/boots
+            if item["status"] == "PASS":
+                continue
+            item_id = item["id"]
+            try:
+                _ = dashboard_func(item_id, False, error_verbose=False)
+            except click.ClickException as e:
+                if "No issues" in e.message:
+                    missing_ids.append(item_id)
+        if missing_ids:
+            return [f"{tree_name}/{branch}", commit, missing_ids]
+        return []
+    except click.Abort:
+        kci_msg_red(
+            f"{tree_name}/{branch}: Aborted while fetching dashboard builds/boots"
+        )
+        return []
+    except click.ClickException as e:
+        kci_msg_red(f"{tree_name}/{branch}: {e.message}")
+        return []
+
+
+@results.command(
+    name="issues",
+    help="""Fetch KCIDB issues from the dashboard
+
+\b
+Examples:
+  # Get issues
+  kci-dev results issues --origin <origin> --days <number-of-days>
+  # Get new issues for all checkouts
+  kci-dev issues --new --days <number-of-days> --origin <origin>
+  # Get new issues for a checkout
+  kci-dev issues --new --giturl <git-url> --branch <git-branch> --commit <commit> --origin <origin>
+  # Get failed or inconclusive builds and boots without any issue for all checkouts
+  kci-dev issues --missing
+  # Get failed or inconclusive builds and boots without any issue for specific checkout
+  kci-dev issues --missing --giturl <git-url> --branch <git-branch> --commit <commit> --origin <origin>
+  # Get failed/inconclusive builds without issues
+  kci-dev issues --missing --builds
+  # Get failed/inconclusive boots without issues
+  kci-dev issues --missing --boots
+""",
+)
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+    default="maestro",
+)
+@click.option(
+    "--days",
+    help="Provide a period of time in days to get results for",
+    type=int,
+    default="5",
+)
+@click.option(
+    "--new",
+    is_flag=True,
+    help="Fetch new KCIDB issues for a checkout",
+)
+@click.option(
+    "--giturl",
+    help="Git URL of kernel tree",
+)
+@click.option(
+    "--branch",
+    help="Branch to get results for",
+)
+@click.option(
+    "--commit",
+    help="Commit or tag to get results for",
+)
+@click.option(
+    "--git-folder",
+    help="Path of git repository folder",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+)
+@click.option(
+    "--latest",
+    is_flag=True,
+    help="Select latest results available",
+)
+@click.option(
+    "--missing",
+    is_flag=True,
+    help="List all failed/incomplete builds and boots without any issue associated to them",
+)
+@click.option(
+    "--builds",
+    is_flag=True,
+    help="The option can be used along with '--missing' to list only builds",
+)
+@click.option(
+    "--boots",
+    is_flag=True,
+    help="The option can be used along with '--missing' to list only boots",
+)
+@click.option("--arch", help="Filter by arch")
+@click.pass_context
+@results_display_options
+def issues(
+    ctx,
+    origin,
+    days,
+    new,
+    giturl,
+    branch,
+    commit,
+    use_json,
+    latest,
+    git_folder,
+    arch,
+    missing,
+    builds,
+    boots,
+):
+    """Issues command handler"""
+    if not new and not missing:
+        data = dashboard_fetch_issue_list(origin, days, use_json)
+        print_issues(data["issues"], use_json)
+    if new:
+        if not all([giturl, branch, commit]):
+            kci_msg("Fetching new issues for all checkouts...")
+            trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            for tree in trees_list:
+                giturl = tree["git_repository_url"]
+                branch = tree["git_repository_branch"]
+                commit = tree["git_commit_hash"]
+                tree_name = tree["tree_name"]
+                get_new_issues(origin, tree_name, giturl, branch, commit, arch)
+            return
+        kci_msg("Fetching new issues for the checkout...")
+        giturl, branch, commit = set_giturl_branch_commit(
+            origin, giturl, branch, commit, latest, git_folder
+        )
+        tree_name = get_tree_name(origin, giturl, branch)
+        get_new_issues(origin, tree_name, giturl, branch, commit, arch)
+    if missing:
+        if builds:
+            item_types = ["builds"]
+        elif boots:
+            item_types = ["boots"]
+        else:
+            item_types = ["builds", "boots"]
+
+        if all([giturl, branch, commit]):
+            tree_name = get_tree_name(origin, giturl, branch)
+            for item_type in item_types:
+                final_stats = []
+                kci_msg_green(f"Fetching data for {item_type}...")
+                stats = get_missing_issue_items(
+                    ctx, origin, item_type, giturl, branch, commit, tree_name, arch
+                )
+                if stats:
+                    final_stats.append(stats)
+                if final_stats:
+                    print_missing_data(final_stats)
+
+        else:
+            trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            for item_type in item_types:
+                kci_msg_green(f"Fetching data for {item_type}...")
+                final_stats = []
+                for tree in trees_list:
+                    giturl = tree["git_repository_url"]
+                    branch = tree["git_repository_branch"]
+                    commit = tree["git_commit_hash"]
+                    tree_name = tree["tree_name"]
+                    stats = get_missing_issue_items(
+                        ctx, origin, item_type, giturl, branch, commit, tree_name, arch
+                    )
+                    if stats:
+                        final_stats.append(stats)
+                if final_stats:
+                    print_missing_data(final_stats)
+
+
+@results.command(
+    name="issue",
+    help="""Fetch KCIDB issue matching provided ID.
+Also get associated builds and tests.
+
+\b
+Examples:
+  # Get issue information and associated builds/tests
+  kci-dev results issue --id <id> --origin <origin>
+""",
+)
+@click.option(
+    "--id",
+    "issue_id",
+    required=True,
+    help="Issue ID to get information for",
+)
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+)
+@results_display_options
+def issue(issue_id, origin, use_json):
+    """Get issue matching ID command handler"""
+    # Get issue information
+    data = dashboard_fetch_issue(issue_id, use_json)
+    kci_msg_green("Issue information:")
+    print_issues([data], use_json)
+
+    # Get associated builds and tests
+    item_types = ["builds", "tests"]
+    for item_type in item_types:
+        if item_type == "builds":
+            dashboard_func = dashboard_fetch_issue_builds
+        else:
+            dashboard_func = dashboard_fetch_issue_tests
+
+        try:
+            kci_msg_green(f"Associated {item_type}:")
+            data = dashboard_func(origin, issue_id, use_json, error_verbose=False)
+            item_ids = [item["id"] for item in data]
+            for item_id in item_ids:
+                kci_msg(f"- {item_id}")
+            kci_msg("")
+        except click.ClickException as e:
+            if f"No {item_type}" in e.message:
+                kci_msg(f"No associated {item_type} found")
+                kci_msg("")
+
 
 if __name__ == "__main__":
     main_kcidev()

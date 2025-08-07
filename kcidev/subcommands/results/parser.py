@@ -939,17 +939,56 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
             kci_msg("✅ No regressions found - all status changes are expected")
 
 
-def cmd_issue_list(data, use_json):
-    """Display KCIDB issues"""
+def print_issues(issues, use_json):
+    """Print a list of issues with formatting"""
     if use_json:
-        kci_msg_json(data["issues"])
-    else:
-        kci_msg(data["issues"])
+        kci_msg_json(issues)
+        return
+    for issue in issues:
+        kci_msg_nonl("- Issue ID: ")
+        kci_msg_cyan(issue["id"])
+
+        kci_msg_nonl("  origin: ")
+        kci_msg_cyan(issue["origin"])
+
+        kci_msg(f"  version: {issue['version']}")
+
+        kci_msg_nonl("  comment: ")
+        kci_msg(issue["comment"])
+        kci_msg(f"  field_timestamp: {issue['field_timestamp']}")
+
+        for field in ["culprit_code", "culprit_tool", "culprit_harness"]:
+            if issue[field]:
+                kci_msg_nonl(f"  {field}: ")
+                kci_msg_red(issue[field])
+            else:
+                kci_msg(f"  {field}: {issue[field]}")
+
+        if issue["categories"]:
+            kci_msg_nonl("  categories:")
+            kci_msg(issue["categories"])
+
+        kci_msg("")
 
 
-def print_data(data, use_json):
-    """Print a list of dictionary"""
-    if use_json:
-        kci_msg_json(data)
-    else:
-        kci_msg(data)
+def print_missing_data(data):
+    """Print builds/tests for which KCIDB issues are missing"""
+    from collections import defaultdict
+
+    tree_groups = defaultdict(list)
+
+    for row in data:
+        try:
+            tree_branch = row[0]
+            commit = row[1]
+            missing_ids = row[2]
+        except IndexError:
+            kci_msg_red("Failed to extract data for list view")
+            continue
+        tree_groups[tree_branch].append({"commit": commit, "missing_ids": missing_ids})
+    for tree_branch, commits in tree_groups.items():
+        kci_msg_bold(f"{tree_branch}: ")
+        for commit in commits:
+            kci_msg(f"  - Commit:{commit['commit']}")
+            for id in missing_ids:
+                kci_msg(f"  {id}")
