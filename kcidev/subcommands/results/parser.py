@@ -937,3 +937,35 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
 
         if total_regressions == 0:
             kci_msg("✅ No regressions found - all status changes are expected")
+
+
+def print_issues(issues, use_json):
+    """Print a list of issues with formatting"""
+    if use_json:
+        kci_msg_json(issues)
+        return
+    for issue in issues:
+        kci_msg_nonl("- Issue ID: ")
+        kci_msg_cyan(issue["id"])
+
+        kci_msg_nonl("  origin: ")
+        kci_msg_cyan(issue["origin"])
+
+        kci_msg(f"  version: {issue['version']}")
+
+        kci_msg_nonl("  comment: ")
+        kci_msg(issue["comment"])
+        kci_msg(f"  field_timestamp: {issue['field_timestamp']}")
+
+        for field in ["culprit_code", "culprit_tool", "culprit_harness"]:
+            if issue[field]:
+                kci_msg_nonl(f"  {field}: ")
+                kci_msg_red(issue[field])
+            else:
+                kci_msg(f"  {field}: {issue[field]}")
+
+        if issue["categories"]:
+            kci_msg_nonl("  categories:")
+            kci_msg(issue["categories"])
+
+        kci_msg("")
