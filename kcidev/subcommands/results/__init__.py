@@ -21,7 +21,6 @@ from kcidev.libs.dashboard import (
 )
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results.hardware import hardware
-from kcidev.subcommands.results.issues import issues
 from kcidev.subcommands.results.options import (
     builds_and_tests_options,
     common_options,
@@ -74,7 +73,7 @@ Examples:
   # Display KCIDB issues
   kci-dev results issues list
 """,
-    commands={"hardware": hardware, "issues": issues},
+    commands={"hardware": hardware},
     invoke_without_command=True,
 )
 @click.pass_context
@@ -691,8 +690,6 @@ def detect(
             table_fmt = "simple_grid"
             print_stats(stats, headers, max_col_width, table_fmt)
 
-
-issues.add_command(detect)
 
 if __name__ == "__main__":
     main_kcidev()
