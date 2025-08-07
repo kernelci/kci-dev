@@ -969,3 +969,26 @@ def print_issues(issues, use_json):
             kci_msg(issue["categories"])
 
         kci_msg("")
+
+
+def print_missing_data(data):
+    """Print builds/tests for which KCIDB issues are missing"""
+    from collections import defaultdict
+
+    tree_groups = defaultdict(list)
+
+    for row in data:
+        try:
+            tree_branch = row[0]
+            commit = row[1]
+            missing_ids = row[2]
+        except IndexError:
+            kci_msg_red("Failed to extract data for list view")
+            continue
+        tree_groups[tree_branch].append({"commit": commit, "missing_ids": missing_ids})
+    for tree_branch, commits in tree_groups.items():
+        kci_msg_bold(f"{tree_branch}: ")
+        for commit in commits:
+            kci_msg(f"  - Commit:{commit['commit']}")
+            for id in missing_ids:
+                kci_msg(f"  {id}")
