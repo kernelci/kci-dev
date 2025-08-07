@@ -994,3 +994,60 @@ def print_issue(issue, new_tag=False):
             kci_msg_nonl("  First incident seen on ")
             kci_msg_bold(tree_branch)
     kci_msg("")
+
+
+def print_issues(data):
+    """Print a list of issues with formatting
+    data (dict): provide dictionary with 'issues' and 'extras' keys"""
+    parsed = urlparse(DASHBOARD_API)
+    dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    if not data.get("issues") or not data.get("extras"):
+        kci_err("Please provide dictionary with 'issues' and 'extras' keys")
+        return
+
+    issues = data["issues"]
+    extras = data["extras"]
+    for issue in issues:
+        print_issue_information(issue, dashboard_url)
+
+        extra = extras.get(issue.get("id"))
+        if extra:
+            tree_branch = (
+                f'{extra.get("tree_name")}/{extra.get("git_repository_branch")}'
+            )
+            kci_msg_nonl("  First incident seen on ")
+            kci_msg_bold(tree_branch)
+        kci_msg("")
+
+
+def print_missing_data(item_type, data):
+    """Print builds/tests for which KCIDB issues are missing"""
+    from collections import defaultdict
+
+    tree_groups = defaultdict(list)
+
+    for row in data:
+        try:
+            tree_branch = row[0]
+            commit = row[1]
+            missing_ids = row[2]
+        except IndexError:
+            kci_msg_red("Failed to extract data for list view")
+            continue
+        tree_groups[tree_branch].append({"commit": commit, "missing_ids": missing_ids})
+
+    parsed = urlparse(DASHBOARD_API)
+    dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+    if item_type == "builds":
+        endpoint = "build"
+    else:
+        endpoint = "test"
+    for tree_branch, commits in tree_groups.items():
+        kci_msg_bold(f"{tree_branch}: ")
+        for commit in commits:
+            kci_msg(f"  - Commit:{commit['commit']}")
+            for item in missing_ids:
+                for item_id, status in item.items():
+                    kci_msg_nonl(f"  {dashboard_url}/{endpoint}/{item_id}  status: ")
+                    kci_msg_red(f"{status}")

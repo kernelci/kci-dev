@@ -296,23 +296,24 @@ def dashboard_fetch_hardware_tests(name, origin, use_json):
     )
 
 
-def dashboard_fetch_build_issues(build_id, use_json):
+def dashboard_fetch_build_issues(build_id, use_json, error_verbose):
     endpoint = f"build/{build_id}/issues"
     logging.info(f"Fetching build issues for build ID: {build_id}")
-    return dashboard_api_fetch(endpoint, {}, use_json)
+    return dashboard_api_fetch(endpoint, {}, use_json, error_verbose=error_verbose)
 
 
-def dashboard_fetch_boot_issues(test_id, use_json):
+def dashboard_fetch_boot_issues(test_id, use_json, error_verbose):
     endpoint = f"test/{test_id}/issues"
     logging.info(f"Fetching test issues for test ID: {test_id}")
-    return dashboard_api_fetch(endpoint, {}, use_json)
+    return dashboard_api_fetch(endpoint, {}, use_json, error_verbose=error_verbose)
 
 
 def dashboard_fetch_issue_list(origin, days, use_json):
     params = {
-        "filter_origin": origin,
         "interval_in_days": days,
     }
+    if origin:
+        params["filter_origin"] = origin
     logging.info(f"Fetching issue list for origin: {origin}")
     return dashboard_api_fetch("issue/", params, use_json)
 
