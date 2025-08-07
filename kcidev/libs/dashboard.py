@@ -13,7 +13,9 @@ DASHBOARD_API = "https://dashboard.kernelci.org/api/"
 
 def _dashboard_request(func):
     @wraps(func)
-    def wrapper(endpoint, params, use_json, body=None, max_retries=3):
+    def wrapper(
+        endpoint, params, use_json, body=None, max_retries=3, error_verbose=True
+    ):
         base_url = urllib.parse.urljoin(DASHBOARD_API, endpoint)
         url = "{}?{}".format(base_url, urllib.parse.urlencode(params))
         retries = 0
@@ -53,11 +55,12 @@ def _dashboard_request(func):
                 logging.debug(f"Response data size: {len(json.dumps(data))} bytes")
 
                 if "error" in data:
-                    logging.error(f"API returned error: {data.get('error')}")
-                    if use_json:
-                        kci_msg(data)
-                    else:
-                        kci_msg("json error: " + str(data["error"]))
+                    if error_verbose:
+                        logging.error(f"API returned error: {data.get('error')}")
+                        if use_json:
+                            kci_msg(data)
+                        else:
+                            kci_msg("json error: " + str(data["error"]))
                     raise click.ClickException(data.get("error"))
 
                 logging.info(f"Successfully completed {func.__name__} request")
@@ -81,7 +84,7 @@ def dashboard_api_post(endpoint, params, use_json, body, max_retries=3):
 
 
 @_dashboard_request
-def dashboard_api_fetch(endpoint, params, use_json, max_retries=3):
+def dashboard_api_fetch(endpoint, params, use_json, max_retries=3, error_verbose=True):
     return requests.get(endpoint)
 
 
@@ -319,16 +322,20 @@ def dashboard_fetch_issue(issue_id, use_json):
     return dashboard_api_fetch(f"issue/{issue_id}", {}, use_json)
 
 
-def dashboard_fetch_issue_builds(origin, issue_id, use_json):
+def dashboard_fetch_issue_builds(origin, issue_id, use_json, error_verbose=True):
     logging.info(f"Fetching builds for issue ID: {issue_id}")
-    params = {"filter_origin": origin}
-    return dashboard_api_fetch(f"issue/{issue_id}/builds", params, use_json)
+    params = {"filter_origin": origin} if origin else {}
+    return dashboard_api_fetch(
+        f"issue/{issue_id}/builds", params, use_json, error_verbose=error_verbose
+    )
 
 
-def dashboard_fetch_issue_tests(origin, issue_id, use_json):
+def dashboard_fetch_issue_tests(origin, issue_id, use_json, error_verbose=True):
     logging.info(f"Fetching tests for issue ID: {issue_id}")
-    params = {"filter_origin": origin}
-    return dashboard_api_fetch(f"issue/{issue_id}/tests", params, use_json)
+    params = {"filter_origin": origin} if origin else {}
+    return dashboard_api_fetch(
+        f"issue/{issue_id}/tests", params, use_json, error_verbose=error_verbose
+    )
 
 
 def dashboard_fetch_issues_extra(issues, use_json):

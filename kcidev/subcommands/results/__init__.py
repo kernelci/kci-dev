@@ -6,7 +6,7 @@ from functools import wraps
 import click
 from tabulate import tabulate
 
-from kcidev.libs.common import kci_msg_green, kci_msg_red
+from kcidev.libs.common import kci_msg, kci_msg_green, kci_msg_red
 from kcidev.libs.dashboard import (
     dashboard_fetch_boot_issues,
     dashboard_fetch_boots,
@@ -14,6 +14,9 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_build_issues,
     dashboard_fetch_builds,
     dashboard_fetch_commits_history,
+    dashboard_fetch_issue,
+    dashboard_fetch_issue_builds,
+    dashboard_fetch_issue_tests,
     dashboard_fetch_issues_extra,
     dashboard_fetch_summary,
     dashboard_fetch_test,
@@ -36,6 +39,8 @@ from kcidev.subcommands.results.parser import (
     cmd_single_test,
     cmd_summary,
     cmd_tests,
+    print_issue,
+    print_issues,
 )
 
 
@@ -711,6 +716,56 @@ def detect(
             max_col_width = [None, None]
             table_fmt = "simple_grid"
             print_stats(stats, headers, max_col_width, table_fmt)
+
+
+@results.command(
+    name="issue",
+    help="""Fetch KCIDB issue matching provided ID.
+Also get associated builds and tests.
+
+\b
+Examples:
+  # Get issue information and associated builds/tests
+  kci-dev results issue --id <id> --origin <origin>
+""",
+)
+@click.option(
+    "--id",
+    "issue_id",
+    required=True,
+    help="Issue ID to get information for",
+)
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+)
+@results_display_options
+def issue(issue_id, origin, use_json):
+    """Get issue matching ID command handler"""
+    # Get issue information
+    data = dashboard_fetch_issue(issue_id, use_json)
+    kci_msg_green("Issue information:")
+    print_issue(data)
+
+    # Get associated builds and tests
+    item_types = ["builds", "tests"]
+    for item_type in item_types:
+        if item_type == "builds":
+            dashboard_func = dashboard_fetch_issue_builds
+        else:
+            dashboard_func = dashboard_fetch_issue_tests
+
+        try:
+            kci_msg_green(f"Associated {item_type}:")
+            data = dashboard_func(origin, issue_id, use_json, error_verbose=False)
+            item_ids = [item["id"] for item in data]
+            for item_id in item_ids:
+                kci_msg(f"- {item_id}")
+            kci_msg("")
+        except click.ClickException as e:
+            if f"No {item_type}" in e.message:
+                kci_msg(f"No associated {item_type} found")
+                kci_msg("")
 
 
 if __name__ == "__main__":

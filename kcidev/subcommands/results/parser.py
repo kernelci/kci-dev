@@ -2,12 +2,13 @@ import gzip
 import json
 import logging
 import re
+from urllib.parse import urlparse
 
 import requests
 import yaml
 
 from kcidev.libs.common import *
-from kcidev.libs.dashboard import dashboard_fetch_tree_list
+from kcidev.libs.dashboard import DASHBOARD_API, dashboard_fetch_tree_list
 from kcidev.libs.files import download_logs_to_file
 from kcidev.libs.filters import (
     CompatibleFilter,
@@ -937,3 +938,59 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
 
         if total_regressions == 0:
             kci_msg("✅ No regressions found - all status changes are expected")
+
+
+def print_issue_information(issue, dashboard_url, new_tag=False):
+    """Extract and print issue information"""
+
+    if not isinstance(issue, dict):
+        kci_err("Please provide issue dictionary to extract information")
+        return
+
+    if new_tag:
+        kci_msg_nonl("- ")
+        kci_msg_red("[NEW] ", nl=False)
+        kci_msg_bold(f"{issue.get('comment')}")
+    else:
+        kci_msg_bold(f"- {issue.get('comment')}")
+    kci_msg(f"  {dashboard_url}/issue/{issue.get('id')}")
+    kci_msg(f"  origin: {issue.get('origin')}")
+    kci_msg(f"  version: {issue.get('version')}")
+    kci_msg(f"  field_timestamp: {issue.get('field_timestamp')}")
+
+    for field in ["culprit_code", "culprit_tool", "culprit_harness"]:
+        if not issue.get(field):
+            continue
+        if issue[field]:
+            kci_msg_nonl(f"  {field}: ")
+            kci_msg_red(issue[field])
+        else:
+            kci_msg(f"  {field}: {issue[field]}")
+
+    if issue.get("categories"):
+        kci_msg_nonl("  categories:")
+        kci_msg(issue["categories"])
+
+
+def print_issue(issue, new_tag=False):
+    """Print issue information
+    issue (dict): KCIDB issue dictionary"""
+
+    parsed = urlparse(DASHBOARD_API)
+    dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    print_issue_information(issue, dashboard_url, new_tag)
+
+    extra = issue.get("extra")
+    if not extra:
+        kci_msg("")
+        return
+    if extra.get(issue["id"]):
+        incident = extra.get(issue["id"]).get("first_incident")
+        if incident:
+            tree_branch = (
+                f'{incident.get("tree_name")}/{incident.get("git_repository_branch")}'
+            )
+            kci_msg_nonl("  First incident seen on ")
+            kci_msg_bold(tree_branch)
+    kci_msg("")
