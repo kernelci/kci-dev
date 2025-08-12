@@ -218,7 +218,7 @@ def dashboard_fetch_tree_list(origin, use_json, days=7):
         "interval_in_days": days,
     }
     logging.info(f"Fetching tree list for origin: {origin}")
-    return dashboard_api_fetch("tree-fast", params, use_json)
+    return dashboard_api_fetch("tree", params, use_json)
 
 
 def dashboard_fetch_hardware_list(origin, use_json):
