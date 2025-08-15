@@ -22,6 +22,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_summary,
     dashboard_fetch_test,
     dashboard_fetch_tests,
+    dashboard_fetch_tree_report,
 )
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results.hardware import hardware
@@ -40,6 +41,7 @@ from kcidev.subcommands.results.parser import (
     cmd_single_test,
     cmd_summary,
     cmd_tests,
+    cmd_tree_report,
     print_issue,
     print_issues,
     print_missing_data,
@@ -1050,6 +1052,63 @@ def issue(issue_id, origin, use_json):
             if f"No {item_type}" in e.message:
                 kci_msg(f"No associated {item_type} found")
                 kci_msg("")
+
+
+@results.command(
+    name="tree-report",
+    help="""Fetch tree report
+
+\b
+The command is used to fetch tree report using dashboard API.
+The report will consist of build, boot, and tests summary along with regression
+and unstable tests information.
+
+\b
+Examples:
+  # Get report by providing url and branch
+  kci-dev results tree-report --giturl <giturl> --branch <branch>
+""",
+)
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+    default="maestro",
+)
+@click.option(
+    "--giturl",
+    help="Git URL of kernel tree ",
+    required=True,
+)
+@click.option(
+    "--branch",
+    help="Branch to get results for",
+    required=True,
+)
+@click.option(
+    "--path",
+    multiple=True,
+    help="A list of test paths to query for. SQL Wildcard can be used.",
+)
+@click.option(
+    "--history-size",
+    default=3,
+    help="Maximum number of entries to be retrieved in a test history.",
+)
+@click.option(
+    "--max-age",
+    default=24,
+    help="Maximum age for the queried checkout and related tests in hours",
+)
+@click.option(
+    "--min-age", default=0, help="Minimum age of the queried checkout in hours."
+)
+@results_display_options
+def tree_report(origin, giturl, branch, path, history_size, max_age, min_age, use_json):
+    """Fetch tree report"""
+    data = dashboard_fetch_tree_report(
+        origin, branch, giturl, use_json, path, history_size, max_age, min_age
+    )
+    cmd_tree_report(data, use_json)
 
 
 if __name__ == "__main__":

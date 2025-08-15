@@ -1051,3 +1051,125 @@ def print_missing_data(item_type, data):
                 for item_id, status in item.items():
                     kci_msg_nonl(f"  {dashboard_url}/{endpoint}/{item_id}  status: ")
                     kci_msg_red(f"{status}")
+        kci_msg(data)
+
+
+def sum_tree_report_inconclusive_results(results):
+    count = 0
+    for status in [
+        "error_count",
+        "skip_count",
+        "miss_count",
+        "done_count",
+        "null_count",
+    ]:
+        if status in results.keys():
+            count += results[status]
+
+    return count
+
+
+def get_tree_report_summary(command_data):
+    inconclusive_cmd = sum_tree_report_inconclusive_results(command_data)
+    pass_cmd = command_data["pass_count"] if "pass_count" in command_data.keys() else 0
+    fail_cmd = command_data["fail_count"] if "fail_count" in command_data.keys() else 0
+    return inconclusive_cmd, pass_cmd, fail_cmd
+
+
+def status_mapping(status):
+    if status == "PASS":
+        return "✅"
+    if status == "FAIL":
+        return "❌"
+    if status in ["ERROR", "SKIP", "MISS", "DONE", "NULL", None]:
+        return "⚠️"
+
+
+def cmd_tree_report(data, use_json):
+    """Parse tree report and print information"""
+    if use_json:
+        kci_msg_json(data)
+        return
+
+    kci_msg_nonl("Tree: ")
+    kci_msg_bold(data["dashboard_url"])
+    kci_msg(f"Commit: {data['commit_hash']}")
+    kci_msg_nonl("Origin: ")
+    kci_msg_cyan(data["origin"])
+    kci_msg(f"Checkout start time: {data['checkout_start_time']}")
+    kci_msg("")
+
+    builds = data["build_status_summary"]
+    inconclusive_builds, pass_builds, fail_builds = get_command_summary(builds)
+
+    boots = data["boot_status_summary"]
+    inconclusive_boots, pass_boots, fail_boots = get_tree_report_summary(boots)
+
+    tests = data["test_status_summary"]
+    inconclusive_tests, pass_tests, fail_tests = get_tree_report_summary(tests)
+
+    kci_msg_bold("Summary: (pass/fail/inconclusive)")
+    print_summary("builds", pass_builds, fail_builds, inconclusive_builds)
+    print_summary("boots", pass_boots, fail_boots, inconclusive_boots)
+    print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
+    kci_msg("")
+
+    parsed = urlparse(data["dashboard_url"])
+    parsed_dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    categories = {
+        "possible_regressions": "Possible regressions:",
+        "fixed_regressions": "Fixed regressions:",
+        "unstable_tests": "Unstable tests:",
+    }
+    for category, name in categories.items():
+        if data[category]:
+            kci_msg_bold(f"{name}")
+        for platform, configs in data[category].items():
+            kci_msg_nonl("Platform: ")
+            kci_msg_cyan(platform)
+            for config, arch_compilers in configs.items():
+                kci_msg_nonl("> Config: ")
+                kci_msg_cyan(config)
+                for arch_compiler, paths in arch_compilers.items():
+                    kci_msg_nonl(" - Architecture/compiler: ")
+                    kci_msg_cyan(arch_compiler)
+                    for path, tests in paths.items():
+                        kci_msg_nonl("   - Test path: ")
+                        kci_msg_cyan(path)
+                        kci_msg(
+                            f"   last run: {parsed_dashboard_url}/test/{tests[0]['id']}"
+                        )
+                        history = []
+                        for test in tests:
+                            status = status_mapping(test["status"])
+                            history.append(status)
+                        kci_msg("   history:" + " > ".join(history[::-1]))
+                        kci_msg("")
+
+    build_issues = data["issues"]["builds"]
+    if build_issues:
+        kci_msg_bold("Build issues:")
+    for issue in build_issues:
+        if issue["is_new_issue"]:
+            kci_msg_nonl("- ")
+            kci_msg_red("[NEW] ", nl=False)
+            kci_msg(f"{parsed_dashboard_url}/issue/{issue.get('issue_id')}")
+        else:
+            kci_msg(f"- {parsed_dashboard_url}/issue/{issue.get('issue_id')}")
+
+        kci_msg_nonl("  Comment: ")
+        kci_msg_cyan(f"{issue.get('comment')}")
+        kci_msg(f"  Build: {parsed_dashboard_url}/build/{issue.get('build_id')}")
+        kci_msg(f"  version: {issue.get('version')}")
+        kci_msg(f"  Report URL: {issue.get('report_url')}")
+        kci_msg(f"  First seen: {issue.get('first_seen')}")
+        for field in ["culprit_code", "culprit_tool", "culprit_harness"]:
+            if not issue.get(field):
+                continue
+            if issue[field]:
+                kci_msg_nonl(f"  {field}: ")
+                kci_msg_red(issue[field])
+            else:
+                kci_msg(f"  {field}: {issue[field]}")
+        kci_msg("")
