@@ -2,6 +2,7 @@ import gzip
 import json
 import logging
 import re
+from urllib.parse import urlparse
 
 import requests
 import yaml
@@ -953,3 +954,86 @@ def print_data(data, use_json):
         kci_msg_json(data)
     else:
         kci_msg(data)
+
+
+def sum_tree_report_inconclusive_results(results):
+    count = 0
+    for status in [
+        "error_count",
+        "skip_count",
+        "miss_count",
+        "done_count",
+        "null_count",
+    ]:
+        if status in results.keys():
+            count += results[status]
+
+    return count
+
+
+def get_tree_report_summary(command_data):
+    inconclusive_cmd = sum_tree_report_inconclusive_results(command_data)
+    pass_cmd = command_data["pass_count"] if "pass_count" in command_data.keys() else 0
+    fail_cmd = command_data["fail_count"] if "fail_count" in command_data.keys() else 0
+    return inconclusive_cmd, pass_cmd, fail_cmd
+
+
+def cmd_tree_report(data, use_json):
+    """Parse test report and print information"""
+    if use_json:
+        kci_msg_json(data)
+        return
+
+    kci_msg_nonl("Tree: ")
+    kci_msg_bold(data["dashboard_url"])
+    kci_msg(f"Commit: {data['commit_hash']}")
+    kci_msg_nonl("Origin: ")
+    kci_msg_cyan(data["origin"])
+    kci_msg(f"Checkout start time: {data['checkout_start_time']}")
+    kci_msg("")
+
+    builds = data["build_status_summary"]
+    inconclusive_builds, pass_builds, fail_builds = get_command_summary(builds)
+
+    boots = data["boot_status_summary"]
+    inconclusive_boots, pass_boots, fail_boots = get_tree_report_summary(boots)
+
+    tests = data["test_status_summary"]
+    inconclusive_tests, pass_tests, fail_tests = get_tree_report_summary(tests)
+
+    kci_msg_bold("Summary: (pass/fail/inconclusive)")
+    print_summary("builds", pass_builds, fail_builds, inconclusive_builds)
+    print_summary("boots", pass_boots, fail_boots, inconclusive_boots)
+    print_summary("tests", pass_tests, fail_tests, inconclusive_tests)
+    kci_msg("")
+
+    parsed = urlparse(data["dashboard_url"])
+    parsed_dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    categories = {
+        "possible_regressions": "Possible regressions:",
+        "fixed_regressions": "Fixed regressions:",
+        "unstable_tests": "Unstable tests:",
+    }
+    for category, name in categories.items():
+        if data[category]:
+            kci_msg_bold(f"{name}")
+        for platform, info in data[category].items():
+            kci_msg_nonl("Platform: ")
+            kci_msg_cyan(platform)
+            for config, test_data in info.items():
+                kci_msg_nonl("- Config: ")
+                kci_msg_cyan(config)
+                for path, tests in test_data.items():
+                    kci_msg_nonl("  - Test path: ")
+                    kci_msg_cyan(path)
+                    for test in tests:
+                        kci_msg_nonl(f"  · {parsed_dashboard_url}/test/{test['id']}")
+                        kci_msg_nonl(" status:")
+                        if test["status"] == "PASS":
+                            kci_msg_green("PASS")
+                        elif test["status"] == "FAIL":
+                            kci_msg_red("FAIL")
+                        else:
+                            kci_msg_yellow(f"INCONCLUSIVE ({test['status']})")
+                    kci_msg("")
