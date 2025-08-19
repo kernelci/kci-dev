@@ -6,7 +6,7 @@ from functools import wraps
 import click
 from tabulate import tabulate
 
-from kcidev.libs.common import kci_msg_green, kci_msg_red
+from kcidev.libs.common import kci_msg_green, kci_msg_json, kci_msg_red
 from kcidev.libs.dashboard import (
     dashboard_fetch_boot_issues,
     dashboard_fetch_boots,
@@ -18,6 +18,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_summary,
     dashboard_fetch_test,
     dashboard_fetch_tests,
+    dashboard_fetch_tree_report,
 )
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results.hardware import hardware
@@ -37,6 +38,7 @@ from kcidev.subcommands.results.parser import (
     cmd_single_test,
     cmd_summary,
     cmd_tests,
+    cmd_tree_report,
 )
 
 
@@ -693,6 +695,64 @@ def detect(
 
 
 issues.add_command(detect)
+
+
+@results.command(
+    name="tree-report",
+    help="""Fetch tree report
+
+\b
+The command is used to fetch tree report using dashboard API.
+The report will consist of build, boot, and tests summary along with regression
+and unstable tests information.
+
+\b
+Examples:
+  # Get report by providing url and branch
+  kci-dev results tree-report --giturl <giturl> --branch <branch>
+""",
+)
+@click.option(
+    "--origin",
+    help="Select KCIDB origin",
+    default="maestro",
+)
+@click.option(
+    "--giturl",
+    help="Git URL of kernel tree ",
+    required=True,
+)
+@click.option(
+    "--branch",
+    help="Branch to get results for",
+    required=True,
+)
+@click.option(
+    "--path",
+    multiple=True,
+    help="A list of test paths to query for. SQL Wildcard can be used.",
+)
+@click.option(
+    "--group-size",
+    default=3,
+    help="Maximum number of entries to be retrieved in a test history.",
+)
+@click.option(
+    "--max-age",
+    default=24,
+    help="Maximum age for the queried checkout and related tests in hours",
+)
+@click.option(
+    "--min-age", default=0, help="Minimum age of the queried checkout in hours."
+)
+@results_display_options
+def tree_report(origin, giturl, branch, path, group_size, max_age, min_age, use_json):
+    """Fetch tree report"""
+    data = dashboard_fetch_tree_report(
+        origin, branch, giturl, use_json, path, group_size, max_age, min_age
+    )
+    cmd_tree_report(data, use_json)
+
 
 if __name__ == "__main__":
     main_kcidev()
