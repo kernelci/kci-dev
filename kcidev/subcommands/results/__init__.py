@@ -139,6 +139,11 @@ def trees(origin, use_json, days, verbose):
     default=True,
     help="Print build details",
 )
+@click.option(
+    "--error-verbose",
+    default=True,
+    help="Print error returned from dashboard API",
+)
 def builds(
     origin,
     git_folder,
@@ -164,13 +169,23 @@ def builds(
     min_duration,
     max_duration,
     verbose,
+    error_verbose,
 ):
     """Display build results."""
     giturl, branch, commit = set_giturl_branch_commit(
         origin, giturl, branch, commit, latest, git_folder
     )
     data = dashboard_fetch_builds(
-        origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+        origin,
+        giturl,
+        branch,
+        commit,
+        arch,
+        tree,
+        start_date,
+        end_date,
+        use_json,
+        error_verbose,
     )
     return cmd_builds(
         data,
@@ -199,6 +214,11 @@ def builds(
     "--boot-origin",
     help="Select KCIDB boot origin",
 )
+@click.option(
+    "--error-verbose",
+    default=True,
+    help="Print error returned from dashboard API",
+)
 def boots(
     origin,
     git_folder,
@@ -225,6 +245,7 @@ def boots(
     use_json,
     verbose,
     boot_origin,
+    error_verbose,
 ):
     """Display boot results."""
     giturl, branch, commit = set_giturl_branch_commit(
@@ -241,6 +262,7 @@ def boots(
         end_date,
         use_json,
         boot_origin,
+        error_verbose,
     )
     return cmd_tests(
         data["boots"],

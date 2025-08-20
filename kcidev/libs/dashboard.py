@@ -115,7 +115,16 @@ def dashboard_fetch_commits_history(origin, giturl, branch, commit, use_json):
 
 
 def dashboard_fetch_builds(
-    origin, giturl, branch, commit, arch, tree, start_date, end_date, use_json
+    origin,
+    giturl,
+    branch,
+    commit,
+    arch,
+    tree,
+    start_date,
+    end_date,
+    use_json,
+    error_verbose=True,
 ):
     endpoint = f"tree/{commit}/builds"
     params = {
@@ -136,7 +145,7 @@ def dashboard_fetch_builds(
     logging.debug(
         f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
     )
-    return dashboard_api_fetch(endpoint, params, use_json)
+    return dashboard_api_fetch(endpoint, params, use_json, error_verbose=error_verbose)
 
 
 def dashboard_fetch_boots(
@@ -150,6 +159,7 @@ def dashboard_fetch_boots(
     end_date,
     use_json,
     boot_origin,
+    error_verbose=True,
 ):
     endpoint = f"tree/{commit}/boots"
     params = {
@@ -172,7 +182,7 @@ def dashboard_fetch_boots(
     logging.debug(
         f"Filters: arch={arch}, tree={tree}, start_date={start_date}, end_date={end_date}"
     )
-    return dashboard_api_fetch(endpoint, params, use_json)
+    return dashboard_api_fetch(endpoint, params, use_json, error_verbose=error_verbose)
 
 
 def dashboard_fetch_tests(
