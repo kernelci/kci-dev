@@ -2,12 +2,13 @@ import gzip
 import json
 import logging
 import re
+from urllib.parse import urlparse
 
 import requests
 import yaml
 
 from kcidev.libs.common import *
-from kcidev.libs.dashboard import dashboard_fetch_tree_list
+from kcidev.libs.dashboard import DASHBOARD_API, dashboard_fetch_tree_list
 from kcidev.libs.files import download_logs_to_file
 from kcidev.libs.filters import (
     CompatibleFilter,
@@ -939,17 +940,114 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
             kci_msg("✅ No regressions found - all status changes are expected")
 
 
-def cmd_issue_list(data, use_json):
-    """Display KCIDB issues"""
-    if use_json:
-        kci_msg_json(data["issues"])
+def print_issue_information(issue, dashboard_url, new_tag=False):
+    """Extract and print issue information"""
+
+    if not isinstance(issue, dict):
+        kci_err("Please provide issue dictionary to extract information")
+        return
+
+    if new_tag:
+        kci_msg_nonl("- ")
+        kci_msg_red("[NEW] ", nl=False)
+        kci_msg_bold(f"{issue.get('comment')}")
     else:
-        kci_msg(data["issues"])
+        kci_msg_bold(f"- {issue.get('comment')}")
+    kci_msg(f"  {dashboard_url}/issue/{issue.get('id')}")
+    kci_msg(f"  origin: {issue.get('origin')}")
+    kci_msg(f"  version: {issue.get('version')}")
+    kci_msg(f"  field_timestamp: {issue.get('field_timestamp')}")
+
+    for field in ["culprit_code", "culprit_tool", "culprit_harness"]:
+        if not issue.get(field):
+            continue
+        if issue[field]:
+            kci_msg_nonl(f"  {field}: ")
+            kci_msg_red(issue[field])
+        else:
+            kci_msg(f"  {field}: {issue[field]}")
+
+    if issue.get("categories"):
+        kci_msg_nonl("  categories:")
+        kci_msg(issue["categories"])
 
 
-def print_data(data, use_json):
-    """Print a list of dictionary"""
-    if use_json:
-        kci_msg_json(data)
+def print_issue(issue, new_tag=False):
+    """Print issue information
+    issue (dict): KCIDB issue dictionary"""
+
+    parsed = urlparse(DASHBOARD_API)
+    dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    print_issue_information(issue, dashboard_url, new_tag)
+
+    extra = issue.get("extra")
+    if not extra:
+        kci_msg("")
+        return
+    if extra.get(issue["id"]):
+        incident = extra.get(issue["id"]).get("first_incident")
+        if incident:
+            tree_branch = (
+                f'{incident.get("tree_name")}/{incident.get("git_repository_branch")}'
+            )
+            kci_msg_nonl("  First incident seen on ")
+            kci_msg_bold(tree_branch)
+    kci_msg("")
+
+
+def print_issues(data):
+    """Print a list of issues with formatting
+    data (dict): provide dictionary with 'issues' and 'extras' keys"""
+    parsed = urlparse(DASHBOARD_API)
+    dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    if not data.get("issues") or not data.get("extras"):
+        kci_err("Please provide dictionary with 'issues' and 'extras' keys")
+        return
+
+    issues = data["issues"]
+    extras = data["extras"]
+    for issue in issues:
+        print_issue_information(issue, dashboard_url)
+
+        extra = extras.get(issue.get("id"))
+        if extra:
+            tree_branch = (
+                f'{extra.get("tree_name")}/{extra.get("git_repository_branch")}'
+            )
+            kci_msg_nonl("  First incident seen on ")
+            kci_msg_bold(tree_branch)
+        kci_msg("")
+
+
+def print_missing_data(item_type, data):
+    """Print builds/tests for which KCIDB issues are missing"""
+    from collections import defaultdict
+
+    tree_groups = defaultdict(list)
+
+    for row in data:
+        try:
+            tree_branch = row[0]
+            commit = row[1]
+            missing_ids = row[2]
+        except IndexError:
+            kci_msg_red("Failed to extract data for list view")
+            continue
+        tree_groups[tree_branch].append({"commit": commit, "missing_ids": missing_ids})
+
+    parsed = urlparse(DASHBOARD_API)
+    dashboard_url = f"{parsed.scheme}://{parsed.netloc}"
+    if item_type == "builds":
+        endpoint = "build"
     else:
-        kci_msg(data)
+        endpoint = "test"
+    for tree_branch, commits in tree_groups.items():
+        kci_msg_bold(f"{tree_branch}: ")
+        for commit in commits:
+            kci_msg(f"  - Commit:{commit['commit']}")
+            for item in missing_ids:
+                for item_id, status in item.items():
+                    kci_msg_nonl(f"  {dashboard_url}/{endpoint}/{item_id}  status: ")
+                    kci_msg_red(f"{status}")
