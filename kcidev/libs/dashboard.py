@@ -351,3 +351,29 @@ def dashboard_fetch_issues_extra(issues, use_json):
     """
     body = {"issues": issues}
     return dashboard_api_post("issue/extras/", {}, use_json, body)
+
+
+def dashboard_fetch_tree_report(
+    origin,
+    git_branch,
+    git_url,
+    use_json,
+    test_path,
+    history_size,
+    max_age_in_hours,
+    min_age_in_hours,
+):
+    """Get tree report"""
+    params = [
+        ("origin", origin),
+        ("git_branch", git_branch),
+        ("git_url", git_url),
+        ("group_size", history_size),
+        ("max_age_in_hours", max_age_in_hours),
+        ("min_age_in_hours", min_age_in_hours),
+    ]
+    for path in test_path:
+        params.append(("path", path))
+
+    logging.info(f"Fetching tree report for origin: {origin}")
+    return dashboard_api_fetch("tree-report", params, use_json)
