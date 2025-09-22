@@ -52,14 +52,29 @@ def get_builds(ctx, giturl, branch, commit, arch):
     return maestro_builds, dashboard_builds
 
 
-def find_missing_items(maestro_data, dashboard_data, verbose):
+def find_missing_items(maestro_data, dashboard_data, item_type, verbose):
     """
     Compare build/boot IDs found in maestro with dashboard results
     Return missing builds/boots in dashboard.
     """
     dashboard_ids = [b["id"].split(":")[1] for b in dashboard_data]
-    maestro_ids = [b["id"] for b in maestro_data]
 
+    if item_type == "build":
+        # Exclude build retries
+        maestro_data = [
+            b
+            for b in maestro_data
+            if (b["result"] != "incomplete" or b["retry_counter"] == 3)
+        ]
+    elif item_type == "boot":
+        # Exclude boot retries
+        maestro_data = [
+            b
+            for b in maestro_data
+            if (b["result"] not in {"incomplete", "fail"} or b["retry_counter"] == 3)
+        ]
+
+    maestro_ids = [b["id"] for b in maestro_data]
     if len(maestro_ids) > len(dashboard_ids):
         missing_items = [b for b in maestro_data if b["id"] not in dashboard_ids]
         missing_ids = [b["id"] for b in missing_items]
@@ -109,7 +124,7 @@ def get_build_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     else:
         count_comparison_flag = "❌"
         missing_build_ids = find_missing_items(
-            maestro_builds, dashboard_builds, verbose
+            maestro_builds, dashboard_builds, "build", verbose
         )
     builds_with_status_mismatch = validate_build_status(
         maestro_builds, dashboard_builds
@@ -260,6 +275,7 @@ def get_boots(ctx, giturl, branch, commit, arch):
         "data.kernel_revision.url=" + giturl,
         "data.kernel_revision.branch=" + branch,
         "data.kernel_revision.commit=" + commit,
+        "state=done",
     ]
     if arch:
         filters.append(f"data.arch={arch}")
@@ -302,7 +318,9 @@ def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
         count_comparison_flag = "✅"
     else:
         count_comparison_flag = "❌"
-        missing_boot_ids = find_missing_items(maestro_boots, dashboard_boots, verbose)
+        missing_boot_ids = find_missing_items(
+            maestro_boots, dashboard_boots, "boot", verbose
+        )
     boots_with_status_mismatch = validate_boot_status(maestro_boots, dashboard_boots)
     stats = [
         f"{tree_name}/{branch}",
@@ -321,7 +339,7 @@ def get_builds_history_stats(ctx, giturl, branch, tree_name, arch, days, verbose
     final_stats = []
     builds_history = get_builds_history(ctx, checkouts, arch)
     for b in builds_history:
-        missing_build_ids = find_missing_items(b[1], b[2], verbose)
+        missing_build_ids = find_missing_items(b[1], b[2], "build", verbose)
         total_maestro_builds = len(b[1])
         total_dashboard_builds = len(b[2])
         stats = [
