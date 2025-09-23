@@ -6,7 +6,7 @@ import sys
 import click
 
 from kcidev.libs.common import kci_msg, kci_msg_cyan, kci_msg_green, kci_msg_nonl
-from kcidev.libs.maestro_common import maestro_get_node, maestro_get_nodes
+from kcidev.libs.maestro_common import maestro_get_nodes
 from kcidev.subcommands.maestro.results import results
 from kcidev.subcommands.maestro.validate import validate
 
