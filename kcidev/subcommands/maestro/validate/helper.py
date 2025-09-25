@@ -260,6 +260,7 @@ def get_boots(ctx, giturl, branch, commit, arch):
         "data.kernel_revision.url=" + giturl,
         "data.kernel_revision.branch=" + branch,
         "data.kernel_revision.commit=" + commit,
+        "state=done",
     ]
     if arch:
         filters.append(f"data.arch={arch}")
