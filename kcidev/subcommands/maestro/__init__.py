@@ -38,51 +38,68 @@ def maestro(ctx):
         sys.exit(0)
 
 
-def print_bar_chart(data):
-    """Create bar chart for coverage data"""
+def print_bar_graph(data):
+    """Create bar graph for coverage data"""
 
     import math
+    import webbrowser
 
     import matplotlib.pyplot as plt
+    import mplcursors
     import numpy as np
 
+    # Calculate for subplots layout (one subplot per branch)
     branches = list(data.keys())
     num_branches = len(branches)
-
-    # Grid layout: 2 columns
     ncols = 2
     nrows = math.ceil(num_branches / ncols)
 
+    # Generate grid for subplots
     fig, axes = plt.subplots(
         nrows, ncols, figsize=(16, 5 * nrows), constrained_layout=True
     )
-
-    # Ensure axes is always iterable
     axes = axes.flatten()
+
+    all_bars = []
 
     for i, branch in enumerate(branches):
         ax = axes[i]
-        commits_data = data[branch]
+        coverage_data = data[branch]
 
-        full_commit_ids = [entry["commit"] for entry in commits_data]
-        short_commit_ids = [cid[:6] for cid in full_commit_ids]
+        full_commit_ids = [entry["commit"] for entry in coverage_data]
+        short_commit_ids = [c[:6] for c in full_commit_ids]  # truncate to 6 chars
 
-        func_coverage = [entry["function_coverage"] for entry in commits_data]
-        line_coverage = [entry["line_coverage"] for entry in commits_data]
+        func_coverage = [entry["function_coverage"] for entry in coverage_data]
+        line_coverage = [entry["line_coverage"] for entry in coverage_data]
 
+        # Create position on x-axis
         x = np.arange(len(short_commit_ids))
+        # Width of bar
         width = 0.35
 
-        bars1 = ax.bar(
+        # Create function coverage bar
+        func_bars = ax.bar(
             x - width / 2,
             func_coverage,
             width,
             label="Function Coverage",
             color="royalblue",
         )
-        bars2 = ax.bar(
+
+        # Create line coverage bar
+        line_bars = ax.bar(
             x + width / 2, line_coverage, width, label="Line Coverage", color="orange"
         )
+
+        for idx, bar in enumerate(func_bars):
+            bar.commit_id = full_commit_ids[idx]
+            bar.coverage_report_url = coverage_data[idx]["coverage_report_url"]
+            all_bars.append(bar)
+
+        for idx, bar in enumerate(line_bars):
+            bar.commit_id = full_commit_ids[idx]
+            bar.coverage_report_url = coverage_data[idx]["coverage_report_url"]
+            all_bars.append(bar)
 
         ax.set_title(f"Coverage for {branch}", fontsize=14)
         ax.set_xlabel("Commit ID")
@@ -92,7 +109,6 @@ def print_bar_chart(data):
         ax.set_ylim(0, max(func_coverage + line_coverage) + 5)
         ax.legend()
 
-        # Add coverage % on top of bars
         def add_labels(bars):
             for bar in bars:
                 height = bar.get_height()
@@ -105,10 +121,34 @@ def print_bar_chart(data):
                     fontsize=9,
                 )
 
-        add_labels(bars1)
-        add_labels(bars2)
+        # Add coverage % lables above each bar
+        add_labels(func_bars)
+        add_labels(line_bars)
 
-    # Hide unused subplots (if any)
+    cursor = mplcursors.cursor(all_bars, hover=True)
+
+    # Hover on the bar will show coverage report URL
+    @cursor.connect("add")
+    def on_add(sel):
+        bar = sel.artist
+        coverage_report_url = getattr(bar, "coverage_report_url", None)
+        if coverage_report_url:
+            sel.annotation.set_text(coverage_report_url)
+            sel.annotation.get_bbox_patch().set(fc="white", ec="black")
+
+    # Click on the bar will open coverage report URL
+    def on_click(event):
+        if event.inaxes:
+            for bar in all_bars:
+                if bar.contains(event)[0]:
+                    coverage_report_url = getattr(bar, "coverage_report_url", None)
+                    if coverage_report_url:
+                        webbrowser.open_new_tab(coverage_report_url)
+                    break
+
+    fig.canvas.mpl_connect("button_press_event", on_click)
+
+    # Hide unused axes
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
 
@@ -214,6 +254,7 @@ def coverage(ctx, branch, commit, limit, offset, start_date, end_date, graph_out
                         "commit": c,
                         "function_coverage": func_coverage,
                         "line_coverage": line_coverage,
+                        "coverage_report_url": artifacts.get("coverage_report"),
                     }
                     if aggregate_data.get(f"chromiumos/{b}"):
                         aggregate_data[f"chromiumos/{b}"].append(data)
@@ -232,7 +273,7 @@ def coverage(ctx, branch, commit, limit, offset, start_date, end_date, graph_out
                     kci_msg(f"  Coverage logs: {artifacts.get('log')}")
                     kci_msg("")
     if graph_output:
-        print_bar_chart(aggregate_data)
+        print_bar_graph(aggregate_data)
 
 
 # Add subcommands to the maestro group
