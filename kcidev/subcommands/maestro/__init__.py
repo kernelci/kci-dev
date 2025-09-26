@@ -6,7 +6,7 @@ import sys
 import click
 
 from kcidev.libs.common import kci_msg, kci_msg_cyan, kci_msg_green, kci_msg_nonl
-from kcidev.libs.maestro_common import maestro_get_node, maestro_get_nodes
+from kcidev.libs.maestro_common import maestro_get_nodes
 from kcidev.subcommands.maestro.results import results
 from kcidev.subcommands.maestro.validate import validate
 
@@ -36,6 +36,83 @@ def maestro(ctx):
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         sys.exit(0)
+
+
+def print_bar_chart(data):
+    """Create bar chart for coverage data"""
+
+    import math
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    branches = list(data.keys())
+    num_branches = len(branches)
+
+    # Grid layout: 2 columns
+    ncols = 2
+    nrows = math.ceil(num_branches / ncols)
+
+    fig, axes = plt.subplots(
+        nrows, ncols, figsize=(16, 5 * nrows), constrained_layout=True
+    )
+
+    # Ensure axes is always iterable
+    axes = axes.flatten()
+
+    for i, branch in enumerate(branches):
+        ax = axes[i]
+        commits_data = data[branch]
+
+        full_commit_ids = [entry["commit"] for entry in commits_data]
+        short_commit_ids = [cid[:6] for cid in full_commit_ids]
+
+        func_coverage = [entry["function_coverage"] for entry in commits_data]
+        line_coverage = [entry["line_coverage"] for entry in commits_data]
+
+        x = np.arange(len(short_commit_ids))
+        width = 0.35
+
+        bars1 = ax.bar(
+            x - width / 2,
+            func_coverage,
+            width,
+            label="Function Coverage",
+            color="royalblue",
+        )
+        bars2 = ax.bar(
+            x + width / 2, line_coverage, width, label="Line Coverage", color="orange"
+        )
+
+        ax.set_title(f"Coverage for {branch}", fontsize=14)
+        ax.set_xlabel("Commit ID")
+        ax.set_ylabel("Coverage (%)")
+        ax.set_xticks(x)
+        ax.set_xticklabels(short_commit_ids, rotation=0, ha="center", fontsize=9)
+        ax.set_ylim(0, max(func_coverage + line_coverage) + 5)
+        ax.legend()
+
+        # Add coverage % on top of bars
+        def add_labels(bars):
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    height + 0.5,
+                    f"{height:.1f}%",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                )
+
+        add_labels(bars1)
+        add_labels(bars2)
+
+    # Hide unused subplots (if any)
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.show()
 
 
 @maestro.command(
@@ -75,8 +152,14 @@ Examples:
     "--end-date",
     help="Filter results before this date (ISO format: YYYY-MM-DD or full timestamp)",
 )
+@click.option(
+    "--graph-output",
+    is_flag=True,
+    default=False,
+    help="Display results in bar graph format instead of simple list",
+)
 @click.pass_context
-def coverage(ctx, branch, commit, limit, offset, start_date, end_date):
+def coverage(ctx, branch, commit, limit, offset, start_date, end_date, graph_output):
     """Get coverage handler"""
     config_data = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
@@ -95,6 +178,8 @@ def coverage(ctx, branch, commit, limit, offset, start_date, end_date):
         filters.append(f"created__gt={start_date}")
     if end_date:
         filters.append(f"created__lt={end_date}")
+    if graph_output:
+        aggregate_data = {}
     build_nodes = maestro_get_nodes(api_url, limit, offset, filters, True)
     for build_node in build_nodes:
         child_nodes = maestro_get_nodes(
@@ -116,22 +201,38 @@ def coverage(ctx, branch, commit, limit, offset, start_date, end_date):
                     continue
                 b = child["data"].get("kernel_revision", {}).get("branch")
                 c = child["data"].get("kernel_revision", {}).get("commit")
-                kci_msg_nonl("- Tree/branch: ")
-                kci_msg_cyan(f"chromiumos/{b}")
-                kci_msg(f"  Commit: {c}")
-                kci_msg(f"  Build: {api_url}viewer?node_id={build_node['id']}")
+                func_coverage = None
+                line_coverage = None
                 for test in coverage_tests:
                     if test["name"] == "coverage.functions":
                         func_coverage = test["data"].get("misc", {}).get("measurement")
-                        kci_msg_nonl("  Function coverage: ")
-                        kci_msg_green(f"{func_coverage}%")
                     if test["name"] == "coverage.lines":
                         line_coverage = test["data"].get("misc", {}).get("measurement")
-                        kci_msg_nonl("  Line coverage: ")
-                        kci_msg_green(f"{line_coverage}%")
-                kci_msg(f"  Coverage report: {artifacts.get('coverage_report')}")
-                kci_msg(f"  Coverage logs: {artifacts.get('log')}")
-                kci_msg("")
+
+                if graph_output:
+                    data = {
+                        "commit": c,
+                        "function_coverage": func_coverage,
+                        "line_coverage": line_coverage,
+                    }
+                    if aggregate_data.get(f"chromiumos/{b}"):
+                        aggregate_data[f"chromiumos/{b}"].append(data)
+                    else:
+                        aggregate_data[f"chromiumos/{b}"] = [data]
+                else:
+                    kci_msg_nonl("- Tree/branch: ")
+                    kci_msg_cyan(f"chromiumos/{b}")
+                    kci_msg(f"  Commit: {c}")
+                    kci_msg(f"  Build: {api_url}viewer?node_id={build_node['id']}")
+                    kci_msg_nonl("  Function coverage: ")
+                    kci_msg_green(f"{func_coverage}%")
+                    kci_msg_nonl("  Line coverage: ")
+                    kci_msg_green(f"{line_coverage}%")
+                    kci_msg(f"  Coverage report: {artifacts.get('coverage_report')}")
+                    kci_msg(f"  Coverage logs: {artifacts.get('log')}")
+                    kci_msg("")
+    if graph_output:
+        print_bar_chart(aggregate_data)
 
 
 # Add subcommands to the maestro group
