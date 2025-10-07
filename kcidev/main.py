@@ -35,7 +35,7 @@ def cli(ctx, settings, instance, debug):
     if debug:
         # DEBUG level is too verbose about included packages
         # us INFO instead
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.DEBUG)
 
     subcommand = ctx.invoked_subcommand
     ctx.obj = {"CFG": load_toml(settings, subcommand)}
