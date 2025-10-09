@@ -1,0 +1,17 @@
+kci_dev_release:
+  steps:
+    - rebuild_package:
+        project: home:arisut
+        package: kci-dev
+  filters:
+    event: push
+    branches:
+      only:
+        - main
+kci_dev_pull_request:
+  steps:
+    - rebuild_package:
+        project: home:arisut
+        package: kci-dev
+  filters:
+    event: pull_request
