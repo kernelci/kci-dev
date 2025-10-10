@@ -3,7 +3,8 @@
 
 import logging
 import os
-import shutil
+from importlib.resources import files
+from pathlib import Path
 
 import click
 
@@ -36,8 +37,6 @@ def check_configuration(settings):
 
 
 def add_config(fpath):
-    config = None
-    example_configuration = ".kci-dev.toml.example"
     fpath = os.path.expandvars(fpath)
     fpath = os.path.expanduser(fpath)
     fpath = os.path.join(fpath)
@@ -56,48 +55,16 @@ def add_config(fpath):
         raise click.Abort()
 
     kci_msg("Config file not present, adding a config file to " + fpath)
-    # Installed with Poetry
-    poetry_example_configuration = os.path.join(
-        os.path.dirname(__file__), "../..", example_configuration
-    )
-    poetry_example_configuration = os.path.normpath(poetry_example_configuration)
-    logging.debug(f"Checking for Poetry template at: {poetry_example_configuration}")
-    if os.path.isfile(poetry_example_configuration):
-        logging.info(f"Found Poetry template configuration")
-        config = True
-        if not os.path.exists(dpath) and dpath != "":
-            # copy config
-            logging.debug(f"Creating directory: {dpath}")
-            os.makedirs(dpath)
-        logging.info(f"Copying template configuration to: {fpath}")
-        shutil.copyfile(poetry_example_configuration, fpath)
+    # Install config
+    if not os.path.exists(dpath) and dpath != "":
+        # copy config
+        logging.debug(f"Creating directory: {dpath}")
+        os.makedirs(dpath)
+    example_config = (files("kcidev._data") / "kci-dev.toml.example").read_text()
+    Path(fpath).write_text(example_config, encoding="utf-8")
+    os.chmod(fpath, 0o600)
 
-    # Installed with PyPI
-    pypi_example_configuration = os.path.join(
-        os.path.dirname(__file__), "..", example_configuration
-    )
-    pypi_example_configuration = os.path.normpath(pypi_example_configuration)
-    logging.debug(f"Checking for PyPI template at: {pypi_example_configuration}")
-    if os.path.isfile(pypi_example_configuration):
-        logging.info(f"Found PyPI template configuration")
-        config = True
-        if not os.path.exists(dpath) and dpath != "":
-            # copy config
-            logging.debug(f"Creating directory: {dpath}")
-            os.makedirs(dpath)
-        logging.info(f"Copying template configuration to: {fpath}")
-        shutil.copyfile(pypi_example_configuration, fpath)
-
-    if not config:
-        logging.error("No template configuration file found")
-        logging.error(f"Searched at: {poetry_example_configuration}")
-        logging.error(f"Searched at: {pypi_example_configuration}")
-        kci_err(f"No template configfile found at:")
-        kci_err(poetry_example_configuration)
-        kci_err(pypi_example_configuration)
-        raise click.Abort()
-    else:
-        logging.info(f"Configuration file successfully created at: {fpath}")
+    logging.info(f"Configuration file successfully created at: {fpath}")
 
 
 @click.command(
