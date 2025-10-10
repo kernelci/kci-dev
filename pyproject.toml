@@ -9,7 +9,6 @@ packages = [
 {include = "kcidev", format = ["sdist", "wheel"]},
 {include = "subcommands", from="kcidev", format = ["sdist", "wheel"]},
 {include = "libs", from="kcidev", format = ["sdist", "wheel"]},
-{include = ".kci-dev.toml.example", to="kcidev", format = ["sdist", "wheel"]},
 ]
 repository = "https://github.com/kernelci/kci-dev"
 classifiers = [
