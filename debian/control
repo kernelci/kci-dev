@@ -1,0 +1,33 @@
+Source: kci-dev
+Section: devel
+Priority: optional
+Maintainer: Arisu Tachibana <arisu.tachibana@miraclelinux.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-sequence-python3,
+ python3-all,
+ pybuild-plugin-pyproject,
+ python3-poetry-core
+#keep for compatibility with dpkg older than 1.22.13
+Rules-Requires-Root: no
+Homepage: https://github.com/kernelci/kci-dev
+Vcs-Git: https://github.com/kernelci/kci-dev.git
+Vcs-Browser: https://github.com/kernelci/kci-dev
+Standards-Version: 4.6.2
+
+Package: kci-dev
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}
+Description: Stand alone tool for KernelCI
+ Stand alone tool for Linux Kernel developers and
+ maintainers to interact with KernelCI.
+
+Package: kci-dev-completions
+Section: shells
+Architecture: all
+Depends: ${misc:Depends}, kci-dev (= ${binary:Version})
+Recommends: bash-completion
+Description: Shell completions for kci-dev (bash, zsh, fish)
+ Bash: /usr/share/bash-completion/completions/kci-dev
+ Zsh:  /usr/share/zsh/vendor-completions/_kci-dev
+ Fish: /usr/share/fish/vendor_completions.d/kci-dev.fish
