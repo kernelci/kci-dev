@@ -1,6 +1,6 @@
 kci_dev_release:
   steps:
-    - rebuild_package:
+    - trigger_services:
         project: home:arisut
         package: kci-dev
   filters:
@@ -10,7 +10,7 @@ kci_dev_release:
         - main
 kci_dev_pull_request:
   steps:
-    - rebuild_package:
+    - trigger_services:
         project: home:arisut
         package: kci-dev
   filters:
