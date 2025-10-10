@@ -151,12 +151,14 @@ def results(
         )
         results = maestro_get_nodes(url, limit, offset, filter, paginate)
         if count:
-            return results
+            kci_msg(len(results))
 
     logging.debug(f"Displaying results with fields: {field if field else 'all'}")
 
     if verbose:
         maestro_print_nodes(results, field)
+    return results
+
 
 if __name__ == "__main__":
     main_kcidev()
