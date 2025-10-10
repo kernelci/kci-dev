@@ -10,8 +10,9 @@ kci_dev_release:
         - main
 kci_dev_pull_request:
   steps:
-    - trigger_services:
-        project: home:arisut
-        package: kci-dev
+    - branch_package:
+        source_project: home:arisut
+        source_package: kci-dev
+        target_project: home:arisut
   filters:
     event: pull_request
