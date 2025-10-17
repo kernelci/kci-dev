@@ -80,6 +80,12 @@ Examples:
     default=True,
     help="Set True if pagination is required in the output. Default is True",
 )
+@click.option(
+    "--verbose",
+    is_flag=True,
+    default=True,
+    help="Print results on stdout",
+)
 @add_filter_options
 @click.pass_context
 def results(
@@ -99,6 +105,7 @@ def results(
     git_branch,
     count,
     paginate,
+    verbose,
 ):
     logging.info("Starting maestro results command")
     logging.debug(
@@ -144,11 +151,13 @@ def results(
         )
         results = maestro_get_nodes(url, limit, offset, filter, paginate)
         if count:
-            return results
+            kci_msg(len(results))
 
     logging.debug(f"Displaying results with fields: {field if field else 'all'}")
 
-    maestro_print_nodes(results, field)
+    if verbose:
+        maestro_print_nodes(results, field)
+    return results
 
 
 if __name__ == "__main__":

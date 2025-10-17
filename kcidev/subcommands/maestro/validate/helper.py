@@ -26,10 +26,10 @@ def get_builds(ctx, giturl, branch, commit, arch):
         filters.append("data.arch=" + arch)
     maestro_builds = ctx.invoke(
         results,
-        count=True,
         nodes=True,
         filter=filters,
         paginate=False,
+        verbose=False,
     )
     try:
         dashboard_builds = ctx.invoke(
@@ -281,10 +281,10 @@ def get_boots(ctx, giturl, branch, commit, arch):
         filters.append(f"data.arch={arch}")
     maestro_boots = ctx.invoke(
         results,
-        count=True,
         nodes=True,
         filter=filters,
         paginate=False,
+        verbose=False,
     )
     try:
         dashboard_boots = ctx.invoke(
