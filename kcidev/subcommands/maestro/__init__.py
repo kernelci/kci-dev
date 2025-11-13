@@ -19,10 +19,6 @@ querying test results and in the future will include other maestro-specific
 commands.
 
 \b
-Available subcommands:
-  results   - Query test results from Maestro API
-
-\b
 Examples:
   # Query test results
   kci-dev maestro results --nodeid <NODE_ID>
