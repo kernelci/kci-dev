@@ -49,25 +49,11 @@ from kcidev.subcommands.results.parser import (
 
 
 @click.group(
-    help="""[Experimental] Query and display test results from the KernelCI dashboard.
+    help="""Query and display test results from the KernelCI dashboard.
 
 This command group provides various ways to retrieve and analyze kernel test
 results from the KernelCI dashboard. You can query results by tree, branch,
 commit, architecture, and more.
-
-\b
-Available subcommands:
-  summary   - Display a summary of test results
-  trees     - List available kernel trees
-  builds    - Display build results
-  boots     - Display boot test results
-  tests     - Display test suite results
-  build     - Display details for a specific build
-  boot      - Display details for a specific boot test
-  test      - Display details for a specific test
-  hardware  - Query hardware-specific results
-  compare   - Compare test results between commits
-  issues    - Query KCIDB issues
 
 \b
 Examples:
