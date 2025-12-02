@@ -62,7 +62,7 @@ profile = "black"
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "src"
+  "."
 ]
 
 [build-system]
