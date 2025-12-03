@@ -20,8 +20,6 @@ classifiers = [
         'Topic :: Software Development :: Libraries',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: 3.13',
         'Programming Language :: Python :: Implementation :: CPython',
@@ -62,7 +60,7 @@ profile = "black"
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "src"
+  "."
 ]
 
 [build-system]
