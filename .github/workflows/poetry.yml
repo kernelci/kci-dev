@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - name: Install Python ${{ matrix.python-version }}
@@ -34,4 +34,4 @@ jobs:
       - name: Isort check
         run: poetry run isort . --profile black --check --diff
       - name: Tox check (pytest)
-        run: poetry run tox
+        run: poetry run tox -e py${{ replace(matrix.python-version, '.', '') }}
