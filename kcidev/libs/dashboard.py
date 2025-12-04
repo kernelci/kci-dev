@@ -3,12 +3,15 @@ import logging
 import urllib
 from datetime import datetime, timedelta
 from functools import wraps
+from urllib.parse import urlparse
 
 import requests
 
 from kcidev.libs.common import *
 
 DASHBOARD_API = "https://dashboard.kernelci.org/api/"
+_PARSED_DASHBOARD_API = urlparse(DASHBOARD_API)
+DASHBOARD_URL = f"{_PARSED_DASHBOARD_API.scheme}://{_PARSED_DASHBOARD_API.netloc}"
 
 
 def _dashboard_request(func):
