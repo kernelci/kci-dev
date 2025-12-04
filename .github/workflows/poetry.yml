@@ -34,4 +34,4 @@ jobs:
       - name: Isort check
         run: poetry run isort . --profile black --check --diff
       - name: Tox check (pytest)
-        run: poetry run tox -e py${{ replace(matrix.python-version, '.', '') }}
+        run: poetry run tox
