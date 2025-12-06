@@ -55,12 +55,11 @@ The node ID can be obtained from test results or from the KernelCI dashboard.
 
 \b
 Examples:
-  # Retry a test job using its node ID
-  kci-dev testretry --nodeid 65a5c89f1234567890abcdef
-
-  # Get node ID from maestro-results and retry
-  kci-dev maestro-results --nodes --filter "status=fail" --field id --field name
-  kci-dev testretry --nodeid <NODE_ID_FROM_ABOVE>
+    kci-dev testretry --nodeid 65a5c89f1234567890abcdef
+    # If the user doesn't know the node id, they can query it using maestro results command
+    # for example, for failed tests:
+    kci-dev maestro results --nodes --filter "status=fail" --field id --field name
+    kci-dev testretry --nodeid <NODE_ID_FROM_ABOVE>
 """
 )
 @click.option(
