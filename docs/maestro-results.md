@@ -10,14 +10,14 @@ Do not use it, unless you are requesting test on Maestro through `kci-dev`.
 
 Example:
 ```sh
-kci-dev maestro-results --nodeid <str: testnodeid>
+kci-dev maestro results --nodeid <str: testnodeid>
 ```
 
 This command will show the results of tests by page nodes limit and page offset.
 
 Example:
 ```sh
-kci-dev maestro-results --nodes --limit <int: page nodes limit> --offset <int: page nodes offset>
+kci-dev maestro results --nodes --limit <int: page nodes limit> --offset <int: page nodes offset>
 ```
 
 Result sample:
@@ -82,7 +82,7 @@ Usually it is hexadecimal string.
 Additionally, for --nodes you can provide optional parameters --filter to filter the results by the given key and value.  
 For example:
 ```sh
-./kci-dev.py results --nodes --filter treeid=e25266f77837de335edba3c1b8d2a04edc2bfb195b77c44711d81ebea4494140 --filter kind=test
+kci-dev maestro results --nodes --filter treeid=e25266f77837de335edba3c1b8d2a04edc2bfb195b77c44711d81ebea4494140 --filter kind=test
 ```
 This command will show the nodes of tests in particular tree checkout.  
 But as you might see, there is a lot of fields you might be not interested in.  
@@ -90,7 +90,7 @@ But as you might see, there is a lot of fields you might be not interested in.
 For this we have additional option --field, that will restrict output only to specified fields.  
 For example:
 ```sh
-./kci-dev.py results --nodes --filter treeid=e25266f77837de335edba3c1b8d2a04edc2bfb195b77c44711d81ebea4494140 --filter kind=test --field name --field result
+kci-dev maestro results --nodes --filter treeid=e25266f77837de335edba3c1b8d2a04edc2bfb195b77c44711d81ebea4494140 --filter kind=test --field name --field result
 ```
 Example:
 

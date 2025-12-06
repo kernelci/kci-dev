@@ -818,17 +818,17 @@ Examples:
   # Get issues
   kci-dev results issues --origin <origin> --days <number-of-days>
   # Get new issues for all checkouts
-  kci-dev issues --new --days <number-of-days> --origin <origin>
+  kci-dev results issues --new --days <number-of-days> --origin <origin>
   # Get new issues for a checkout
-  kci-dev issues --new --giturl <git-url> --branch <git-branch> --commit <commit> --origin <origin>
+  kci-dev results issues --new --giturl <git-url> --branch <git-branch> --commit <commit> --origin <origin>
   # Get failed or inconclusive builds and boots without any issue for all checkouts
-  kci-dev issues --missing
+  kci-dev results issues --missing
   # Get failed or inconclusive builds and boots without any issue for specific checkout
-  kci-dev issues --missing --giturl <git-url> --branch <git-branch> --commit <commit> --origin <origin>
+  kci-dev results issues --missing --giturl <git-url> --branch <git-branch> --commit <commit> --origin <origin>
   # Get failed/inconclusive builds without issues
-  kci-dev issues --missing --builds
+  kci-dev results issues --missing --builds
   # Get failed/inconclusive boots without issues
-  kci-dev issues --missing --boots
+  kci-dev results issues --missing --boots
 """,
 )
 @click.option(
