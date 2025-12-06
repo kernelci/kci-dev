@@ -17,14 +17,14 @@ Subcommands:
 \b
 Examples:
     # Validate builds
-    kci-dev validate builds --all-checkouts --days <number-of-days>
-    kci-dev validate builds -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    kci-dev maestro validate builds --all-checkouts --days <number-of-days>
+    kci-dev maestro validate builds -commit <git-commit> --giturl <git-url> --branch <git-branch>
     # Validate boots
-    kci-dev validate boots --all-checkouts --days <number-of-days>
-    kci-dev validate boots -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    kci-dev maestro validate boots --all-checkouts --days <number-of-days>
+    kci-dev maestro validate boots -commit <git-commit> --giturl <git-url> --branch <git-branch>
     # Validate builds history
-    kci-dev validate builds --history --all-checkouts --days <number-of-days> --arch <architecture-filter>
-    kci-dev validate builds --history -commit <git-commit> --giturl <git-url> --branch <git-branch> --days <number-of-days>
+    kci-dev maestro validate builds --history --all-checkouts --days <number-of-days> --arch <architecture-filter>
+    kci-dev maestro validate builds --history -commit <git-commit> --giturl <git-url> --branch <git-branch> --days <number-of-days>
 """,
     invoke_without_command=True,
 )

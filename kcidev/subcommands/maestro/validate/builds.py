@@ -31,11 +31,11 @@ by providing --history option.
 \b
 Examples:
     # Build validation
-    kci-dev validate builds --all-checkouts --days <number-of-days>
-    kci-dev validate builds --commit <git-commit> --giturl <git-url> --branch <git-branch>
+    kci-dev maestro validate builds --all-checkouts --days <number-of-days>
+    kci-dev maestro validate builds --commit <git-commit> --giturl <git-url> --branch <git-branch>
     # Build history validation
-    kci-dev validate builds --history --all-checkouts --days <number-of-days>
-    kci-dev validate builds --history --giturl <git-url> --branch <git-branch> --days <number-of-days>
+    kci-dev maestro validate builds --history --all-checkouts --days <number-of-days>
+    kci-dev maestro validate builds --history --giturl <git-url> --branch <git-branch> --days <number-of-days>
 """,
 )
 @click.option(

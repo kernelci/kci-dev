@@ -21,8 +21,8 @@ checkout from the git folder specified.
 
 \b
 Examples:
-    kci-dev validate boots --all-checkouts --days <number-of-days>
-    kci-dev validate boots -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    kci-dev maestro validate boots --all-checkouts --days <number-of-days>
+    kci-dev maestro validate boots -commit <git-commit> --giturl <git-url> --branch <git-branch>
     """,
 )
 @click.option(
