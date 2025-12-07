@@ -42,7 +42,7 @@ kci-dev = 'kcidev.main:run'
 
 [tool.poetry.urls]
 "Issue Tracker" = "https://github.com/kernelci/kci-dev/issues"
-Documentation = "https://kci.dev/v0.1.8"
+Documentation = "https://kci.dev"
 Changelog = "https://github.com/kernelci/kci-dev/releases"
 
 [tool.poetry.group.ci.dependencies]
