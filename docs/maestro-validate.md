@@ -1,3 +1,9 @@
++++
+title = 'maestro-validate'
+date = 2024-01-14T07:07:07+01:00
+description = 'Validate KernelCI dashboard results against Mestro.'
++++
+
 # `kci-dev maestro validate` — Maestro/Dashboard Consistency Checker
 
 Validate KernelCI dashboard results against Maestro pipeline outputs.

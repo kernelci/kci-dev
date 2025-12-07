@@ -60,3 +60,13 @@ sidebar_cache_limit = 1000
     name = "maestro-results"
     url = "maestro-results/"
     weight = 20
+
+  [[menu.main]]
+    name = "maestro-validate"
+    url = "maestro-validate/"
+    weight = 20
+
+  [[menu.main]]
+    name = "maestro-coverage"
+    url = "maestro-coverage/"
+    weight = 20
