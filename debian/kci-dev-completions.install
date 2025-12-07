@@ -1,4 +1,4 @@
 # move completions files under share
-kci-dev/completions/kci-dev-completion.bash usr/share/bash-completion/completions/kci-dev
-kci-dev/completions/_kci-dev                usr/share/zsh/vendor-completions/_kci-dev
-kci-dev/completions/kci-dev.fish            usr/share/fish/vendor_completions.d/kci-dev.fish
+completions/kci-dev-completion.bash usr/share/bash-completion/completions/kci-dev
+completions/_kci-dev usr/share/zsh/vendor-completions/_kci-dev
+completions/kci-dev.fish usr/share/fish/vendor_completions.d/kci-dev.fish
