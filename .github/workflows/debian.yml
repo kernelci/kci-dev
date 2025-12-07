@@ -1,0 +1,67 @@
+name: Make Debian Package
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-dsc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            debhelper \
+            devscripts \
+            dh-python \
+            dh-sequence-python3 \
+            pybuild-plugin-pyproject \
+            fakeroot \
+            python3-all \
+            python3-poetry-core
+
+      - name: Create upstream tarball
+        run: |
+          DEB_VERSION=$(dpkg-parsechangelog -SVersion)
+          UPSTREAM_VERSION=${DEB_VERSION%%-*}
+          git archive --format=tar.gz \
+            --output=../kci-dev_${UPSTREAM_VERSION}.orig.tar.gz \
+            --prefix=kci-dev-${UPSTREAM_VERSION}/ \
+            HEAD
+
+      - name: Build Debian package
+        run: debuild -S -us -uc --lintian-opts --profile debian
+
+      - name: Collect Debian artifacts for development
+        run: |
+          mkdir -p artifacts
+          shopt -s nullglob
+          for file in ../kci-dev_*; do
+            mv "$file" artifacts/
+          done
+
+      - name: Upload Debian artifacts for development
+        uses: actions/upload-artifact@v4
+        with:
+          name: kci-dev-debian-source
+          path: artifacts/
+
+      - name: Upload Debian source to GitHub Release on new tag
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ../kci-dev_*.dsc
+            ../kci-dev_*.orig.tar.*
+            ../kci-dev_*debian.tar.*
+            ../kci-dev_*_source.buildinfo
+            ../kci-dev_*_source.changes
