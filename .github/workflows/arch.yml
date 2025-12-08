@@ -1,0 +1,81 @@
+name: Make Arch Package
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-pkg:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm \
+            python \
+            python-build \
+            python-installer \
+            python-wheel \
+            python-poetry-core \
+            python-click \
+            python-requests \
+            python-gitpython \
+            python-yaml \
+            python-tabulate \
+            python-matplotlib \
+            namcap
+
+      - name: Update PKGBUILD version from pyproject.toml
+        working-directory: packaging/arch
+        run: |
+          VERSION=$(grep '^version = ' ../../pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          echo "Building version: ${VERSION}"
+
+      - name: Validate PKGBUILD
+        working-directory: packaging/arch
+        run: namcap PKGBUILD
+
+      - name: Build package
+        working-directory: packaging/arch
+        run: |
+          # makepkg cannot run as root, create a build user
+          useradd -m builder
+          chown -R builder:builder .
+          su builder -c "makepkg --printsrcinfo > .SRCINFO"
+          su builder -c "makepkg -s --noconfirm"
+
+      - name: Validate built package
+        working-directory: packaging/arch
+        run: namcap *.pkg.tar.zst
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p artifacts
+          mv packaging/arch/*.pkg.tar.zst artifacts/
+          cp packaging/arch/PKGBUILD artifacts/
+          cp packaging/arch/.SRCINFO artifacts/
+
+      - name: Upload Arch package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kci-dev-arch-package
+          path: artifacts/
+
+      - name: Upload Arch package to GitHub Release on new tag
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: artifacts/*.pkg.tar.zst
