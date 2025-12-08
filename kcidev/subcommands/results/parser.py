@@ -692,7 +692,7 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
                 origin, giturl, branch, commit_hash, None, None, None, None, False
             )
             boots_data = dashboard_fetch_boots(
-                origin, giturl, branch, commit_hash, None, None, None, None, False
+                origin, giturl, branch, commit_hash, None, None, None, None, False, None
             )
             tests_data = dashboard_fetch_tests(
                 origin, giturl, branch, commit_hash, None, None, None, None, False
