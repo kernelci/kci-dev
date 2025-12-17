@@ -909,7 +909,7 @@ def issues(
     if not new and not missing:
         if not any([giturl, branch, commit]):
             data = dashboard_fetch_issue_list(origin, days, use_json)
-            print_issues(data)
+            print_issues(data, use_json)
             return
         if not all([giturl, branch, commit]):
             raise click.UsageError(
