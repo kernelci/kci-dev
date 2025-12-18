@@ -997,12 +997,26 @@ def print_issue(issue, new_tag=False):
     kci_msg("")
 
 
-def print_issues(data):
+def print_issues(data, use_json=False):
     """Print a list of issues with formatting
     data (dict): provide dictionary with 'issues' and 'extras' keys"""
 
     if not data.get("issues") or not data.get("extras"):
         kci_err("Please provide dictionary with 'issues' and 'extras' keys")
+        return
+
+    if use_json:
+        # Build JSON output with issues and their extras merged
+        output = []
+        issues = data["issues"]
+        extras = data["extras"]
+        for issue in issues:
+            issue_data = dict(issue)
+            extra = extras.get(issue.get("id"))
+            if extra:
+                issue_data["extra"] = {issue["id"]: extra}
+            output.append(issue_data)
+        kci_msg_json(output)
         return
 
     issues = data["issues"]
