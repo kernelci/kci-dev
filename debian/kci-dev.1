@@ -1,0 +1,48 @@
+.TH kci-dev 1 "December 2025" "kci-dev 0.1.9" "User Commands"
+.SH NAME
+kci-dev \- Stand alone command line tool for interacting with KernelCI
+.SH SYNOPSIS
+.B kci-dev
+[\fIOPTIONS\fR] \fICOMMAND\fR [\fIARGS\fR]
+.SH DESCRIPTION
+\fBkci-dev\fR is a command line tool for Linux kernel developers and maintainers
+to interact with KernelCI. Purpose of this tool to provide an easy-to-use command line tool 
+for developers and maintainers request test from KernelCI, view results, download logs, 
+integrate with scripts, etc.
+.SH COMMANDS
+.TP
+\fBconfig\fR
+Create a template configuration file.
+.TP
+\fBresults\fR
+Query KernelCI results and related data.
+.TP
+\fBcheckout\fR
+Checkout allow to test arbitary commit on the KernelCI Pipeline instance.
+.TP
+\fBwatch\fR
+Watch results for a KernelCI node or job.
+.TP
+\fBmaestro\fR
+Interact with Maestro data (for example, results validation).
+.SH OPTIONS
+Run \fBkci-dev --help\fR for a full list of options and subcommands.
+.SH FILES
+.TP
+\fB/etc/kci-dev.toml\fR
+System-wide configuration file.
+.TP
+\fB~/.config/kci-dev/kci-dev.toml\fR
+User configuration file.
+.SH EXAMPLES
+.TP
+\fBkci-dev config\fR
+Generate a configuration template.
+.TP
+\fBkci-dev results summary --giturl <url> --branch <branch> --commit <sha>\fR
+Show results summary for a specific kernel commit.
+.TP
+\fBkci-dev checkout --giturl <url> --branch <branch> --commit <sha>\fR
+This command can execute all tests configured for particular tree/branch, or you can provide job-filter to execute specific tests and builds.
+.SH SEE ALSO
+The full documentation is available at https://kci.dev

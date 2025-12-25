@@ -1,8 +1,12 @@
 #!/usr/bin/make -f
 export PYBUILD_NAME=kcidev
+export PYBUILD_SYSTEM=pyproject
 
 %:
 	dh $@ --buildsystem=pybuild
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/kci-dev
 
 override_dh_auto_test:
 	@echo "Skipping tests"; true
