@@ -119,22 +119,22 @@ def get_build_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     if dashboard_builds is None:
         return []
     missing_build_ids = []
-    if len(dashboard_builds) == len(maestro_builds):
-        count_comparison_flag = "✅"
-    else:
-        count_comparison_flag = "❌"
+    summary_flag = "✅"
+    if len(dashboard_builds) != len(maestro_builds):
         missing_build_ids = find_missing_items(
             maestro_builds, dashboard_builds, "build", verbose
         )
     builds_with_status_mismatch = validate_build_status(
         maestro_builds, dashboard_builds
     )
+    if missing_build_ids or builds_with_status_mismatch:
+        summary_flag = "❌"
     stats = [
         f"{tree_name}/{branch}",
         commit,
         len(maestro_builds),
         len(dashboard_builds),
-        count_comparison_flag,
+        summary_flag,
         missing_build_ids,
         builds_with_status_mismatch,
     ]
@@ -314,20 +314,20 @@ def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     if dashboard_boots is None:
         return []
     missing_boot_ids = []
-    if len(dashboard_boots) == len(maestro_boots):
-        count_comparison_flag = "✅"
-    else:
-        count_comparison_flag = "❌"
+    summary_flag = "✅"
+    if len(dashboard_boots) != len(maestro_boots):
         missing_boot_ids = find_missing_items(
             maestro_boots, dashboard_boots, "boot", verbose
         )
     boots_with_status_mismatch = validate_boot_status(maestro_boots, dashboard_boots)
+    if missing_boot_ids or boots_with_status_mismatch:
+        summary_flag = "❌"
     stats = [
         f"{tree_name}/{branch}",
         commit,
         len(maestro_boots),
         len(dashboard_boots),
-        count_comparison_flag,
+        summary_flag,
         missing_boot_ids,
         boots_with_status_mismatch,
     ]
