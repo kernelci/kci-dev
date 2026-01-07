@@ -1,4 +1,4 @@
-name: Make Debian Package
+name: Create Debian Package
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-dsc:
+  build-deb:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -39,9 +39,9 @@ jobs:
             HEAD
 
       - name: Build Debian package
-        run: debuild -S -us -uc --lintian-opts --profile debian
+        run: debuild -b -us -uc --lintian-opts --profile debian
 
-      - name: Collect Debian artifacts for development
+      - name: Collect Debian artifacts
         run: |
           mkdir -p artifacts
           shopt -s nullglob
@@ -49,22 +49,17 @@ jobs:
             mv "$file" artifacts/
           done
 
-      - name: Upload Debian artifacts for development
+      - name: Upload Debian artifact to the workflow
         uses: actions/upload-artifact@v4
         with:
-          name: kci-dev-debian-source
+          name: kci-dev-debian-package
           path: artifacts/
 
-      - name: Upload Debian source to GitHub Release on new tag
+      - name: Upload Debian package to GitHub Release on new tag
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          files: |
-            artifacts/kci-dev_*.dsc
-            artifacts/kci-dev_*.orig.tar.*
-            artifacts/kci-dev_*debian.tar.*
-            artifacts/kci-dev_*_source.buildinfo
-            artifacts/kci-dev_*_source.changes
+          files: artifacts/*
