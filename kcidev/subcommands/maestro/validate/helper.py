@@ -20,7 +20,7 @@ def get_builds(ctx, giturl, branch, commit, arch):
         "data.kernel_revision.url=" + giturl,
         "data.kernel_revision.branch=" + branch,
         "data.kernel_revision.commit=" + commit,
-        "state__in=done,available",
+        "state__ne=running",
     ]
     if arch:
         filters.append("data.arch=" + arch)
@@ -385,7 +385,7 @@ def get_builds_history(ctx, checkouts, arch):
             "kind=kbuild",
             "data.error_code__ne=node_timeout",
             "parent=" + c["id"],
-            "state__in=done,available",
+            "state__ne=running",
         ]
         if arch:
             filters.append(f"data.arch={arch}")
