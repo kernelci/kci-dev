@@ -156,7 +156,8 @@ def extract_validation_data(row: list):
         commit = row[1]  # Commit hash
         comparison = row[4]  # Build/boot count comparison (✅ or ❌)
         missing_ids = row[5]  # Missing build/boot IDs
-        return tree_branch, commit, comparison, missing_ids
+        mismatched_ids = row[6]
+        return tree_branch, commit, comparison, missing_ids, mismatched_ids
     except IndexError:
         kci_msg_red("Failed to extract data for list view report")
         raise ValueError()
@@ -173,23 +174,35 @@ def print_simple_list(data, item_type, history=False):
 
         for row in data:
             try:
-                tree_branch, commit, comparison, missing_ids = extract_validation_data(
-                    row
+                tree_branch, commit, comparison, missing_ids, mismatched_ids = (
+                    extract_validation_data(row)
                 )
             except ValueError:
                 continue
             tree_groups[tree_branch].append(
-                {"commit": commit, "status": comparison, "missing_ids": missing_ids}
+                {
+                    "commit": commit,
+                    "status": comparison,
+                    "missing_ids": missing_ids,
+                    "mismatched_ids": mismatched_ids,
+                }
             )
 
         for tree_branch, commits in tree_groups.items():
             kci_msg_bold(f"{tree_branch}: ")
             for commit in commits:
-                if commit["status"] == "❌" and commit["missing_ids"]:
+                if commit["status"] == "❌":
                     kci_msg(f"  Commit {commit['commit'][:12]}: ❌")
-                    kci_msg(f"  Missing {item_type}: {len(commit['missing_ids'])}")
-                    for id in commit["missing_ids"]:
-                        kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                    if commit["missing_ids"]:
+                        kci_msg(f"  Missing {item_type}: {len(commit['missing_ids'])}")
+                        for id in commit["missing_ids"]:
+                            kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                    if commit["mismatched_ids"]:
+                        kci_msg(
+                            f"  Status mismatched {item_type}: {len(commit['mismatched_ids'])}"
+                        )
+                        for id in commit["mismatched_ids"]:
+                            kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
                 elif commit["status"] == "✅":
                     kci_msg(f"  Commit {commit['commit'][:12]}: ✅")
 
@@ -197,8 +210,8 @@ def print_simple_list(data, item_type, history=False):
         # For non-history mode, show each individual result
         for row in data:
             try:
-                tree_branch, commit, comparison, missing_ids = extract_validation_data(
-                    row
+                tree_branch, commit, comparison, missing_ids, mismatched_ids = (
+                    extract_validation_data(row)
                 )
             except ValueError:
                 continue
@@ -210,8 +223,10 @@ def print_simple_list(data, item_type, history=False):
                 kci_msg(f"  Missing {item_type}: {len(missing_ids)}")
                 for id in missing_ids:
                     kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
-            elif comparison == "❌":
-                kci_msg(f"  Has mismatch but no missing IDs listed")
+            if comparison == "❌" and mismatched_ids:
+                kci_msg(f"  Status mismatched {item_type}: {len(mismatched_ids)}")
+                for id in mismatched_ids:
+                    kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
             kci_msg("")
 
 
@@ -342,6 +357,7 @@ def get_builds_history_stats(ctx, giturl, branch, tree_name, arch, days, verbose
         missing_build_ids = find_missing_items(b[1], b[2], "build", verbose)
         total_maestro_builds = len(b[1])
         total_dashboard_builds = len(b[2])
+        mismatched_ids = validate_build_status(b[1], b[2])
         stats = [
             f"{tree_name}/{branch}",
             b[0],
@@ -349,6 +365,7 @@ def get_builds_history_stats(ctx, giturl, branch, tree_name, arch, days, verbose
             total_dashboard_builds,
             "✅" if total_maestro_builds == total_dashboard_builds else "❌",
             missing_build_ids,
+            mismatched_ids,
         ]
         final_stats.append(stats)
     return final_stats
