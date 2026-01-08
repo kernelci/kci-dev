@@ -385,10 +385,10 @@ def get_checkouts(ctx, giturl, branch, days):
     ]
     checkouts = ctx.invoke(
         results,
-        count=True,
         nodes=True,
         filter=filters,
         paginate=False,
+        verbose=False,
     )
     return checkouts
 
@@ -408,10 +408,10 @@ def get_builds_history(ctx, checkouts, arch):
             filters.append(f"data.arch={arch}")
         maestro_builds = ctx.invoke(
             results,
-            count=True,
             nodes=True,
             filter=filters,
             paginate=False,
+            verbose=False,
         )
 
         branch = c["data"]["kernel_revision"].get("branch")
