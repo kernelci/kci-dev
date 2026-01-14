@@ -1,3 +1,10 @@
+kci-dev (0.1.10-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Update to version 0.1.10.
+
+ -- Arisu Tachibana <arisu.tachibana@miraclelinux.com>  Wed, 14 Jan 2026 12:00:00 +0900
+
 kci-dev (0.1.9-1) unstable; urgency=medium
 
   * New upstream release.

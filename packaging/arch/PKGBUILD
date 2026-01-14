@@ -2,52 +2,52 @@
 # https://github.com/kernelci/kci-dev
 
 pkgname=kci-dev
-pkgver=0.1.9
+pkgver=0.1.10
 pkgrel=1
 pkgdesc='Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI'
 arch=('any')
 url='https://github.com/kernelci/kci-dev'
 license=('LGPL-2.1-or-later')
 depends=(
-    'python>=3.10'
-    'python-click'
-    'python-requests'
-    'python-gitpython'
-    'python-yaml'
-    'python-tabulate'
-    'python-matplotlib'
+  'python>=3.10'
+  'python-click'
+  'python-requests'
+  'python-gitpython'
+  'python-yaml'
+  'python-tabulate'
+  'python-matplotlib'
 )
 makedepends=(
-    'python-build'
-    'python-installer'
-    'python-wheel'
-    'python-poetry-core'
+  'python-build'
+  'python-installer'
+  'python-wheel'
+  'python-poetry-core'
 )
 optdepends=(
-    'python-mplcursors: interactive cursor support for plots (AUR)'
-    'bash-completion: bash completion support'
+  'python-mplcursors: interactive cursor support for plots (AUR)'
+  'bash-completion: bash completion support'
 )
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/kernelci/kci-dev/archive/refs/tags/v${pkgver}.tar.gz")
 sha256sums=('SKIP')
 
 build() {
-    cd "${pkgname}-${pkgver}"
-    python -m build --wheel --no-isolation
+  cd "${pkgname}-${pkgver}"
+  python -m build --wheel --no-isolation
 }
 
 package() {
-    cd "${pkgname}-${pkgver}"
-    python -m installer --destdir="${pkgdir}" dist/*.whl
+  cd "${pkgname}-${pkgver}"
+  python -m installer --destdir="${pkgdir}" dist/*.whl
 
-    # Shell completions
-    install -Dm644 completions/kci-dev-completion.bash \
-        "${pkgdir}/usr/share/bash-completion/completions/kci-dev"
-    install -Dm644 completions/_kci-dev \
-        "${pkgdir}/usr/share/zsh/site-functions/_kci-dev"
-    install -Dm644 completions/kci-dev.fish \
-        "${pkgdir}/usr/share/fish/vendor_completions.d/kci-dev.fish"
+  # Shell completions
+  install -Dm644 completions/kci-dev-completion.bash \
+    "${pkgdir}/usr/share/bash-completion/completions/kci-dev"
+  install -Dm644 completions/_kci-dev \
+    "${pkgdir}/usr/share/zsh/site-functions/_kci-dev"
+  install -Dm644 completions/kci-dev.fish \
+    "${pkgdir}/usr/share/fish/vendor_completions.d/kci-dev.fish"
 
-    # License and documentation
-    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
-    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+  # License and documentation
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
 }
