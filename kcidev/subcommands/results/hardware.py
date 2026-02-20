@@ -57,24 +57,124 @@ def summary(name, origin, use_json):
 @hardware_common_opt
 @results_display_options
 @builds_and_tests_options
-def boots(name, origin, use_json, download_logs, status, filter, count):
+def boots(
+    name,
+    origin,
+    use_json,
+    download_logs,
+    status,
+    filter,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    hardware,
+    test_path,
+    git_branch,
+    compatible,
+    min_duration,
+    max_duration,
+    count,
+):
     data = dashboard_fetch_hardware_boots(name, origin, use_json)
-    cmd_tests(data["boots"], name, download_logs, status, filter, count, use_json)
+    cmd_tests(
+        data["boots"],
+        name,
+        download_logs,
+        status,
+        filter,
+        start_date,
+        end_date,
+        compiler,
+        config,
+        hardware,
+        test_path,
+        git_branch,
+        compatible,
+        min_duration,
+        max_duration,
+        count,
+        use_json,
+    )
 
 
 @hardware.command()
 @hardware_common_opt
 @results_display_options
 @builds_and_tests_options
-def builds(name, origin, use_json, download_logs, status, filter, count):
+def builds(
+    name,
+    origin,
+    use_json,
+    download_logs,
+    status,
+    filter,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    hardware,
+    test_path,
+    git_branch,
+    compatible,
+    min_duration,
+    max_duration,
+    count,
+):
     data = dashboard_fetch_hardware_builds(name, origin, use_json)
-    cmd_builds(data, name, download_logs, status, count, use_json)
+    cmd_builds(
+        data,
+        name,
+        download_logs,
+        status,
+        compiler,
+        config,
+        git_branch,
+        count,
+        use_json,
+    )
 
 
 @hardware.command()
 @hardware_common_opt
 @results_display_options
 @builds_and_tests_options
-def tests(name, origin, use_json, download_logs, status, filter, count):
+def tests(
+    name,
+    origin,
+    use_json,
+    download_logs,
+    status,
+    filter,
+    start_date,
+    end_date,
+    compiler,
+    config,
+    hardware,
+    test_path,
+    git_branch,
+    compatible,
+    min_duration,
+    max_duration,
+    count,
+):
     data = dashboard_fetch_hardware_tests(name, origin, use_json)
-    cmd_tests(data["tests"], name, download_logs, status, filter, count, use_json)
+    cmd_tests(
+        data["tests"],
+        name,
+        download_logs,
+        status,
+        filter,
+        start_date,
+        end_date,
+        compiler,
+        config,
+        hardware,
+        test_path,
+        git_branch,
+        compatible,
+        min_duration,
+        max_duration,
+        count,
+        use_json,
+    )
