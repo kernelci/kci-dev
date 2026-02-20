@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+from importlib.metadata import PackageNotFoundError, version
 
 import click
 
@@ -12,6 +13,11 @@ if sys.version_info >= (3, 11):
     import tomllib
 else:
     import tomli as tomllib
+
+try:
+    kcidev_version = version("kci-dev")
+except PackageNotFoundError:
+    kcidev_version = "unknown"
 
 
 def load_toml(settings, subcommand):
