@@ -41,7 +41,7 @@ def send_checkout_full(baseurl, token, **kwargs):
     maestro_print_api_call(url, data)
     try:
         logging.debug(f"POST request to: {url}")
-        response = requests.post(url, headers=headers, data=jdata, timeout=30)
+        response = kcidev_session.post(url, headers=headers, data=jdata, timeout=30)
         logging.debug(f"Checkout response status: {response.status_code}")
     except requests.exceptions.RequestException as e:
         logging.error(f"Checkout API request failed: {e}")

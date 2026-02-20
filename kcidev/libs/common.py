@@ -8,6 +8,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 
 import click
+import requests
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -18,6 +19,9 @@ try:
     kcidev_version = version("kci-dev")
 except PackageNotFoundError:
     kcidev_version = "unknown"
+
+kcidev_session = requests.Session()
+kcidev_session.headers["User-Agent"] = f"kci-dev/{kcidev_version}"
 
 
 def load_toml(settings, subcommand):

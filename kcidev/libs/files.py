@@ -5,7 +5,7 @@ import re
 
 import requests
 
-from kcidev.libs.common import kci_err
+from kcidev.libs.common import kci_err, kcidev_session
 
 INVALID_FILE_CHARS = re.compile(r'[\\/:"*?<>|]+')
 
@@ -23,7 +23,7 @@ def download_logs_to_file(log_url, log_file):
     try:
         # Download compressed log
         logging.debug("Fetching compressed log file")
-        response = requests.get(log_url)
+        response = kcidev_session.get(log_url)
         response.raise_for_status()
 
         # Decompress log
