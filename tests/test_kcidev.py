@@ -1,10 +1,12 @@
 import os
+import re
 import shutil
 from subprocess import PIPE, run
 
 import git
 import pytest
 
+from kcidev.libs.common import kcidev_session, kcidev_version
 from kcidev.subcommands.config import add_config
 
 
@@ -916,6 +918,17 @@ def test_kcidev_results_build_with_real_id():
         except (json.JSONDecodeError, KeyError, IndexError):
             # If we can't parse JSON or extract ID, that's still a valid test result
             pass
+
+
+def test_kcidev_session_user_agent():
+    ua = kcidev_session.headers["User-Agent"]
+    assert ua == f"kci-dev/{kcidev_version}"
+    assert kcidev_version != "unknown"
+
+
+def test_kcidev_version_from_metadata():
+    assert isinstance(kcidev_version, str)
+    assert re.match(r"^\d+\.\d+\.\d+", kcidev_version)
 
 
 def test_clean():

@@ -61,7 +61,7 @@ def maestro_get_node(url, nodeid):
     maestro_print_api_call(url)
 
     try:
-        response = requests.get(url, headers=headers)
+        response = kcidev_session.get(url, headers=headers)
         logging.debug(f"Node request status: {response.status_code}")
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
@@ -107,7 +107,7 @@ def maestro_get_nodes(url, limit, offset, filter, paginate):
     maestro_print_api_call(url)
 
     try:
-        response = requests.get(url, headers=headers)
+        response = kcidev_session.get(url, headers=headers)
         logging.debug(f"Nodes request status: {response.status_code}")
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
@@ -169,7 +169,7 @@ def maestro_retrieve_treeid_nodes(baseurl, token, treeid):
     logging.debug(f"Tree nodes URL: {url}")
 
     try:
-        response = requests.get(url, headers=headers, timeout=30)
+        response = kcidev_session.get(url, headers=headers, timeout=30)
         logging.debug(f"Tree nodes request status: {response.status_code}")
     except requests.exceptions.RequestException as e:
         logging.warning(f"Request exception retrieving tree nodes: {e}")
