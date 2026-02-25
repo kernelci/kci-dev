@@ -931,6 +931,28 @@ def test_kcidev_version_from_metadata():
     assert re.match(r"^\d+\.\d+\.\d+", kcidev_version)
 
 
+def test_kcidev_submit_help():
+    command = ["poetry", "run", "kci-dev", "submit", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
+def test_kcidev_submit_build_help():
+    command = ["poetry", "run", "kci-dev", "submit", "build", "--help"]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    print("returncode: " + str(result.returncode))
+    print("#### stdout ####")
+    print(result.stdout)
+    print("#### stderr ####")
+    print(result.stderr)
+    assert result.returncode == 0
+
+
 def test_clean():
     # clean enviroment
     shutil.rmtree("my-new-repo/")
