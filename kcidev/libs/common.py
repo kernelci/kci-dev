@@ -78,7 +78,7 @@ def load_toml(settings, subcommand):
         return config
 
     # config and results subcommand work without a config file
-    if subcommand != "config" and subcommand != "results":
+    if subcommand not in ("config", "results", "submit"):
         if not config:
             logging.warning(f"No config file found for subcommand {subcommand}")
             kci_err(
