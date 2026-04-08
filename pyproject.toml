@@ -49,7 +49,7 @@ Changelog = "https://github.com/kernelci/kci-dev/releases"
 black = "^24.8.0"
 isort = "^5.13.2"
 pytest = "^8.3.3"
-poethepoet = "^0.29.0"
+poethepoet = ">=0.29,<0.45"
 tox = "^4.24.1"
 
 [tool.poe.tasks]
