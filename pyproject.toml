@@ -46,7 +46,7 @@ Documentation = "https://kci.dev"
 Changelog = "https://github.com/kernelci/kci-dev/releases"
 
 [tool.poetry.group.ci.dependencies]
-black = "^24.8.0"
+black = ">=24.8,<27.0"
 isort = "^5.13.2"
 pytest = "^8.3.3"
 poethepoet = "^0.29.0"
