@@ -47,7 +47,7 @@ Changelog = "https://github.com/kernelci/kci-dev/releases"
 
 [tool.poetry.group.ci.dependencies]
 black = "^24.8.0"
-isort = "^5.13.2"
+isort = ">=5.13.2,<9.0.0"
 pytest = "^8.3.3"
 poethepoet = "^0.29.0"
 tox = "^4.24.1"
