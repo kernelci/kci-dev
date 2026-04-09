@@ -226,7 +226,7 @@ def bisection_loop(state):
     except Exception as e:
         logging.error(f"Error getting return code from kci-dev: {e}")
         kci_err(f"Error executing kci-dev, no returncode: {e}")
-        sys.exit
+        sys.exit(1)
 
     logging.info(f"Test completed with return code: {testret}")
 
