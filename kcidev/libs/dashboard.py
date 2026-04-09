@@ -44,6 +44,8 @@ def _dashboard_request(func):
                         logging.warning(
                             f"Retrying request due to status {r.status_code} (attempt {retries}/{max_retries})"
                         )
+                        # Delay before retrying, to prevent hammering the server with exponential backoff
+                        time.sleep(2**retries)
                         continue
                     else:
                         logging.error(
