@@ -13,6 +13,7 @@ from kcidev.subcommands import (
     config,
     maestro,
     results,
+    storage,
     submit,
     testretry,
     watch,
@@ -44,7 +45,7 @@ def cli(ctx, settings, instance, debug):
     if subcommand not in ("results", "config"):
         if instance:
             ctx.obj["INSTANCE"] = instance
-        elif subcommand != "submit":
+        elif subcommand not in ("submit", "storage"):
             ctx.obj["INSTANCE"] = ctx.obj["CFG"].get("default_instance")
             fconfig = config_path(settings)
             if not ctx.obj["INSTANCE"]:
@@ -63,6 +64,7 @@ def run():
     cli.add_command(maestro.maestro)
     cli.add_command(testretry.testretry)
     cli.add_command(results.results)
+    cli.add_command(storage.storage)
     cli.add_command(submit.submit)
     cli.add_command(watch.watch)
     cli()
