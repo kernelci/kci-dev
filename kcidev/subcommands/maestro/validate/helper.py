@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 from datetime import datetime, timedelta
 
 import click
@@ -10,7 +11,7 @@ from kcidev.subcommands.maestro.results import results
 from kcidev.subcommands.results import boots, builds
 
 
-def get_builds(ctx, giturl, branch, commit, arch):
+def get_builds(ctx, giturl, branch, commit, arch, raise_errors=False):
     """Get builds matching git URL, branch, and commit
     Architecture can also be provided for filtering"""
     maestro_builds = []
@@ -42,12 +43,16 @@ def get_builds(ctx, giturl, branch, commit, arch):
             arch=arch,
         )
     except click.Abort:
+        if raise_errors:
+            raise
         kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard builds")
         return maestro_builds, None
     except click.ClickException as e:
-        kci_msg_red(f"{branch}/{commit}: {e.message}")
         if "No builds available" in e.message:
             return maestro_builds, []
+        if raise_errors:
+            raise
+        kci_msg_red(f"{branch}/{commit}: {e.message}")
         return maestro_builds, None
     return maestro_builds, dashboard_builds
 
@@ -113,9 +118,13 @@ def validate_build_status(maestro_builds, dashboard_builds):
     return builds_with_status_mismatch
 
 
-def get_build_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
+def get_build_stats(
+    ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors=False
+):
     """Get build stats"""
-    maestro_builds, dashboard_builds = get_builds(ctx, giturl, branch, commit, arch)
+    maestro_builds, dashboard_builds = get_builds(
+        ctx, giturl, branch, commit, arch, raise_errors
+    )
     if dashboard_builds is None:
         return []
     missing_build_ids = []
@@ -127,7 +136,11 @@ def get_build_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     builds_with_status_mismatch = validate_build_status(
         maestro_builds, dashboard_builds
     )
-    if missing_build_ids or builds_with_status_mismatch:
+    if (
+        len(dashboard_builds) != len(maestro_builds)
+        or missing_build_ids
+        or builds_with_status_mismatch
+    ):
         summary_flag = "❌"
     stats = [
         f"{tree_name}/{branch}",
@@ -174,9 +187,13 @@ def print_simple_list(data, item_type, history=False):
 
         for row in data:
             try:
-                tree_branch, commit, comparison, missing_ids, mismatched_ids = (
-                    extract_validation_data(row)
-                )
+                (
+                    tree_branch,
+                    commit,
+                    comparison,
+                    missing_ids,
+                    mismatched_ids,
+                ) = extract_validation_data(row)
             except ValueError:
                 continue
             tree_groups[tree_branch].append(
@@ -210,9 +227,13 @@ def print_simple_list(data, item_type, history=False):
         # For non-history mode, show each individual result
         for row in data:
             try:
-                tree_branch, commit, comparison, missing_ids, mismatched_ids = (
-                    extract_validation_data(row)
-                )
+                (
+                    tree_branch,
+                    commit,
+                    comparison,
+                    missing_ids,
+                    mismatched_ids,
+                ) = extract_validation_data(row)
             except ValueError:
                 continue
             kci_msg_bold(f"• {tree_branch}: ", nl=False)
@@ -228,6 +249,52 @@ def print_simple_list(data, item_type, history=False):
                 for id in mismatched_ids:
                     kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
             kci_msg("")
+
+
+def validation_rows_to_json(kind, rows, history, origin, days, arch):
+    """Convert validation stats rows to the public JSON report format."""
+    results = []
+    for row in rows:
+        missing_ids = row[5] or []
+        status_mismatch_ids = row[6] or []
+        ok = row[2] == row[3] and row[4] == "✅" and not missing_ids
+        ok = ok and not status_mismatch_ids
+        results.append(
+            {
+                "tree_branch": row[0],
+                "commit": row[1],
+                "maestro_count": row[2],
+                "dashboard_count": row[3],
+                "ok": ok,
+                "missing_ids": missing_ids,
+                "status_mismatch_ids": status_mismatch_ids,
+            }
+        )
+
+    return {
+        "kind": kind,
+        "history": history,
+        "origin": origin,
+        "days": days,
+        "arch": arch,
+        "summary": {
+            "checked": len(results),
+            "failed": sum(not result["ok"] for result in results),
+            "missing": sum(len(result["missing_ids"]) for result in results),
+            "status_mismatches": sum(
+                len(result["status_mismatch_ids"]) for result in results
+            ),
+            "ok": all(result["ok"] for result in results),
+        },
+        "results": results,
+    }
+
+
+def print_validation_json(kind, rows, history, origin, days, arch):
+    """Print a single JSON validation report to stdout."""
+    report = validation_rows_to_json(kind, rows, history, origin, days, arch)
+    click.echo(json.dumps(report))
+    return report
 
 
 def validate_boot_status(maestro_boots, dashboard_boots):
@@ -281,7 +348,7 @@ def validate_boot_status(maestro_boots, dashboard_boots):
     return boots_with_status_mismatch
 
 
-def get_boots(ctx, giturl, branch, commit, arch):
+def get_boots(ctx, giturl, branch, commit, arch, raise_errors=False):
     """Get boots matching git URL, branch, and commit"""
     maestro_boots = []
     dashboard_boots = []
@@ -313,19 +380,27 @@ def get_boots(ctx, giturl, branch, commit, arch):
             boot_origin="maestro",
         )
     except click.Abort:
+        if raise_errors:
+            raise
         kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard boots")
         return maestro_boots, None
     except click.ClickException as e:
-        kci_msg_red(f"{branch}/{commit}: {e.message}")
         if "No boots available" in e.message:
             return maestro_boots, []
+        if raise_errors:
+            raise
+        kci_msg_red(f"{branch}/{commit}: {e.message}")
         return maestro_boots, None
     return maestro_boots, dashboard_boots
 
 
-def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
+def get_boot_stats(
+    ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors=False
+):
     """Get boot stats"""
-    maestro_boots, dashboard_boots = get_boots(ctx, giturl, branch, commit, arch)
+    maestro_boots, dashboard_boots = get_boots(
+        ctx, giturl, branch, commit, arch, raise_errors
+    )
     if dashboard_boots is None:
         return []
     missing_boot_ids = []
@@ -335,7 +410,11 @@ def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
             maestro_boots, dashboard_boots, "boot", verbose
         )
     boots_with_status_mismatch = validate_boot_status(maestro_boots, dashboard_boots)
-    if missing_boot_ids or boots_with_status_mismatch:
+    if (
+        len(dashboard_boots) != len(maestro_boots)
+        or missing_boot_ids
+        or boots_with_status_mismatch
+    ):
         summary_flag = "❌"
     stats = [
         f"{tree_name}/{branch}",
@@ -349,21 +428,30 @@ def get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch):
     return stats
 
 
-def get_builds_history_stats(ctx, giturl, branch, tree_name, arch, days, verbose):
+def get_builds_history_stats(
+    ctx, giturl, branch, tree_name, arch, days, verbose, raise_errors=False
+):
     checkouts = get_checkouts(ctx, giturl, branch, days)
     final_stats = []
-    builds_history = get_builds_history(ctx, checkouts, arch)
+    builds_history = get_builds_history(ctx, checkouts, arch, raise_errors)
     for b in builds_history:
         missing_build_ids = find_missing_items(b[1], b[2], "build", verbose)
         total_maestro_builds = len(b[1])
         total_dashboard_builds = len(b[2])
         mismatched_ids = validate_build_status(b[1], b[2])
+        summary_flag = (
+            "✅"
+            if total_maestro_builds == total_dashboard_builds
+            and not missing_build_ids
+            and not mismatched_ids
+            else "❌"
+        )
         stats = [
             f"{tree_name}/{branch}",
             b[0],
             total_maestro_builds,
             total_dashboard_builds,
-            "✅" if total_maestro_builds == total_dashboard_builds else "❌",
+            summary_flag,
             missing_build_ids,
             mismatched_ids,
         ]
@@ -393,7 +481,7 @@ def get_checkouts(ctx, giturl, branch, days):
     return checkouts
 
 
-def get_builds_history(ctx, checkouts, arch):
+def get_builds_history(ctx, checkouts, arch, raise_errors=False):
     """Get builds from maestro and dashboard for provided checkouts"""
     builds_history = []
     for c in checkouts:
@@ -427,9 +515,14 @@ def get_builds_history(ctx, checkouts, arch):
             )
             builds_history.append([commit, maestro_builds, dashboard_builds])
         except click.Abort:
+            if raise_errors:
+                raise
             kci_msg_red(f"{branch}/{commit}: Aborted while fetching dashboard builds")
         except click.ClickException as e:
-            kci_msg_red(f"{branch}/{commit}: {e.message}")
             if "No builds available" in e.message:
                 builds_history.append([commit, maestro_builds, []])
+                continue
+            if raise_errors:
+                raise
+            kci_msg_red(f"{branch}/{commit}: {e.message}")
     return builds_history

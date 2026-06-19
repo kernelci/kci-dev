@@ -1,9 +1,17 @@
+import sys
+
 import click
 
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.subcommands.results import trees
 
-from .helper import get_boot_stats, print_simple_list, print_table_stats
+from .helper import (
+    get_boot_stats,
+    print_simple_list,
+    print_table_stats,
+    print_validation_json,
+    validation_rows_to_json,
+)
 
 
 @click.command(
@@ -75,6 +83,19 @@ Examples:
     default=False,
     help="Display results in table format",
 )
+@click.option(
+    "--json",
+    "use_json",
+    is_flag=True,
+    default=False,
+    help="Print validation results as JSON",
+)
+@click.option(
+    "--fail-on-mismatch",
+    is_flag=True,
+    default=False,
+    help="Exit with status 1 when validation finds mismatches",
+)
 @click.pass_context
 def boots(
     ctx,
@@ -89,33 +110,49 @@ def boots(
     days,
     verbose,
     table_output,
+    use_json,
+    fail_on_mismatch,
 ):
     final_stats = []
-    print("Fetching boot information...")
-    if all_checkouts:
-        if giturl or branch or commit:
-            raise click.UsageError(
-                "Cannot use --all-checkouts with --giturl, --branch, or --commit"
+    stdout = sys.stdout
+    if use_json:
+        sys.stdout = sys.stderr
+    try:
+        if not use_json:
+            print("Fetching boot information...")
+        if all_checkouts:
+            if giturl or branch or commit:
+                raise click.UsageError(
+                    "Cannot use --all-checkouts with --giturl, --branch, or --commit"
+                )
+            trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            for tree in trees_list:
+                giturl = tree["git_repository_url"]
+                branch = tree["git_repository_branch"]
+                commit = tree["git_commit_hash"]
+                tree_name = tree["tree_name"]
+                stats = get_boot_stats(
+                    ctx, giturl, branch, commit, tree_name, verbose, arch, use_json
+                )
+                if stats:
+                    final_stats.append(stats)
+        else:
+            giturl, branch, commit = set_giturl_branch_commit(
+                origin, giturl, branch, commit, latest, git_folder
             )
-        trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
-        for tree in trees_list:
-            giturl = tree["git_repository_url"]
-            branch = tree["git_repository_branch"]
-            commit = tree["git_commit_hash"]
-            tree_name = tree["tree_name"]
+            tree_name = get_tree_name(origin, giturl, branch)
             stats = get_boot_stats(
-                ctx, giturl, branch, commit, tree_name, verbose, arch
+                ctx, giturl, branch, commit, tree_name, verbose, arch, use_json
             )
             if stats:
                 final_stats.append(stats)
-    else:
-        giturl, branch, commit = set_giturl_branch_commit(
-            origin, giturl, branch, commit, latest, git_folder
-        )
-        tree_name = get_tree_name(origin, giturl, branch)
-        stats = get_boot_stats(ctx, giturl, branch, commit, tree_name, verbose, arch)
-        if stats:
-            final_stats.append(stats)
+    finally:
+        sys.stdout = stdout
+    if use_json:
+        report = print_validation_json("boots", final_stats, False, origin, days, arch)
+        if fail_on_mismatch and not report["summary"]["ok"]:
+            ctx.exit(1)
+        return
     if final_stats:
         headers = [
             "tree/branch",
@@ -132,3 +169,9 @@ def boots(
             print_table_stats(final_stats, headers, max_col_width, table_fmt)
         else:
             print_simple_list(final_stats, "boots", False)
+    if fail_on_mismatch:
+        report = validation_rows_to_json(
+            "boots", final_stats, False, origin, days, arch
+        )
+        if not report["summary"]["ok"]:
+            ctx.exit(1)
