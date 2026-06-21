@@ -235,8 +235,9 @@ def builds(
                 "Dashboard\nbuilds",
                 "Build count\ncomparison",
                 "Missing build IDs",
+                "Extra dashboard\nbuild IDs",
             ]
-            max_col_width = [None, 40, 3, 3, 2, 30]
+            max_col_width = [None, 40, 3, 3, 2, 30, 30]
 
         else:
             headers = [
@@ -247,8 +248,9 @@ def builds(
                 "Build count\ncomparison",
                 "Missing build IDs",
                 "Builds with\nstatus mismatch",
+                "Extra dashboard\nbuild IDs",
             ]
-            max_col_width = [None, 40, 3, 3, 2, 30, 30]
+            max_col_width = [None, 40, 3, 3, 2, 30, 30, 30]
         table_fmt = "simple_grid"
         if table_output:
             print_table_stats(final_stats, headers, max_col_width, table_fmt)

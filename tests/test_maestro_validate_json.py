@@ -5,6 +5,7 @@ import click
 from click.testing import CliRunner
 
 from kcidev.subcommands.maestro.validate.helper import (
+    find_extra_dashboard_items,
     find_missing_items,
     validation_report_to_text,
     validation_rows_to_json,
@@ -27,6 +28,7 @@ def _build_row(
     summary_flag="✅",
     missing_ids=None,
     status_mismatch_ids=None,
+    extra_dashboard_ids=None,
 ):
     return [
         "mainline/master",
@@ -36,6 +38,7 @@ def _build_row(
         summary_flag,
         missing_ids or [],
         status_mismatch_ids or [],
+        extra_dashboard_ids or [],
     ]
 
 
@@ -184,6 +187,23 @@ def test_missing_ids_make_summary_not_ok():
     assert report["results"][0]["ok"] is False
 
 
+def test_extra_dashboard_ids_make_summary_not_ok():
+    report = validation_rows_to_json(
+        "boots",
+        [_build_row(1, 2, "❌", extra_dashboard_ids=["boot-extra"])],
+        False,
+        "maestro",
+        1,
+        None,
+    )
+
+    assert report["summary"]["ok"] is False
+    assert report["summary"]["failed"] == 1
+    assert report["summary"]["extra_in_dashboard"] == 1
+    assert report["results"][0]["extra_in_dashboard_ids"] == ["boot-extra"]
+    assert report["results"][0]["ok"] is False
+
+
 def test_status_mismatches_make_summary_not_ok():
     report = validation_rows_to_json(
         "boots",
@@ -247,11 +267,31 @@ def test_validation_report_to_text_decodes_summary():
     text = validation_report_to_text(report)
 
     assert "Dashboard validation: boots (FAIL)" in text
-    assert "Summary: checked=1, failed=1, missing=1, status_mismatches=1" in text
+    assert (
+        "Summary: checked=1, failed=1, missing=1, extra_in_dashboard=0, "
+        "status_mismatches=1"
+    ) in text
     assert "mainline/master @ aaaaaaaaaaaa: FAIL" in text
     assert "Count delta: 71 more in Maestro" in text
     assert "https://api.kernelci.org/viewer?node_id=boot-1" in text
     assert "https://api.kernelci.org/viewer?node_id=boot-2" in text
+
+
+def test_validation_report_to_text_shows_extra_dashboard_ids():
+    report = validation_rows_to_json(
+        "boots",
+        [_build_row(1, 2, "❌", extra_dashboard_ids=["boot-extra"])],
+        False,
+        "maestro",
+        1,
+        None,
+    )
+
+    text = validation_report_to_text(report)
+
+    assert "Count delta: 1 more in dashboard" in text
+    assert "Extra dashboard boot IDs: 1" in text
+    assert "https://api.kernelci.org/viewer?node_id=boot-extra" in text
 
 
 def test_json_human_readable_keeps_stdout_json_and_writes_text_to_stderr(
@@ -431,6 +471,18 @@ def test_missing_items_only_reports_maestro_items_missing_from_dashboard():
     assert find_missing_items(maestro_data, dashboard_data, "boot", False) == []
 
 
+def test_extra_dashboard_items_report_dashboard_items_missing_from_maestro():
+    maestro_data = [{"id": "boot-1", "result": "pass", "retry_counter": 0}]
+    dashboard_data = [
+        {"id": "maestro:boot-1", "status": "PASS"},
+        {"id": "maestro:dashboard-extra", "status": "NULL"},
+    ]
+
+    assert find_extra_dashboard_items(maestro_data, dashboard_data, "boot", False) == [
+        "dashboard-extra"
+    ]
+
+
 def test_boot_stats_uses_retry_filtered_maestro_count_and_status(monkeypatch):
     helper_module = importlib.import_module(
         "kcidev.subcommands.maestro.validate.helper"
@@ -465,3 +517,4 @@ def test_boot_stats_uses_retry_filtered_maestro_count_and_status(monkeypatch):
     assert stats[2] == 1
     assert stats[3] == 2
     assert stats[6] == []
+    assert stats[7] == ["boot-retry"]

@@ -187,8 +187,9 @@ def boots(
             "Boot count\ncomparison",
             "Missing boot IDs",
             "Boots with\nstatus mismatch",
+            "Extra dashboard\nboot IDs",
         ]
-        max_col_width = [None, 40, 3, 3, 2, 30, 30]
+        max_col_width = [None, 40, 3, 3, 2, 30, 30, 30]
         table_fmt = "simple_grid"
         if table_output:
             print_table_stats(final_stats, headers, max_col_width, table_fmt)

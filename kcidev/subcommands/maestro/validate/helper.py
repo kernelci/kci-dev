@@ -99,6 +99,26 @@ def find_missing_items(maestro_data, dashboard_data, item_type, verbose):
     return missing_ids
 
 
+def find_extra_dashboard_items(maestro_data, dashboard_data, item_type, verbose):
+    """
+    Compare build/boot IDs found in dashboard with Maestro results.
+    Return dashboard builds/boots that are not present in Maestro.
+    """
+    maestro_data = filter_maestro_items_for_validation(maestro_data, item_type)
+    maestro_ids = {b["id"] for b in maestro_data}
+
+    extra_items = [
+        b for b in dashboard_data if b["id"].split(":")[1] not in maestro_ids
+    ]
+    extra_ids = [b["id"].split(":")[1] for b in extra_items]
+
+    if extra_items and verbose:
+        kci_msg("Extra dashboard items:")
+        kci_msg_json(extra_items)
+
+    return extra_ids
+
+
 def validate_build_status(maestro_builds, dashboard_builds):
     """
     Validate if the build status of dashboard pulled build
@@ -135,13 +155,16 @@ def get_build_stats(
     missing_build_ids = find_missing_items(
         maestro_builds, dashboard_builds, "build", verbose
     )
-
+    extra_dashboard_build_ids = find_extra_dashboard_items(
+        maestro_builds, dashboard_builds, "build", verbose
+    )
     builds_with_status_mismatch = validate_build_status(
         maestro_builds, dashboard_builds
     )
     if (
         len(dashboard_builds) != len(maestro_builds)
         or missing_build_ids
+        or extra_dashboard_build_ids
         or builds_with_status_mismatch
     ):
         summary_flag = "❌"
@@ -153,6 +176,7 @@ def get_build_stats(
         summary_flag,
         missing_build_ids,
         builds_with_status_mismatch,
+        extra_dashboard_build_ids,
     ]
     return stats
 
@@ -173,7 +197,15 @@ def extract_validation_data(row: list):
         comparison = row[4]  # Build/boot count comparison (✅ or ❌)
         missing_ids = row[5]  # Missing build/boot IDs
         mismatched_ids = row[6]
-        return tree_branch, commit, comparison, missing_ids, mismatched_ids
+        extra_dashboard_ids = row[7] or [] if len(row) > 7 else []
+        return (
+            tree_branch,
+            commit,
+            comparison,
+            missing_ids,
+            mismatched_ids,
+            extra_dashboard_ids,
+        )
     except IndexError:
         kci_msg_red("Failed to extract data for list view report")
         raise ValueError()
@@ -196,6 +228,7 @@ def print_simple_list(data, item_type, history=False):
                     comparison,
                     missing_ids,
                     mismatched_ids,
+                    extra_dashboard_ids,
                 ) = extract_validation_data(row)
             except ValueError:
                 continue
@@ -205,6 +238,7 @@ def print_simple_list(data, item_type, history=False):
                     "status": comparison,
                     "missing_ids": missing_ids,
                     "mismatched_ids": mismatched_ids,
+                    "extra_dashboard_ids": extra_dashboard_ids,
                 }
             )
 
@@ -223,6 +257,12 @@ def print_simple_list(data, item_type, history=False):
                         )
                         for id in commit["mismatched_ids"]:
                             kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                    if commit["extra_dashboard_ids"]:
+                        kci_msg(
+                            f"  Extra dashboard {item_type}: {len(commit['extra_dashboard_ids'])}"
+                        )
+                        for id in commit["extra_dashboard_ids"]:
+                            kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
                 elif commit["status"] == "✅":
                     kci_msg(f"  Commit {commit['commit'][:12]}: ✅")
 
@@ -236,6 +276,7 @@ def print_simple_list(data, item_type, history=False):
                     comparison,
                     missing_ids,
                     mismatched_ids,
+                    extra_dashboard_ids,
                 ) = extract_validation_data(row)
             except ValueError:
                 continue
@@ -251,6 +292,10 @@ def print_simple_list(data, item_type, history=False):
                 kci_msg(f"  Status mismatched {item_type}: {len(mismatched_ids)}")
                 for id in mismatched_ids:
                     kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+            if comparison == "❌" and extra_dashboard_ids:
+                kci_msg(f"  Extra dashboard {item_type}: {len(extra_dashboard_ids)}")
+                for id in extra_dashboard_ids:
+                    kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
             kci_msg("")
 
 
@@ -260,8 +305,9 @@ def validation_rows_to_json(kind, rows, history, origin, days, arch):
     for row in rows:
         missing_ids = row[5] or []
         status_mismatch_ids = row[6] or []
+        extra_dashboard_ids = row[7] or [] if len(row) > 7 else []
         ok = row[2] == row[3] and row[4] == "✅" and not missing_ids
-        ok = ok and not status_mismatch_ids
+        ok = ok and not status_mismatch_ids and not extra_dashboard_ids
         results.append(
             {
                 "tree_branch": row[0],
@@ -270,6 +316,7 @@ def validation_rows_to_json(kind, rows, history, origin, days, arch):
                 "dashboard_count": row[3],
                 "ok": ok,
                 "missing_ids": missing_ids,
+                "extra_in_dashboard_ids": extra_dashboard_ids,
                 "status_mismatch_ids": status_mismatch_ids,
             }
         )
@@ -284,6 +331,9 @@ def validation_rows_to_json(kind, rows, history, origin, days, arch):
             "checked": len(results),
             "failed": sum(not result["ok"] for result in results),
             "missing": sum(len(result["missing_ids"]) for result in results),
+            "extra_in_dashboard": sum(
+                len(result["extra_in_dashboard_ids"]) for result in results
+            ),
             "status_mismatches": sum(
                 len(result["status_mismatch_ids"]) for result in results
             ),
@@ -316,6 +366,7 @@ def validation_report_to_text(report):
             f"checked={summary['checked']}, "
             f"failed={summary['failed']}, "
             f"missing={summary['missing']}, "
+            f"extra_in_dashboard={summary['extra_in_dashboard']}, "
             f"status_mismatches={summary['status_mismatches']}"
         ),
     ]
@@ -324,7 +375,8 @@ def validation_report_to_text(report):
         lines.append("")
         lines.append(
             "Note: count comparisons use raw query totals; missing IDs are "
-            "reported after validation filtering."
+            "reported after validation filtering. Extra dashboard IDs are "
+            "dashboard rows not present in the filtered Maestro set."
         )
 
     for result in report["results"]:
@@ -350,10 +402,17 @@ def validation_report_to_text(report):
         )
 
         missing_ids = result["missing_ids"]
+        extra_dashboard_ids = result["extra_in_dashboard_ids"]
         status_mismatch_ids = result["status_mismatch_ids"]
         if missing_ids:
             lines.append(f"  Missing {item_type} IDs: {len(missing_ids)}")
             for node_id in missing_ids:
+                lines.append(f"    - https://api.kernelci.org/viewer?node_id={node_id}")
+        if extra_dashboard_ids:
+            lines.append(
+                f"  Extra dashboard {item_type} IDs: {len(extra_dashboard_ids)}"
+            )
+            for node_id in extra_dashboard_ids:
                 lines.append(f"    - https://api.kernelci.org/viewer?node_id={node_id}")
         if status_mismatch_ids:
             lines.append(
@@ -488,10 +547,14 @@ def get_boot_stats(
     missing_boot_ids = find_missing_items(
         maestro_boots, dashboard_boots, "boot", verbose
     )
+    extra_dashboard_boot_ids = find_extra_dashboard_items(
+        maestro_boots, dashboard_boots, "boot", verbose
+    )
     boots_with_status_mismatch = validate_boot_status(maestro_boots, dashboard_boots)
     if (
         len(dashboard_boots) != len(maestro_boots)
         or missing_boot_ids
+        or extra_dashboard_boot_ids
         or boots_with_status_mismatch
     ):
         summary_flag = "❌"
@@ -503,6 +566,7 @@ def get_boot_stats(
         summary_flag,
         missing_boot_ids,
         boots_with_status_mismatch,
+        extra_dashboard_boot_ids,
     ]
     return stats
 
@@ -516,6 +580,9 @@ def get_builds_history_stats(
     for b in builds_history:
         maestro_builds = filter_maestro_items_for_validation(b[1], "build")
         missing_build_ids = find_missing_items(maestro_builds, b[2], "build", verbose)
+        extra_dashboard_build_ids = find_extra_dashboard_items(
+            maestro_builds, b[2], "build", verbose
+        )
         total_maestro_builds = len(maestro_builds)
         total_dashboard_builds = len(b[2])
         mismatched_ids = validate_build_status(maestro_builds, b[2])
@@ -523,6 +590,7 @@ def get_builds_history_stats(
             "✅"
             if total_maestro_builds == total_dashboard_builds
             and not missing_build_ids
+            and not extra_dashboard_build_ids
             and not mismatched_ids
             else "❌"
         )
@@ -534,6 +602,7 @@ def get_builds_history_stats(
             summary_flag,
             missing_build_ids,
             mismatched_ids,
+            extra_dashboard_build_ids,
         ]
         final_stats.append(stats)
     return final_stats

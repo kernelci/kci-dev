@@ -31,4 +31,5 @@ def test_equal_counts_with_different_ids_fail_validation(
     stats = get_stats(None, "url", "branch", "commit", "tree", False, None)
 
     assert stats[2:5] == [1, 1, "❌"]
-    assert stats[5] == ["dashboard-only"]
+    assert stats[5] == ["maestro-only"]
+    assert stats[7] == ["dashboard-only"]
