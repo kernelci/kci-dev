@@ -293,6 +293,83 @@ def validation_rows_to_json(kind, rows, history, origin, days, arch):
     }
 
 
+def validation_report_to_text(report):
+    """Render a JSON validation report as human-readable text."""
+    item_type = report["kind"][:-1] if report["kind"].endswith("s") else report["kind"]
+    summary = report["summary"]
+    scope = [
+        f"origin={report['origin']}",
+        f"days={report['days']}",
+        f"history={'yes' if report['history'] else 'no'}",
+    ]
+    if report.get("arch"):
+        scope.append(f"arch={report['arch']}")
+    else:
+        scope.append("arch=all")
+
+    status = "PASS" if summary["ok"] else "FAIL"
+    lines = [
+        f"Dashboard validation: {report['kind']} ({status})",
+        f"Scope: {', '.join(scope)}",
+        (
+            "Summary: "
+            f"checked={summary['checked']}, "
+            f"failed={summary['failed']}, "
+            f"missing={summary['missing']}, "
+            f"status_mismatches={summary['status_mismatches']}"
+        ),
+    ]
+
+    if report["results"]:
+        lines.append("")
+        lines.append(
+            "Note: count comparisons use raw query totals; missing IDs are "
+            "reported after validation filtering."
+        )
+
+    for result in report["results"]:
+        result_status = "PASS" if result["ok"] else "FAIL"
+        commit = result["commit"]
+        delta = result["maestro_count"] - result["dashboard_count"]
+        if delta > 0:
+            delta_text = f"{delta} more in Maestro"
+        elif delta < 0:
+            delta_text = f"{-delta} more in dashboard"
+        else:
+            delta_text = "counts match"
+
+        lines.extend(
+            [
+                "",
+                f"{result['tree_branch']} @ {commit[:12]}: {result_status}",
+                f"  Commit: {commit}",
+                f"  Maestro {report['kind']}: {result['maestro_count']}",
+                f"  Dashboard {report['kind']}: {result['dashboard_count']}",
+                f"  Count delta: {delta_text}",
+            ]
+        )
+
+        missing_ids = result["missing_ids"]
+        status_mismatch_ids = result["status_mismatch_ids"]
+        if missing_ids:
+            lines.append(f"  Missing {item_type} IDs: {len(missing_ids)}")
+            for node_id in missing_ids:
+                lines.append(f"    - https://api.kernelci.org/viewer?node_id={node_id}")
+        if status_mismatch_ids:
+            lines.append(
+                f"  Status mismatch {item_type} IDs: {len(status_mismatch_ids)}"
+            )
+            for node_id in status_mismatch_ids:
+                lines.append(f"    - https://api.kernelci.org/viewer?node_id={node_id}")
+
+    return "\n".join(lines)
+
+
+def print_validation_human(report, err=False):
+    """Print a human-readable validation report."""
+    click.echo(validation_report_to_text(report), err=err)
+
+
 def print_validation_json(kind, rows, history, origin, days, arch):
     """Print a single JSON validation report to stdout."""
     report = validation_rows_to_json(kind, rows, history, origin, days, arch)

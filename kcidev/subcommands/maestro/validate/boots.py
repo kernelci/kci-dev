@@ -9,6 +9,7 @@ from .helper import (
     get_boot_stats,
     print_simple_list,
     print_table_stats,
+    print_validation_human,
     print_validation_json,
     validation_rows_to_json,
 )
@@ -91,6 +92,12 @@ Examples:
     help="Print validation results as JSON",
 )
 @click.option(
+    "--human-readable",
+    is_flag=True,
+    default=False,
+    help="Print a human-readable validation summary. With --json, text is written to stderr.",
+)
+@click.option(
     "--fail-on-mismatch",
     is_flag=True,
     default=False,
@@ -111,6 +118,7 @@ def boots(
     verbose,
     table_output,
     use_json,
+    human_readable,
     fail_on_mismatch,
 ):
     final_stats = []
@@ -165,6 +173,8 @@ def boots(
         sys.stdout = stdout
     if use_json:
         report = print_validation_json("boots", final_stats, False, origin, days, arch)
+        if human_readable:
+            print_validation_human(report, err=True)
         if fail_on_mismatch and not report["summary"]["ok"]:
             ctx.exit(1)
         return
@@ -182,6 +192,11 @@ def boots(
         table_fmt = "simple_grid"
         if table_output:
             print_table_stats(final_stats, headers, max_col_width, table_fmt)
+        elif human_readable:
+            report = validation_rows_to_json(
+                "boots", final_stats, False, origin, days, arch
+            )
+            print_validation_human(report)
         else:
             print_simple_list(final_stats, "boots", False)
     if fail_on_mismatch:

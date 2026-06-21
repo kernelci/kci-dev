@@ -6,6 +6,7 @@ from click.testing import CliRunner
 
 from kcidev.subcommands.maestro.validate.helper import (
     find_missing_items,
+    validation_report_to_text,
     validation_rows_to_json,
 )
 
@@ -14,6 +15,10 @@ COMMIT = "a" * 40
 
 def _stdout(result):
     return getattr(result, "stdout", result.output)
+
+
+def _stderr(result):
+    return getattr(result, "stderr", "")
 
 
 def _build_row(
@@ -219,6 +224,66 @@ def test_json_mismatches_still_exit_zero(monkeypatch):
 
     assert result.exit_code == 0
     assert json.loads(_stdout(result))["summary"]["ok"] is False
+
+
+def test_validation_report_to_text_decodes_summary():
+    report = validation_rows_to_json(
+        "boots",
+        [
+            _build_row(
+                116,
+                45,
+                "❌",
+                missing_ids=["boot-1"],
+                status_mismatch_ids=["boot-2"],
+            )
+        ],
+        False,
+        "maestro",
+        1,
+        None,
+    )
+
+    text = validation_report_to_text(report)
+
+    assert "Dashboard validation: boots (FAIL)" in text
+    assert "Summary: checked=1, failed=1, missing=1, status_mismatches=1" in text
+    assert "mainline/master @ aaaaaaaaaaaa: FAIL" in text
+    assert "Count delta: 71 more in Maestro" in text
+    assert "https://api.kernelci.org/viewer?node_id=boot-1" in text
+    assert "https://api.kernelci.org/viewer?node_id=boot-2" in text
+
+
+def test_json_human_readable_keeps_stdout_json_and_writes_text_to_stderr(
+    monkeypatch,
+):
+    command = _patch_boots_command(
+        monkeypatch,
+        _build_row(2, 1, "❌", missing_ids=["boot-1"]),
+    )
+    args = _json_args() + ["--human-readable"]
+
+    result = CliRunner().invoke(command, args)
+
+    assert result.exit_code == 0
+    report = json.loads(_stdout(result))
+    assert report["summary"]["ok"] is False
+    assert "Dashboard validation: boots (FAIL)" in _stderr(result)
+    assert "node_id=boot-1" in _stderr(result)
+
+
+def test_human_readable_without_json_uses_decoded_text(monkeypatch):
+    command = _patch_builds_command(
+        monkeypatch,
+        _build_row(2, 1, "❌", missing_ids=["build-1"]),
+    )
+    args = _json_args()[:-1] + ["--human-readable"]
+
+    result = CliRunner().invoke(command, args)
+
+    assert result.exit_code == 0
+    assert "Dashboard validation: builds (FAIL)" in _stdout(result)
+    assert "node_id=build-1" in _stdout(result)
 
 
 def test_json_runtime_failures_exit_nonzero(monkeypatch):
