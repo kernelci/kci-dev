@@ -4,7 +4,10 @@ import json
 import click
 from click.testing import CliRunner
 
-from kcidev.subcommands.maestro.validate.helper import validation_rows_to_json
+from kcidev.subcommands.maestro.validate.helper import (
+    find_missing_items,
+    validation_rows_to_json,
+)
 
 COMMIT = "a" * 40
 
@@ -351,3 +354,49 @@ def test_mismatch_without_fail_on_mismatch_still_exits_zero(monkeypatch):
     result = CliRunner().invoke(command, args)
 
     assert result.exit_code == 0
+
+
+def test_missing_items_only_reports_maestro_items_missing_from_dashboard():
+    maestro_data = [{"id": "boot-1", "result": "pass", "retry_counter": 0}]
+    dashboard_data = [
+        {"id": "maestro:boot-1", "status": "PASS"},
+        {"id": "maestro:dashboard-extra", "status": "PASS"},
+    ]
+
+    assert find_missing_items(maestro_data, dashboard_data, "boot", False) == []
+
+
+def test_boot_stats_uses_retry_filtered_maestro_count_and_status(monkeypatch):
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    maestro_boots = [
+        {"id": "boot-1", "result": "pass", "retry_counter": 0, "data": {}},
+        {"id": "boot-retry", "result": "fail", "retry_counter": 1, "data": {}},
+    ]
+    dashboard_boots = [
+        {"id": "maestro:boot-1", "status": "PASS"},
+        {"id": "maestro:boot-retry", "status": "PASS"},
+    ]
+    monkeypatch.setattr(
+        helper_module,
+        "get_boots",
+        lambda ctx, giturl, branch, commit, arch, raise_errors=False: (
+            maestro_boots,
+            dashboard_boots,
+        ),
+    )
+
+    stats = helper_module.get_boot_stats(
+        None,
+        "https://example.com/linux.git",
+        "master",
+        COMMIT,
+        "mainline",
+        False,
+        None,
+    )
+
+    assert stats[2] == 1
+    assert stats[3] == 2
+    assert stats[6] == []

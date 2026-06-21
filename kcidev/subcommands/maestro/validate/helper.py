@@ -57,37 +57,40 @@ def get_builds(ctx, giturl, branch, commit, arch, raise_errors=False):
     return maestro_builds, dashboard_builds
 
 
+def filter_maestro_items_for_validation(maestro_data, item_type):
+    """
+    Return Maestro items that should be compared against dashboard results.
+
+    Retry filtering must be shared by counts, missing-item checks, and status
+    checks so all validation fields describe the same item set.
+    """
+    if item_type == "build":
+        # Exclude build retries
+        return [
+            b
+            for b in maestro_data
+            if (b["result"] != "incomplete" or b["retry_counter"] == 3)
+        ]
+    if item_type == "boot":
+        # Exclude boot retries
+        return [
+            b
+            for b in maestro_data
+            if (b["result"] not in {"incomplete", "fail"} or b["retry_counter"] == 3)
+        ]
+    return maestro_data
+
+
 def find_missing_items(maestro_data, dashboard_data, item_type, verbose):
     """
     Compare build/boot IDs found in maestro with dashboard results
     Return missing builds/boots in dashboard.
     """
+    maestro_data = filter_maestro_items_for_validation(maestro_data, item_type)
     dashboard_ids = [b["id"].split(":")[1] for b in dashboard_data]
 
-    if item_type == "build":
-        # Exclude build retries
-        maestro_data = [
-            b
-            for b in maestro_data
-            if (b["result"] != "incomplete" or b["retry_counter"] == 3)
-        ]
-    elif item_type == "boot":
-        # Exclude boot retries
-        maestro_data = [
-            b
-            for b in maestro_data
-            if (b["result"] not in {"incomplete", "fail"} or b["retry_counter"] == 3)
-        ]
-
-    maestro_ids = [b["id"] for b in maestro_data]
-    if len(maestro_ids) > len(dashboard_ids):
-        missing_items = [b for b in maestro_data if b["id"] not in dashboard_ids]
-        missing_ids = [b["id"] for b in missing_items]
-    else:
-        missing_items = [
-            b for b in dashboard_data if b["id"].split(":")[1] not in maestro_ids
-        ]
-        missing_ids = [b["id"].split(":")[1] for b in missing_items]
+    missing_items = [b for b in maestro_data if b["id"] not in dashboard_ids]
+    missing_ids = [b["id"] for b in missing_items]
 
     if missing_items and verbose:
         kci_msg("Missing items:")
@@ -127,6 +130,7 @@ def get_build_stats(
     )
     if dashboard_builds is None:
         return []
+    maestro_builds = filter_maestro_items_for_validation(maestro_builds, "build")
     summary_flag = "✅"
     missing_build_ids = find_missing_items(
         maestro_builds, dashboard_builds, "build", verbose
@@ -402,6 +406,7 @@ def get_boot_stats(
     )
     if dashboard_boots is None:
         return []
+    maestro_boots = filter_maestro_items_for_validation(maestro_boots, "boot")
     summary_flag = "✅"
     missing_boot_ids = find_missing_items(
         maestro_boots, dashboard_boots, "boot", verbose
@@ -432,10 +437,11 @@ def get_builds_history_stats(
     final_stats = []
     builds_history = get_builds_history(ctx, checkouts, arch, raise_errors)
     for b in builds_history:
-        missing_build_ids = find_missing_items(b[1], b[2], "build", verbose)
-        total_maestro_builds = len(b[1])
+        maestro_builds = filter_maestro_items_for_validation(b[1], "build")
+        missing_build_ids = find_missing_items(maestro_builds, b[2], "build", verbose)
+        total_maestro_builds = len(maestro_builds)
         total_dashboard_builds = len(b[2])
-        mismatched_ids = validate_build_status(b[1], b[2])
+        mismatched_ids = validate_build_status(maestro_builds, b[2])
         summary_flag = (
             "✅"
             if total_maestro_builds == total_dashboard_builds
