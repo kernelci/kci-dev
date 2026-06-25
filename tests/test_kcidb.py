@@ -241,3 +241,41 @@ class TestResolveKcidbConfig:
         )
         assert url == "https://cli-host/submit"
         assert token == "cli-token"
+
+
+class TestKernelCIClientApi:
+    def test_import_public_client(self):
+        from kcidev import KciDevError, KernelCIClient
+
+        client = KernelCIClient()
+        assert callable(client.build_kcidb_build_submission)
+        assert issubclass(KciDevError, RuntimeError)
+
+    def test_build_submission_payload_matches_cli_helpers(self):
+        from kcidev import KernelCIClient
+
+        client = KernelCIClient()
+        payload = client.build_kcidb_build_submission(
+            origin="myci",
+            giturl="https://repo.git",
+            branch="main",
+            commit="abc123",
+            arch="x86_64",
+            config_name="defconfig",
+            compiler="gcc-14",
+            status="PASS",
+            start_time="2024-01-01T00:00:00+00:00",
+        )
+
+        assert payload["version"] == {"major": 5, "minor": 3}
+        assert payload["checkouts"][0]["origin"] == "myci"
+        assert payload["checkouts"][0]["git_repository_url"] == "https://repo.git"
+        assert payload["builds"][0]["checkout_id"] == payload["checkouts"][0]["id"]
+        assert payload["builds"][0]["status"] == "PASS"
+
+    def test_library_validation_raises_library_error(self):
+        from kcidev import KciDevError, KernelCIClient
+
+        client = KernelCIClient()
+        with pytest.raises(KciDevError):
+            client.build_kcidb_build_submission(origin="myci", commit="abc123")
