@@ -65,6 +65,103 @@ The [Contributor Guide](https://github.com/kernelci/kci-dev/blob/main/CONTRIBUTI
 
 For latest informations check out the documentation [here](https://kernelci.github.io/kci-dev/)  
 
+## Using kci-dev as a Python library
+
+Python applications can import `kci-dev` directly instead of shelling out to the
+`kci-dev` command. This is useful for services such as mail clients, patchwork
+integrations, or websites that want to test kernel email patches and then submit
+or inspect KernelCI data.
+
+### Create a client
+
+```python
+from kcidev import KernelCIClient
+
+client = KernelCIClient(
+    kcidb_rest_url="https://kcidb.kernelci.org/submit",
+    kcidb_token="<token>",
+)
+```
+
+The client also accepts the same config dictionary layout used by the CLI:
+
+```python
+from kcidev import KernelCIClient
+from kcidev.libs.common import load_toml
+
+cfg = load_toml(".kci-dev.toml", "submit")
+client = KernelCIClient(cfg=cfg, instance="staging")
+```
+
+If explicit credentials are not provided, KCIDB submission can also use the
+`KCIDB_REST` environment variable supported by the CLI.
+
+### Build and submit KCIDB build results
+
+```python
+from kcidev import KernelCIClient
+
+client = KernelCIClient(kcidb_rest_url="https://example.test/submit", kcidb_token="secret")
+
+payload = client.build_kcidb_build_submission(
+    origin="my-mail-ci",
+    giturl="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+    branch="master",
+    commit="0123456789abcdef0123456789abcdef01234567",
+    tree_name="mainline",
+    arch="x86_64",
+    config_name="defconfig",
+    compiler="gcc-14",
+    status="PASS",
+    log_url="https://ci.example.test/logs/0123456789abcdef",
+    comment="Build triggered from an email patch series",
+)
+
+result = client.submit_kcidb(payload)
+```
+
+For applications that already have a checked-out git tree, `git_folder` can be
+used instead of manually passing `giturl`, `branch`, and `commit`:
+
+```python
+payload = client.build_kcidb_build_submission(
+    origin="my-mail-ci",
+    git_folder="/srv/builds/linux",
+    arch="arm64",
+    config_name="defconfig",
+    status="FAIL",
+)
+```
+
+Use `client.submit_build(...)` to build and submit the payload in a single call.
+
+### Query KernelCI dashboard data
+
+The library exposes Python methods for common dashboard requests and returns the
+JSON-compatible Python objects returned by the API:
+
+```python
+summary = client.get_summary(
+    origin="maestro",
+    giturl="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+    branch="master",
+    commit="0123456789abcdef0123456789abcdef01234567",
+)
+
+builds = client.get_builds(
+    origin="maestro",
+    giturl="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+    branch="master",
+    commit="0123456789abcdef0123456789abcdef01234567",
+    arch="x86_64",
+)
+```
+
+Additional helper functions remain importable from `kcidev.libs.*` for advanced
+use cases, but new applications should prefer `KernelCIClient` for a stable,
+Click-free library interface. Library methods raise `kcidev.KciDevError` for
+recoverable kci-dev failures instead of aborting the process like the CLI.
+
 ## License
 
 [LGPL-2.1](https://github.com/kernelci/kci-dev/blob/main/LICENSE)
