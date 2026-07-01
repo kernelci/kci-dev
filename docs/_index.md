@@ -87,6 +87,12 @@ kci-dev --settings /path/to/.kci-dev.toml
 
 Pull results from the Web Dashboard. See detailed [documentation](results).
 
+#### mcp
+
+Run an MCP server exposing KernelCI data and actions to AI agents. See detailed [documentation](mcp).
+
+- [mcp](mcp)
+
 ### Maestro Commands
 
 #### config
