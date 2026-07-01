@@ -12,6 +12,7 @@ from kcidev.subcommands import (
     commit,
     config,
     maestro,
+    mcp,
     results,
     storage,
     submit,
@@ -45,7 +46,7 @@ def cli(ctx, settings, instance, debug):
     if subcommand not in ("results", "config"):
         if instance:
             ctx.obj["INSTANCE"] = instance
-        elif subcommand not in ("submit", "storage"):
+        elif subcommand not in ("submit", "storage", "mcp"):
             ctx.obj["INSTANCE"] = ctx.obj["CFG"].get("default_instance")
             fconfig = config_path(settings)
             if not ctx.obj["INSTANCE"]:
@@ -62,6 +63,7 @@ def run():
     cli.add_command(commit.commit)
     cli.add_command(config.config)
     cli.add_command(maestro.maestro)
+    cli.add_command(mcp.mcp)
     cli.add_command(testretry.testretry)
     cli.add_command(results.results)
     cli.add_command(storage.storage)
