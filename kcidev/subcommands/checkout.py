@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import datetime
-import json
 import logging
 import re
 import subprocess
@@ -10,52 +9,10 @@ import sys
 import time
 
 import click
-import requests
 from git import Repo
 
 from kcidev.libs.common import *
 from kcidev.libs.maestro_common import *
-
-
-def send_checkout_full(baseurl, token, **kwargs):
-    url = baseurl + "api/checkout"
-    headers = {
-        "Content-Type": "application/json; charset=utf-8",
-        "Authorization": f"{token}",
-    }
-    data = {
-        "url": kwargs["giturl"],
-        "branch": kwargs["branch"],
-        "commit": kwargs["commit"],
-        "jobfilter": kwargs["job_filter"],
-    }
-    if "platform_filter" in kwargs:
-        data["platformfilter"] = kwargs["platform_filter"]
-
-    logging.info(
-        f"Sending checkout request for {kwargs['giturl']} branch {kwargs['branch']} commit {kwargs['commit']}"
-    )
-    logging.debug(f"Checkout data: {json.dumps(data, indent=2)}")
-
-    jdata = json.dumps(data)
-    maestro_print_api_call(url, data)
-    try:
-        logging.debug(f"POST request to: {url}")
-        response = kcidev_session.post(url, headers=headers, data=jdata, timeout=30)
-        logging.debug(f"Checkout response status: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Checkout API request failed: {e}")
-        kci_err(f"API connection error: {e}")
-        return None
-
-    if response.status_code != 200:
-        logging.error(f"Checkout failed with status {response.status_code}")
-        maestro_api_error(response)
-        return None
-
-    result = response.json()
-    logging.info(f"Checkout successful - tree ID: {result.get('treeid', 'unknown')}")
-    return result
 
 
 def retrieve_tot_commit(repourl, branch):
