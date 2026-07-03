@@ -56,18 +56,33 @@ def cli(ctx, settings, instance, debug):
                 raise click.Abort()
 
 
+def register_commands(command_group=None):
+    """Register all kci-dev subcommands on a Click command group.
+
+    The CLI entry point and the public Python API both use this helper so the
+    same commands are available from the shell and from library code.
+    """
+    command_group = command_group or cli
+    command_group.add_command(bisect.bisect)
+    command_group.add_command(checkout.checkout)
+    command_group.add_command(commit.commit)
+    command_group.add_command(config.config)
+    command_group.add_command(maestro.maestro)
+    command_group.add_command(testretry.testretry)
+    command_group.add_command(results.results)
+    command_group.add_command(storage.storage)
+    command_group.add_command(submit.submit)
+    command_group.add_command(watch.watch)
+    return command_group
+
+
+def get_cli():
+    """Return the kci-dev Click command group with subcommands registered."""
+    return register_commands(cli)
+
+
 def run():
-    cli.add_command(bisect.bisect)
-    cli.add_command(checkout.checkout)
-    cli.add_command(commit.commit)
-    cli.add_command(config.config)
-    cli.add_command(maestro.maestro)
-    cli.add_command(testretry.testretry)
-    cli.add_command(results.results)
-    cli.add_command(storage.storage)
-    cli.add_command(submit.submit)
-    cli.add_command(watch.watch)
-    cli()
+    get_cli()()
 
 
 if __name__ == "__main__":
