@@ -3,7 +3,7 @@
 
 """kci-dev public package API."""
 
-from kcidev.api import KciDevError, KernelCIClient
+from kcidev.api import KciDevError, KernelCIClient, run_command
 from kcidev.libs.common import kcidev_version
 
-__all__ = ["KciDevError", "KernelCIClient", "kcidev_version"]
+__all__ = ["KciDevError", "KernelCIClient", "kcidev_version", "run_command"]

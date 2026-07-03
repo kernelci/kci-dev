@@ -11,6 +11,7 @@ without invoking Click commands or shelling out to ``kci-dev``.
 from datetime import datetime, timezone
 
 import click
+from click.testing import CliRunner
 
 from kcidev.libs.dashboard import (
     dashboard_fetch_boot_issues,
@@ -45,6 +46,34 @@ from kcidev.libs.kcidb import (
     resolve_kcidb_config,
     submit_to_kcidb,
 )
+from kcidev.main import get_cli
+
+
+def run_command(args, *, catch_exceptions=True, env=None, input=None):
+    """Run a kci-dev CLI command from Python and return Click's result object.
+
+    Args:
+        args: Command-line arguments, either as a sequence such as
+            ``["results", "summary", "--help"]`` or as a shell-like string. Do
+            not include the leading ``kci-dev`` executable name.
+        catch_exceptions: Passed to :class:`click.testing.CliRunner`; keep the
+            default to receive failures in the returned result instead of
+            raising them.
+        env: Optional environment variables for the command invocation.
+        input: Optional standard input text for interactive Click commands.
+
+    Returns:
+        A :class:`click.testing.Result` containing ``exit_code``, ``output``,
+        ``stdout``, ``stderr``, and any captured exception.
+    """
+    runner = CliRunner()
+    return runner.invoke(
+        get_cli(),
+        args,
+        input=input,
+        env=env,
+        catch_exceptions=catch_exceptions,
+    )
 
 
 class KciDevError(RuntimeError):
@@ -77,6 +106,15 @@ class KernelCIClient:
         self.instance = instance
         self.kcidb_rest_url = kcidb_rest_url
         self.kcidb_token = kcidb_token
+
+    def run_command(self, args, *, catch_exceptions=True, env=None, input=None):
+        """Run a kci-dev subcommand using the same command tree as the CLI."""
+        return run_command(
+            args,
+            catch_exceptions=catch_exceptions,
+            env=env,
+            input=input,
+        )
 
     def resolve_kcidb_config(self):
         """Return the configured ``(rest_url, token)`` for KCIDB submission."""

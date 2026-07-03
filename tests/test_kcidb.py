@@ -249,6 +249,7 @@ class TestKernelCIClientApi:
 
         client = KernelCIClient()
         assert callable(client.build_kcidb_build_submission)
+        assert callable(client.run_command)
         assert issubclass(KciDevError, RuntimeError)
 
     def test_build_submission_payload_matches_cli_helpers(self):
@@ -279,3 +280,29 @@ class TestKernelCIClientApi:
         client = KernelCIClient()
         with pytest.raises(KciDevError):
             client.build_kcidb_build_submission(origin="myci", commit="abc123")
+
+
+def test_public_api_can_run_subcommand_help(tmp_path):
+    from kcidev import run_command
+    from kcidev.subcommands.config import add_config
+
+    settings = tmp_path / ".kci-dev.toml"
+    add_config(settings)
+    result = run_command(["--settings", str(settings), "commit", "--help"])
+
+    assert result.exit_code == 0
+    assert "Test local commits" in result.output
+
+
+def test_public_client_can_run_nested_subcommand_help(tmp_path):
+    from kcidev import KernelCIClient
+    from kcidev.subcommands.config import add_config
+
+    settings = tmp_path / ".kci-dev.toml"
+    add_config(settings)
+    result = KernelCIClient().run_command(
+        ["--settings", str(settings), "maestro", "results", "--help"]
+    )
+
+    assert result.exit_code == 0
+    assert "Query test results" in result.output

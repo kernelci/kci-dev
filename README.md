@@ -157,10 +157,37 @@ builds = client.get_builds(
 )
 ```
 
+### Run kci-dev subcommands from Python
+
+For existing integrations that still need full CLI behavior, the public API can
+invoke the Click commands implemented under `kcidev/subcommands/` without
+starting a shell process. Pass the same arguments you would pass after the
+`kci-dev` executable name and inspect the returned `click.testing.Result`:
+
+```python
+from kcidev import run_command
+
+result = run_command(["results", "summary", "--help"])
+if result.exit_code != 0:
+    raise RuntimeError(result.output)
+print(result.output)
+```
+
+The same helper is available on `KernelCIClient`:
+
+```python
+from kcidev import KernelCIClient
+
+client = KernelCIClient()
+result = client.run_command(["maestro", "results", "--help"])
+```
+
 Additional helper functions remain importable from `kcidev.libs.*` for advanced
 use cases, but new applications should prefer `KernelCIClient` for a stable,
 Click-free library interface. Library methods raise `kcidev.KciDevError` for
-recoverable kci-dev failures instead of aborting the process like the CLI.
+recoverable kci-dev failures instead of aborting the process like the CLI. Use
+`run_command` when you specifically need command-compatible behavior from the
+modules in `kcidev/subcommands/`.
 
 ## License
 
