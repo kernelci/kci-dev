@@ -74,6 +74,8 @@ def maestro_get_node(url, nodeid):
         sys.exit(errno.ENOENT)
 
     node_data = response.json()
+    if node_data is None:
+        raise click.ClickException(f"Node {nodeid} not found")
     logging.debug(
         f"Node {nodeid} data received, state: {node_data.get('state', 'unknown')}"
     )
