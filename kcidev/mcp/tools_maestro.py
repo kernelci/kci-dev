@@ -1,37 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from kcidev.libs.maestro_common import maestro_get_node, maestro_get_nodes
-from kcidev.mcp.errors import ToolExecutionError, tool_errors
-from kcidev.subcommands.checkout import send_checkout_full
-from kcidev.subcommands.testretry import send_jobretry
+from kcidev.mcp.errors import tool_errors
 
 
-def _retry_job(pipeline_url, token, node_id):
-    result = send_jobretry(pipeline_url, node_id, token)
-    if result is None:
-        raise ToolExecutionError(f"Maestro job retry failed for node {node_id}")
-    return result
-
-
-def _trigger_checkout(
-    pipeline_url, token, giturl, branch, commit, job_filter, platform_filter
-):
-    kwargs = {
-        "giturl": giturl,
-        "branch": branch,
-        "commit": commit,
-        "job_filter": job_filter,
-    }
-    if platform_filter:
-        kwargs["platform_filter"] = platform_filter
-    result = send_checkout_full(pipeline_url, token, **kwargs)
-    if result is None:
-        raise ToolExecutionError(f"Maestro checkout failed for {giturl} at {commit}")
-    return result
-
-
-def register_tools(server, api_url, pipeline_url, token):
+def register_tools(server, client, api_url, pipeline_url, token):
     from mcp.types import ToolAnnotations
 
     read_only = ToolAnnotations(readOnlyHint=True)
@@ -49,7 +22,7 @@ def register_tools(server, api_url, pipeline_url, token):
             this to poll a job started with trigger_checkout or retry_job.
             Node ids are 24-character hex strings.
             """
-            return maestro_get_node(api_url, node_id)
+            return client.get_node(node_id)
 
         @server.tool(annotations=read_only)
         @tool_errors
@@ -67,7 +40,7 @@ def register_tools(server, api_url, pipeline_url, token):
             than paginating from the start. Use limit and offset to
             paginate within the window.
             """
-            return maestro_get_nodes(api_url, limit, offset, filters or [], True)
+            return client.get_nodes(limit=limit, offset=offset, filters=filters or [])
 
     if pipeline_url and token:
 
@@ -79,7 +52,7 @@ def register_tools(server, api_url, pipeline_url, token):
             Creates a new job for the given Maestro node id. Use list_nodes
             or the dashboard tools to find the node id of the failed job.
             """
-            return _retry_job(pipeline_url, token, node_id)
+            return client.retry_job(node_id)
 
         @server.tool(annotations=action)
         @tool_errors
@@ -98,6 +71,6 @@ def register_tools(server, api_url, pipeline_url, token):
             platform_filter. Returns a tree id; poll progress with list_nodes
             using 'treeid=<tree id>'.
             """
-            return _trigger_checkout(
-                pipeline_url, token, giturl, branch, commit, job_filter, platform_filter
+            return client.trigger_checkout(
+                giturl, branch, commit, job_filter, platform_filter
             )

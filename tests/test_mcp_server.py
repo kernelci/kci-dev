@@ -126,3 +126,30 @@ def test_server_reports_kcidev_version():
     from kcidev.libs.common import kcidev_version
 
     assert create_server()._mcp_server.version == kcidev_version
+
+
+def test_retry_job_calls_pipeline_with_token(monkeypatch):
+    from kcidev.libs import maestro_common
+
+    response = Mock(status_code=200)
+    response.json.return_value = {"message": "OK"}
+    post = Mock(return_value=response)
+    monkeypatch.setattr(maestro_common.kcidev_session, "post", post)
+
+    result = _call_tool(create_server(CFG, "test"), "retry_job", {"node_id": "n1"})
+    assert result.isError is False
+    assert post.call_args[0][0] == "https://pipeline.example.org/api/jobretry"
+    assert post.call_args.kwargs["headers"]["Authorization"] == "secret"
+
+
+def test_retry_job_failure_returns_tool_error(monkeypatch):
+    from kcidev.libs import maestro_common
+
+    monkeypatch.setattr(
+        maestro_common.kcidev_session,
+        "post",
+        Mock(side_effect=requests.exceptions.ConnectionError("no route")),
+    )
+    result = _call_tool(create_server(CFG, "test"), "retry_job", {"node_id": "n1"})
+    assert result.isError is True
+    assert "retry failed" in result.content[0].text

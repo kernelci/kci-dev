@@ -1,47 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json
 import logging
 
 import click
-import requests
 from git import Repo
 
 from kcidev.libs.common import *
 from kcidev.libs.maestro_common import *
-
-
-def send_jobretry(baseurl, jobid, token):
-    url = baseurl + "api/jobretry"
-    headers = {
-        "Content-Type": "application/json; charset=utf-8",
-        "Authorization": f"{token}",
-    }
-    data = {"nodeid": jobid}
-    jdata = json.dumps(data)
-
-    logging.info(f"Sending job retry request for node: {jobid}")
-    logging.debug(f"Retry URL: {url}")
-    maestro_print_api_call(url, data)
-
-    try:
-        logging.debug("Sending POST request for job retry")
-        response = kcidev_session.post(url, headers=headers, data=jdata)
-        logging.debug(f"Response status: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to send job retry request: {e}")
-        kci_err(f"API connection error: {e}")
-        return
-
-    if response.status_code != 200:
-        logging.error(f"Job retry failed with status {response.status_code}")
-        maestro_api_error(response)
-        return None
-
-    result = response.json()
-    logging.info(f"Job retry request successful: {result.get('message', 'No message')}")
-    return result
 
 
 @click.command(

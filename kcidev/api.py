@@ -46,6 +46,12 @@ from kcidev.libs.kcidb import (
     resolve_kcidb_config,
     submit_to_kcidb,
 )
+from kcidev.libs.maestro_common import (
+    maestro_get_node,
+    maestro_get_nodes,
+    send_checkout_full,
+    send_jobretry,
+)
 from kcidev.main import get_cli
 
 
@@ -87,6 +93,8 @@ def _as_library_error(action, func, *args, **kwargs):
     except click.ClickException as exc:
         raise KciDevError(f"{action}: {exc.message}") from exc
     except click.Abort as exc:
+        raise KciDevError(action) from exc
+    except SystemExit as exc:
         raise KciDevError(action) from exc
 
 
@@ -470,3 +478,75 @@ class KernelCIClient:
             max_age_in_hours,
             min_age_in_hours,
         )
+
+    def _instance_setting(self, key, *, human_readable_key=None):
+        value = ((self.cfg or {}).get(self.instance) or {}).get(key)
+        if not value:
+            raise KciDevError(
+                f"No Maestro {human_readable_key or key} configured;"
+                " pass it explicitly or set it in the instance config"
+            )
+        return value
+
+    def get_node(self, node_id, api_url=None):
+        """Fetch a single Maestro node by id."""
+        url = api_url or self._instance_setting("api", human_readable_key="api URL")
+        return _as_library_error(
+            "Maestro node request failed", maestro_get_node, url, node_id
+        )
+
+    def get_nodes(self, limit=50, offset=0, filters=None, api_url=None):
+        """List Maestro nodes with 'field=value' filters and pagination."""
+        url = api_url or self._instance_setting("api", human_readable_key="api URL")
+        return _as_library_error(
+            "Maestro nodes request failed",
+            maestro_get_nodes,
+            url,
+            limit,
+            offset,
+            filters or [],
+            True,
+        )
+
+    def retry_job(self, node_id, pipeline_url=None, token=None):
+        """Retry a failed or incomplete job by Maestro node id."""
+        url = pipeline_url or self._instance_setting(
+            "pipeline", human_readable_key="pipeline URL"
+        )
+        token = token or self._instance_setting("token")
+        result = _as_library_error(
+            "Maestro job retry failed", send_jobretry, url, node_id, token
+        )
+        if result is None:
+            raise KciDevError(f"Maestro job retry failed for node {node_id}")
+        return result
+
+    def trigger_checkout(
+        self,
+        giturl,
+        branch,
+        commit,
+        job_filter,
+        platform_filter=None,
+        pipeline_url=None,
+        token=None,
+    ):
+        """Trigger a pipeline checkout of a tree/branch/commit with a job filter."""
+        url = pipeline_url or self._instance_setting(
+            "pipeline", human_readable_key="pipeline URL"
+        )
+        token = token or self._instance_setting("token")
+        kwargs = {
+            "giturl": giturl,
+            "branch": branch,
+            "commit": commit,
+            "job_filter": job_filter,
+        }
+        if platform_filter:
+            kwargs["platform_filter"] = platform_filter
+        result = _as_library_error(
+            "Maestro checkout failed", send_checkout_full, url, token, **kwargs
+        )
+        if result is None:
+            raise KciDevError(f"Maestro checkout failed for {giturl} at {commit}")
+        return result
