@@ -103,7 +103,7 @@ def test_list_tests_default_limit_bounds_response(monkeypatch):
     )
     assert result["total"] == 300
     assert result["matched"] == 300
-    assert len(result["tests"]) == 100
+    assert len(result["tests"]) == 20
 
 
 def test_get_issue_builds_wraps_bare_list(monkeypatch):
@@ -151,3 +151,66 @@ def test_list_commits_not_found_includes_guidance(monkeypatch):
             branch="master",
             commit="deadbeef",
         )
+
+
+def test_list_tests_projects_fields(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {"tests": [{"id": "t1", "status": "PASS", "log_url": "x", "misc": {}}]},
+    )
+    result = tools_dashboard.list_tests(
+        giturl="https://git.example.org/linux.git",
+        branch="master",
+        commit="deadbeef",
+        fields=["id", "status", "nonexistent"],
+    )
+    assert result["tests"] == [{"id": "t1", "status": "PASS"}]
+
+
+SUMMARY_PAYLOAD = {
+    "common": {"tree_name": "mainline"},
+    "summary": {
+        "builds": {
+            "status": {"PASS": 10, "FAIL": 1},
+            "architectures": {"x86_64": {"PASS": 5}},
+            "configs": {"defconfig": {"PASS": 10}},
+            "labs": {"lab-1": {}},
+            "issues": [],
+        },
+        "boots": {
+            "status": {"pass": 20},
+            "failed_platforms": ["board-1"],
+            "environment_misc": {"big": "blob"},
+        },
+    },
+    "filters": {"configs": ["defconfig"]},
+}
+
+
+def test_get_summary_compact_by_default(monkeypatch):
+    _mock_get(monkeypatch, SUMMARY_PAYLOAD)
+    result = tools_dashboard.get_summary(
+        giturl="https://git.example.org/linux.git", branch="master", commit="deadbeef"
+    )
+    assert result["common"] == {"tree_name": "mainline"}
+    assert result["summary"]["builds"] == {
+        "status": {"PASS": 10, "FAIL": 1},
+        "architectures": {"x86_64": {"PASS": 5}},
+        "issues": [],
+    }
+    assert result["summary"]["boots"] == {
+        "status": {"pass": 20},
+        "failed_platforms": ["board-1"],
+    }
+    assert "filters" not in result
+
+
+def test_get_summary_detail_returns_full_payload(monkeypatch):
+    _mock_get(monkeypatch, SUMMARY_PAYLOAD)
+    result = tools_dashboard.get_summary(
+        giturl="https://git.example.org/linux.git",
+        branch="master",
+        commit="deadbeef",
+        detail=True,
+    )
+    assert result == SUMMARY_PAYLOAD

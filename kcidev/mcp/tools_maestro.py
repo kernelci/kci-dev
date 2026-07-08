@@ -27,7 +27,10 @@ def register_tools(server, client, api_url, pipeline_url, token):
         @server.tool(annotations=read_only)
         @tool_errors
         def list_nodes(
-            filters: list[str] | None = None, limit: int = 50, offset: int = 0
+            filters: list[str] | None = None,
+            limit: int = 50,
+            offset: int = 0,
+            fields: list[str] | None = None,
         ):
             """List Maestro nodes, oldest first, optionally filtered.
 
@@ -38,9 +41,13 @@ def register_tools(server, client, api_url, pipeline_url, token):
             are returned oldest first, so to reach recent nodes window the
             query with a filter such as 'created__gt=2026-07-01' rather
             than paginating from the start. Use limit and offset to
-            paginate within the window.
+            paginate within the window; full nodes are large, so use
+            fields to project each node to only those keys.
             """
-            return client.get_nodes(limit=limit, offset=offset, filters=filters or [])
+            nodes = client.get_nodes(limit=limit, offset=offset, filters=filters or [])
+            if fields:
+                return [{k: n[k] for k in fields if k in n} for n in nodes]
+            return nodes
 
     if pipeline_url and token:
 

@@ -48,3 +48,9 @@ trust.
 Tools that change state (`retry_job`, `trigger_checkout`) are annotated
 as non-read-only so MCP clients can ask for confirmation before calling
 them.
+
+Responses are sized for context-limited clients: `get_summary` returns
+compact aggregates unless `detail=true` is passed, and the list tools
+paginate (default `limit` of 20) and accept a `fields` list to return
+only the named keys per entry. Prefer `status`/`arch` filters, small
+limits and field projection when exploring large trees.
