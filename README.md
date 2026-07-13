@@ -189,6 +189,47 @@ recoverable kci-dev failures instead of aborting the process like the CLI. Use
 `run_command` when you specifically need command-compatible behavior from the
 modules in `kcidev/subcommands/`.
 
+## MCP server
+
+kci-dev ships an [MCP](https://modelcontextprotocol.io/) (Model Context
+Protocol) server so AI agents and automation tools can work with KernelCI
+data:
+
+- query build, boot and test results, as well as known issues, from the
+  dashboard
+- compare results across checkouts of a tree
+- inspect Maestro jobs
+- retry jobs or trigger custom checkouts (with a token)
+
+Tools that only read data are annotated as read-only, so MCP clients can
+require confirmation before the job-triggering ones run.
+
+MCP support is an optional extra:
+
+```sh
+pip install kci-dev[mcp]
+```
+
+MCP is an open protocol, so the server works with any MCP-capable client:
+Claude Code, Gemini CLI, VS Code Copilot, Cursor, or your own agent built on
+an MCP SDK. Run it over stdio and register it with your client, for example
+with Claude Code:
+
+```sh
+claude mcp add kernelci -- kci-dev mcp
+```
+
+Other clients are configured the same way: run `kci-dev mcp` as a stdio
+command, or start `kci-dev mcp --transport http` and point the client at the
+HTTP endpoint.
+
+Then ask things like "which trees have results in KernelCI this week?" or
+"find the failing baseline boots on mainline and check whether they look
+flaky". Read-only dashboard tools work without any configuration; Maestro
+node lookup and job triggering use the `api`/`pipeline` URLs and `token`
+from your [config file](docs/config_file.md). See the full
+[MCP documentation](docs/mcp.md) for the tool list, transports and examples.
+
 ## License
 
 [LGPL-2.1](https://github.com/kernelci/kci-dev/blob/main/LICENSE)
