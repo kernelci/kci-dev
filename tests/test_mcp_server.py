@@ -153,3 +153,23 @@ def test_retry_job_failure_returns_tool_error(monkeypatch):
     result = _call_tool(create_server(CFG, "test"), "retry_job", {"node_id": "n1"})
     assert result.isError is True
     assert "retry failed" in result.content[0].text
+
+
+def test_list_nodes_projects_fields(monkeypatch):
+    from kcidev.libs import maestro_common
+
+    response = Mock(status_code=200)
+    response.json.return_value = [
+        {"id": "n1", "name": "checkout", "state": "done", "commit_message": "huge"}
+    ]
+    monkeypatch.setattr(
+        maestro_common.kcidev_session, "get", Mock(return_value=response)
+    )
+    result = _call_tool(
+        create_server(CFG, "test"),
+        "list_nodes",
+        {"fields": ["id", "state"]},
+    )
+    assert result.isError is False
+    assert '"commit_message"' not in result.content[0].text
+    assert '"n1"' in result.content[0].text
