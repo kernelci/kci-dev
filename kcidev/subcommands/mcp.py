@@ -11,6 +11,12 @@ from kcidev.libs.common import *
 @click.command(
     help="""Run an MCP (Model Context Protocol) server exposing KernelCI.
 
+EXPERIMENTAL: tool names, parameters and response formats may change
+between releases. Please report any issues at:
+
+\b
+https://github.com/kernelci/kci-dev/issues
+
 Read-only dashboard query tools are always available. Maestro node
 lookup tools are enabled when the configured instance has an 'api' URL,
 and job retry/checkout trigger tools when it also has a 'pipeline' URL
