@@ -36,6 +36,11 @@ pyyaml = "^6.0.2"
 tabulate = "0.9.0"
 matplotlib = ">=3.6"
 mplcursors = ">=0.6"
+# matplotlib dependency; releases with python 3.14 wheels need python >=3.11
+numpy = [
+    { version = "<2.3", python = "<3.11" },
+    { version = ">=2.3", python = ">=3.11" },
+]
 mcp = { version = "^1.9", optional = true }
 
 [tool.poetry.extras]
