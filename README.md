@@ -202,7 +202,9 @@ data:
 - retry jobs or trigger custom checkouts (with a token)
 
 Tools that only read data are annotated as read-only, so MCP clients can
-require confirmation before the job-triggering ones run.
+require confirmation before the job-triggering ones run. The MCP server is
+experimental: tool names, parameters and response formats may change
+between releases.
 
 MCP support is an optional extra:
 

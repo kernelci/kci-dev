@@ -7,6 +7,10 @@ description = 'Run an MCP server exposing KernelCI data and actions to AI agents
 This command runs an MCP (Model Context Protocol) server so AI agents and
 automation tools can query KernelCI results and drive Maestro jobs.
 
+> **Experimental**: tool names, parameters and response formats may
+> change between releases. Please report any issues on the
+> [issue tracker](https://github.com/kernelci/kci-dev/issues).
+
 MCP support is an optional extra:
 
 ```sh

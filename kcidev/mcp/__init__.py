@@ -7,7 +7,8 @@ from kcidev.api import KernelCIClient
 from kcidev.libs.common import kcidev_version
 from kcidev.mcp import tools_dashboard, tools_maestro
 
-SERVER_INSTRUCTIONS = """KernelCI MCP server.
+SERVER_INSTRUCTIONS = """KernelCI MCP server (experimental: tools,
+parameters and response formats may change between releases).
 
 Query KernelCI build, boot and test results and known issues from the
 web dashboard, inspect Maestro nodes, and, when a token is configured,
