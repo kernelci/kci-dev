@@ -6,6 +6,7 @@ import logging
 import click
 
 from kcidev.libs.common import *
+from kcidev.libs.dashboard import configure_dashboard_api
 from kcidev.subcommands import (
     bisect,
     checkout,
@@ -43,6 +44,8 @@ def cli(ctx, settings, instance, debug):
     subcommand = ctx.invoked_subcommand
     ctx.obj = {"CFG": load_toml(settings, subcommand)}
     ctx.obj["SETTINGS"] = settings
+    cfg = ctx.obj["CFG"] or {}
+    configure_dashboard_api(cfg, instance or cfg.get("default_instance"))
     if subcommand not in ("results", "config"):
         if instance:
             ctx.obj["INSTANCE"] = instance

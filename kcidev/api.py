@@ -14,6 +14,7 @@ import click
 from click.testing import CliRunner
 
 from kcidev.libs.dashboard import (
+    configure_dashboard_api,
     dashboard_fetch_boot_issues,
     dashboard_fetch_boots,
     dashboard_fetch_build,
@@ -35,6 +36,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_tests,
     dashboard_fetch_tree_list,
     dashboard_fetch_tree_report,
+    set_dashboard_api,
 )
 from kcidev.libs.git_repo import get_folder_repository
 from kcidev.libs.kcidb import (
@@ -107,13 +109,29 @@ class KernelCIClient:
         instance: Optional instance name in ``cfg``.
         kcidb_rest_url: Optional KCIDB submit endpoint override.
         kcidb_token: Optional KCIDB bearer token override.
+        dashboard_api: Optional dashboard API base URL override; when unset,
+            ``dashboard_api`` from the instance section or the top level of
+            ``cfg`` is used, falling back to the production dashboard.
     """
 
-    def __init__(self, cfg=None, instance=None, kcidb_rest_url=None, kcidb_token=None):
+    def __init__(
+        self,
+        cfg=None,
+        instance=None,
+        kcidb_rest_url=None,
+        kcidb_token=None,
+        dashboard_api=None,
+    ):
         self.cfg = cfg
         self.instance = instance
         self.kcidb_rest_url = kcidb_rest_url
         self.kcidb_token = kcidb_token
+        if dashboard_api:
+            set_dashboard_api(dashboard_api)
+        else:
+            configure_dashboard_api(
+                cfg, instance or (cfg or {}).get("default_instance")
+            )
 
     def run_command(self, args, *, catch_exceptions=True, env=None, input=None):
         """Run a kci-dev subcommand using the same command tree as the CLI."""
