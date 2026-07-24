@@ -116,3 +116,43 @@ def test_trigger_checkout_requires_token():
         KernelCIClient(cfg=cfg, instance="test").trigger_checkout(
             "https://git.example.org/linux.git", "master", "deadbeef", ["baseline"]
         )
+
+
+def test_trigger_patchset_posts_payload(monkeypatch):
+    response = Mock(status_code=200)
+    response.json.return_value = {"message": "OK", "node": {"treeid": "t1"}}
+    post = Mock(return_value=response)
+    monkeypatch.setattr(maestro_common.kcidev_session, "post", post)
+    result = _client().trigger_patchset(
+        "0" * 24, patches=["patch content"], job_filter=["baseline-arm64"]
+    )
+    assert result == {"message": "OK", "node": {"treeid": "t1"}}
+    assert post.call_args[0][0] == "https://pipeline.example.org/api/patchset"
+    body = json.loads(post.call_args.kwargs["data"])
+    assert body == {
+        "nodeid": "0" * 24,
+        "patch": ["patch content"],
+        "jobfilter": ["baseline-arm64"],
+    }
+
+
+def test_trigger_patchset_posts_patch_urls(monkeypatch):
+    response = Mock(status_code=200)
+    response.json.return_value = {"message": "OK", "node": {}}
+    post = Mock(return_value=response)
+    monkeypatch.setattr(maestro_common.kcidev_session, "post", post)
+    _client().trigger_patchset(
+        "0" * 24,
+        patchurls=["https://patchwork.kernel.org/series/1/mbox/"],
+        platform_filter=["qemu-arm64"],
+    )
+    body = json.loads(post.call_args.kwargs["data"])
+    assert body["patchurl"] == ["https://patchwork.kernel.org/series/1/mbox/"]
+    assert body["platformfilter"] == ["qemu-arm64"]
+
+
+def test_trigger_patchset_failure_raises(monkeypatch):
+    post = Mock(side_effect=requests.exceptions.ConnectionError("no route"))
+    monkeypatch.setattr(maestro_common.kcidev_session, "post", post)
+    with pytest.raises(KciDevError, match="patchset failed"):
+        _client().trigger_patchset("0" * 24, patches=["patch content"])

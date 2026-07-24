@@ -48,6 +48,7 @@ def test_dashboard_tools_registered_without_config():
     assert "get_node" not in tools
     assert "retry_job" not in tools
     assert "trigger_checkout" not in tools
+    assert "trigger_patchset" not in tools
 
 
 def test_maestro_tools_registered_with_full_config():
@@ -56,6 +57,7 @@ def test_maestro_tools_registered_with_full_config():
     assert "list_nodes" in tools
     assert "retry_job" in tools
     assert "trigger_checkout" in tools
+    assert "trigger_patchset" in tools
 
 
 def test_action_tools_not_registered_without_token():
@@ -64,6 +66,7 @@ def test_action_tools_not_registered_without_token():
     assert "get_node" in tools
     assert "retry_job" not in tools
     assert "trigger_checkout" not in tools
+    assert "trigger_patchset" not in tools
 
 
 def test_action_tools_not_registered_without_pipeline_token():
@@ -77,6 +80,7 @@ def test_action_tools_not_registered_without_pipeline_token():
     assert "get_node" in tools
     assert "retry_job" not in tools
     assert "trigger_checkout" not in tools
+    assert "trigger_patchset" not in tools
 
 
 def test_tool_annotations():
@@ -85,6 +89,7 @@ def test_tool_annotations():
     assert tools["get_node"].annotations.readOnlyHint is True
     assert tools["retry_job"].annotations.readOnlyHint is False
     assert tools["trigger_checkout"].annotations.readOnlyHint is False
+    assert tools["trigger_patchset"].annotations.readOnlyHint is False
 
 
 def test_call_tool_success(monkeypatch):
