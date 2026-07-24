@@ -8,11 +8,7 @@ import requests
 import yaml
 
 from kcidev.libs.common import *
-from kcidev.libs.dashboard import (
-    DASHBOARD_API,
-    DASHBOARD_URL,
-    dashboard_fetch_tree_list,
-)
+from kcidev.libs.dashboard import dashboard_fetch_tree_list, get_dashboard_url
 from kcidev.libs.files import download_logs_to_file
 from kcidev.libs.filters import (
     CompatibleFilter,
@@ -79,7 +75,7 @@ def create_build_json(build, log_path):
         "config_url": build["config_url"],
         "log": log_path,
         "id": build["id"],
-        "dashboard": f"{DASHBOARD_URL}/build/{build['id']}",
+        "dashboard": f"{get_dashboard_url()}/build/{build['id']}",
     }
 
 
@@ -110,7 +106,7 @@ def create_test_json(test, log_path):
         "start_time": test["start_time"],
         "log": log_path,
         "id": test["id"],
-        "dashboard": f"{DASHBOARD_URL}/build/{test['id']}",
+        "dashboard": f"{get_dashboard_url()}/build/{test['id']}",
     }
 
     if runtime:
@@ -274,7 +270,7 @@ def print_build(build, log_path):
     kci_msg(f"  config_url: {build['config_url']}")
     kci_msg(f"  log: {log_path}")
     kci_msg(f"  id: {build['id']}")
-    kci_msg(f"  dashboard: {DASHBOARD_URL}/build/{build['id']}")
+    kci_msg(f"  dashboard: {get_dashboard_url()}/build/{build['id']}")
     kci_msg("")
 
 
@@ -450,7 +446,7 @@ def print_test(test, log_path):
         kci_msg("")
 
     kci_msg(f"  id: {test['id']}")
-    kci_msg(f"  dashboard: {DASHBOARD_URL}/test/{test['id']}")
+    kci_msg(f"  dashboard: {get_dashboard_url()}/test/{test['id']}")
     kci_msg("")
 
 
@@ -838,7 +834,7 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
                     "arch": item.get("architecture", "unknown"),
                     "compiler": item.get("compiler", "unknown"),
                     "id": item.get("id", "unknown"),
-                    "dashboard": f"{DASHBOARD_URL}/build/{item.get('id', 'unknown')}",
+                    "dashboard": f"{get_dashboard_url()}/build/{item.get('id', 'unknown')}",
                     "log": item.get("log_url", ""),
                 }
             else:  # boot or test
@@ -852,7 +848,7 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
                     "config": item.get("config", item.get("config_name", "unknown")),
                     "arch": item.get("arch", item.get("architecture", "unknown")),
                     "id": item.get("id", "unknown"),
-                    "dashboard": f"{DASHBOARD_URL}/test/{item.get('id', 'unknown')}",
+                    "dashboard": f"{get_dashboard_url()}/test/{item.get('id', 'unknown')}",
                     "log": item.get("log_url", ""),
                 }
 
@@ -886,7 +882,7 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
                 kci_msg_cyan(build.get("compiler", "unknown"), nl=False)
                 kci_msg("")
                 kci_msg(
-                    f"  dashboard: {DASHBOARD_URL}/build/{build.get('id', 'unknown')}"
+                    f"  dashboard: {get_dashboard_url()}/build/{build.get('id', 'unknown')}"
                 )
                 kci_msg("")
 
@@ -911,7 +907,7 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
                 kci_msg_cyan(config, nl=False)
                 kci_msg("")
                 kci_msg(
-                    f"  dashboard: {DASHBOARD_URL}/test/{boot.get('id', 'unknown')}"
+                    f"  dashboard: {get_dashboard_url()}/test/{boot.get('id', 'unknown')}"
                 )
                 kci_msg("")
 
@@ -936,7 +932,7 @@ def cmd_compare(origin, giturl, branch, commits, use_json):
                 kci_msg_cyan(config, nl=False)
                 kci_msg("")
                 kci_msg(
-                    f"  dashboard: {DASHBOARD_URL}/test/{test.get('id', 'unknown')}"
+                    f"  dashboard: {get_dashboard_url()}/test/{test.get('id', 'unknown')}"
                 )
                 kci_msg("")
 
@@ -980,7 +976,7 @@ def print_issue(issue, new_tag=False):
     """Print issue information
     issue (dict): KCIDB issue dictionary"""
 
-    print_issue_information(issue, DASHBOARD_URL, new_tag)
+    print_issue_information(issue, get_dashboard_url(), new_tag)
 
     extra = issue.get("extra")
     if not extra:
@@ -1022,7 +1018,7 @@ def print_issues(data, use_json=False):
     issues = data["issues"]
     extras = data["extras"]
     for issue in issues:
-        print_issue_information(issue, DASHBOARD_URL)
+        print_issue_information(issue, get_dashboard_url())
 
         extra = extras.get(issue.get("id"))
         if extra:
@@ -1060,7 +1056,9 @@ def print_missing_data(item_type, data):
             kci_msg(f"  - Commit:{commit['commit']}")
             for item in missing_ids:
                 for item_id, status in item.items():
-                    kci_msg_nonl(f"  {DASHBOARD_URL}/{endpoint}/{item_id}  status: ")
+                    kci_msg_nonl(
+                        f"  {get_dashboard_url()}/{endpoint}/{item_id}  status: "
+                    )
                     kci_msg_red(f"{status}")
         kci_msg(data)
 

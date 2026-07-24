@@ -10,9 +10,35 @@ import requests
 
 from kcidev.libs.common import *
 
-DASHBOARD_API = "https://dashboard.kernelci.org/api/"
-_PARSED_DASHBOARD_API = urlparse(DASHBOARD_API)
-DASHBOARD_URL = f"{_PARSED_DASHBOARD_API.scheme}://{_PARSED_DASHBOARD_API.netloc}"
+DASHBOARD_API_DEFAULT = "https://dashboard.kernelci.org/api/"
+_dashboard_api = DASHBOARD_API_DEFAULT
+
+
+def set_dashboard_api(url):
+    global _dashboard_api
+    if not url.endswith("/"):
+        url += "/"
+    _dashboard_api = url
+
+
+def get_dashboard_api():
+    return _dashboard_api
+
+
+def get_dashboard_url():
+    parsed = urlparse(_dashboard_api)
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def configure_dashboard_api(cfg, instance):
+    if not cfg:
+        return
+    icfg = cfg.get(instance) if instance else None
+    if not isinstance(icfg, dict):
+        icfg = {}
+    url = icfg.get("dashboard_api") or cfg.get("dashboard_api")
+    if url:
+        set_dashboard_api(url)
 
 
 def _dashboard_request(func):
@@ -20,7 +46,7 @@ def _dashboard_request(func):
     def wrapper(
         endpoint, params, use_json, body=None, max_retries=3, error_verbose=True
     ):
-        base_url = urllib.parse.urljoin(DASHBOARD_API, endpoint)
+        base_url = urllib.parse.urljoin(get_dashboard_api(), endpoint)
         url = "{}?{}".format(base_url, urllib.parse.urlencode(params))
         retries = 0
 
@@ -74,7 +100,7 @@ def _dashboard_request(func):
 
             except requests.exceptions.RequestException as e:
                 logging.error(f"Request exception for {endpoint}: {str(e)}")
-                kci_err(f"Failed to fetch from {DASHBOARD_API}: {str(e)}.")
+                kci_err(f"Failed to fetch from {get_dashboard_api()}: {str(e)}.")
                 raise click.Abort()
 
         logging.error("Unexpected failure in API request - exhausted all attempts")

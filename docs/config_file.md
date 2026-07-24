@@ -29,6 +29,7 @@ token="example"
 pipeline="https://staging.kernelci.org:9100/"
 api="https://staging.kernelci.org:9000/"
 token="example"
+dashboard_api="https://staging.dashboard.kernelci.org/api/"
 kcidb_rest_url="https://db.kernelci.org/submit"
 kcidb_token="your-kcidb-token-here"
 
@@ -36,6 +37,7 @@ kcidb_token="your-kcidb-token-here"
 pipeline="https://kernelci-pipeline.westus3.cloudapp.azure.com/"
 api="https://kernelci-api.westus3.cloudapp.azure.com/"
 token="example"
+dashboard_api="https://dashboard.kernelci.org/api/"
 kcidb_rest_url="https://staging.kcidb.kernelci.org/submit"
 kcidb_token="your-kcidb-token-here"
 ```
@@ -43,6 +45,7 @@ kcidb_token="your-kcidb-token-here"
 Where `default_instance` is the default instance to use, if not provided in the command line.  
 In section `local`, `staging`, `production` you can provide the host for the pipeline, api and also a token for the available instances.  
 `pipeline` is the URL of the KernelCI Pipeline API endpoint, `api` is the URL of the new KernelCI API endpoint, and `token` is the API token to use for authentication. `kcidb_rest_uri` is KCIDB submission endpoint, and `kcidb_token` is the API token to use for authentication with KCIDB.   
+`dashboard_api` is the URL of the KernelCI Dashboard API endpoint used for results queries. It is optional and defaults to the production dashboard (`https://dashboard.kernelci.org/api/`); set it to query a staging or internal dashboard instance. It can be set per instance section, or at the top level of the file to apply regardless of instance.   
 If you are using KernelCI instances of pipeline or/and KCIDB, you can get the token from the KernelCI project maintainers.   
 If it is a local instance, you can generate your token using [kernelci-pipeline/tools/jwt_generator.py](https://github.com/kernelci/kernelci-pipeline/blob/main/tools/jwt_generator.py) script.  
 
