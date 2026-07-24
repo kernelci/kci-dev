@@ -107,6 +107,12 @@ Trigger ad-hoc test of specific tree/branch/commit.
 
 - [checkout](checkout)
 
+#### patchset
+
+Test patches on top of an existing checkout.
+
+- [patchset](patchset)
+
 #### testretry
 
 Trigger a test retry for a given Maestro node id.
