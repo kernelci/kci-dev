@@ -47,6 +47,11 @@ sidebar_cache_limit = 1000
     weight = 20
 
   [[menu.main]]
+    name = "patchset"
+    pageRef = "patchset/"
+    weight = 20
+
+  [[menu.main]]
     name = "testretry"
     pageRef = "testretry/"
     weight = 20

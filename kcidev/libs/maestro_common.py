@@ -399,3 +399,51 @@ def send_checkout_full(baseurl, token, **kwargs):
     result = response.json()
     logging.info(f"Checkout successful - tree ID: {result.get('treeid', 'unknown')}")
     return result
+
+
+def send_patchset(
+    baseurl,
+    token,
+    nodeid,
+    patches=None,
+    patchurls=None,
+    job_filter=None,
+    platform_filter=None,
+):
+    url = baseurl + "api/patchset"
+    headers = {
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": f"{token}",
+    }
+    data = {"nodeid": nodeid}
+    if patches:
+        data["patch"] = patches
+    if patchurls:
+        data["patchurl"] = patchurls
+    if job_filter:
+        data["jobfilter"] = job_filter
+    if platform_filter:
+        data["platformfilter"] = platform_filter
+
+    logging.info(f"Sending patchset request for checkout node {nodeid}")
+    logging.debug(f"Patchset data: {json.dumps(data, indent=2)}")
+
+    jdata = json.dumps(data)
+    maestro_print_api_call(url, data)
+    try:
+        logging.debug(f"POST request to: {url}")
+        response = kcidev_session.post(url, headers=headers, data=jdata, timeout=60)
+        logging.debug(f"Patchset response status: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Patchset API request failed: {e}")
+        kci_err(f"API connection error: {e}")
+        return None
+
+    if response.status_code != 200:
+        logging.error(f"Patchset failed with status {response.status_code}")
+        maestro_api_error(response)
+        return None
+
+    result = response.json()
+    logging.info(f"Patchset submitted: {result.get('message', 'No message')}")
+    return result

@@ -81,3 +81,25 @@ def register_tools(server, client, api_url, pipeline_url, token):
             return client.trigger_checkout(
                 giturl, branch, commit, job_filter, platform_filter
             )
+
+        @server.tool(annotations=action)
+        @tool_errors
+        def trigger_patchset(
+            nodeid: str,
+            patches: list[str] | None = None,
+            patchurls: list[str] | None = None,
+            job_filter: list[str] | None = None,
+            platform_filter: list[str] | None = None,
+        ):
+            """Test patches on top of an existing KernelCI checkout.
+
+            Applies patches to the checkout node given by nodeid (for
+            example one started with trigger_checkout) and runs the
+            pipeline on the patched tree. Pass unified diff contents
+            inline in patches, or URLs from an allowed domain such as
+            patchwork.kernel.org in patchurls. Returns the new patchset
+            node; poll progress with list_nodes using 'treeid=<tree id>'.
+            """
+            return client.trigger_patchset(
+                nodeid, patches, patchurls, job_filter, platform_filter
+            )

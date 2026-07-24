@@ -53,6 +53,7 @@ from kcidev.libs.maestro_common import (
     maestro_get_nodes,
     send_checkout_full,
     send_jobretry,
+    send_patchset,
 )
 from kcidev.main import get_cli
 
@@ -567,4 +568,38 @@ class KernelCIClient:
         )
         if result is None:
             raise KciDevError(f"Maestro checkout failed for {giturl} at {commit}")
+        return result
+
+    def trigger_patchset(
+        self,
+        nodeid,
+        patches=None,
+        patchurls=None,
+        job_filter=None,
+        platform_filter=None,
+        pipeline_url=None,
+        token=None,
+    ):
+        """Test patches on top of an existing checkout node.
+
+        Patches are passed inline as strings via patches, or as URLs from
+        an allowed domain via patchurls.
+        """
+        url = pipeline_url or self._instance_setting(
+            "pipeline", human_readable_key="pipeline URL"
+        )
+        token = token or self._instance_setting("token")
+        result = _as_library_error(
+            "Maestro patchset failed",
+            send_patchset,
+            url,
+            token,
+            nodeid,
+            patches=patches,
+            patchurls=patchurls,
+            job_filter=job_filter,
+            platform_filter=platform_filter,
+        )
+        if result is None:
+            raise KciDevError(f"Maestro patchset failed for node {nodeid}")
         return result
