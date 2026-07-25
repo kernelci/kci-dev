@@ -2,7 +2,7 @@
 # https://github.com/kernelci/kci-dev
 
 pkgname=kci-dev
-pkgver=0.1.10
+pkgver=0.1.11
 pkgrel=1
 pkgdesc='Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI'
 arch=('any')
