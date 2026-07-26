@@ -49,7 +49,10 @@ def testretry(ctx, nodeid):
         logging.info("Test retry initiated successfully")
         click.secho(resp["message"], fg="green")
     else:
-        logging.warning("No response message from retry request")
+        # send_jobretry already reported the specific API error, if any
+        logging.error(f"Test retry request for node {nodeid} failed")
+        kci_err(f"Test retry request for node {nodeid} failed")
+        raise click.Abort()
 
 
 if __name__ == "__main__":
