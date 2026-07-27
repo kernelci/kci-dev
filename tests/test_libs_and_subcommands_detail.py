@@ -217,5 +217,5 @@ def test_watch_forwards_filters_to_watch_jobs(monkeypatch):
 
     assert result.exit_code == 0, result.output
     watch_jobs.assert_called_once_with(
-        "https://api/", "secret", "tree-1", ("baseline",), "login"
+        "https://api/", "secret", "tree-1", ("baseline",), "login", root_node="checkout"
     )

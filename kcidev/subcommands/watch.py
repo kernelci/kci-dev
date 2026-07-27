@@ -76,7 +76,8 @@ def watch(ctx, nodeid, job_filter, test):
     logging.info(f"Found node {nodeid} with tree ID: {tree_id}")
     logging.info(f"Starting job watch for tree {tree_id}")
 
-    maestro_watch_jobs(apiurl, token, tree_id, job_filter, test)
+    root_node = "patchset" if node.get("name") == "patchset" else "checkout"
+    maestro_watch_jobs(apiurl, token, tree_id, job_filter, test, root_node=root_node)
 
 
 if __name__ == "__main__":

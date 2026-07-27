@@ -14,6 +14,7 @@ from kcidev.subcommands import (
     config,
     maestro,
     mcp,
+    patchset,
     results,
     storage,
     submit,
@@ -73,6 +74,7 @@ def register_commands(command_group=None):
     command_group.add_command(config.config)
     command_group.add_command(maestro.maestro)
     command_group.add_command(mcp.mcp)
+    command_group.add_command(patchset.patchset)
     command_group.add_command(testretry.testretry)
     command_group.add_command(results.results)
     command_group.add_command(storage.storage)
