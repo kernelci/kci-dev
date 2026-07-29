@@ -1,0 +1,3 @@
+# LGPL-2.1 is a verbatim historical license text. Its original postal address
+# must not be edited even though rpmlint considers that address outdated.
+addFilter("incorrect-fsf-address")
