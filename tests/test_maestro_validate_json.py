@@ -256,6 +256,38 @@ def test_fail_on_mismatch_no_mismatches_exits_zero(monkeypatch):
     assert result.exit_code == 0
 
 
+def test_fail_on_mismatch_does_not_hide_runtime_failures(monkeypatch):
+    builds_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.builds"
+    )
+    monkeypatch.setattr(
+        builds_module,
+        "set_giturl_branch_commit",
+        lambda origin, giturl, branch, commit, latest, git_folder: (
+            giturl,
+            branch,
+            commit,
+        ),
+    )
+    monkeypatch.setattr(
+        builds_module,
+        "get_tree_name",
+        lambda origin, giturl, branch: "mainline",
+    )
+
+    def get_stats(*args):
+        assert args[-1] is True
+        raise click.ClickException("API unavailable")
+
+    monkeypatch.setattr(builds_module, "get_build_stats", get_stats)
+    args = _json_args()[:-1] + ["--fail-on-mismatch"]
+
+    result = CliRunner().invoke(builds_module.builds, args)
+
+    assert result.exit_code == 1
+    assert "API unavailable" in result.output
+
+
 def test_fail_on_mismatch_missing_ids_exit_one(monkeypatch):
     command = _patch_builds_command(
         monkeypatch, _build_row(2, 1, "❌", missing_ids=["b-1"])

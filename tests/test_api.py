@@ -20,6 +20,20 @@ def _client():
     return KernelCIClient(cfg=CFG, instance="test")
 
 
+def test_client_uses_configured_default_instance(monkeypatch):
+    cfg = {"default_instance": "test", **CFG}
+    response = Mock(status_code=200)
+    response.json.return_value = {"id": "n1"}
+    get = Mock(return_value=response)
+    monkeypatch.setattr(maestro_common.kcidev_session, "get", get)
+
+    client = KernelCIClient(cfg=cfg)
+
+    assert client.instance == "test"
+    assert client.get_node("n1") == {"id": "n1"}
+    assert get.call_args[0][0] == "https://api.example.org/latest/node/n1"
+
+
 def test_get_node_uses_configured_api_url(monkeypatch):
     response = Mock(status_code=200)
     response.json.return_value = {"id": "n1", "state": "done"}
@@ -67,6 +81,23 @@ def test_retry_job_posts_with_token(monkeypatch):
     assert _client().retry_job("n1") == {"message": "OK"}
     assert post.call_args[0][0] == "https://pipeline.example.org/api/jobretry"
     assert post.call_args.kwargs["headers"]["Authorization"] == "secret"
+
+
+def test_pipeline_url_does_not_require_trailing_slash(monkeypatch):
+    cfg = {
+        "test": {
+            "pipeline": "https://pipeline.example.org",
+            "token": "secret",
+        }
+    }
+    response = Mock(status_code=200)
+    response.json.return_value = {"message": "OK"}
+    post = Mock(return_value=response)
+    monkeypatch.setattr(maestro_common.kcidev_session, "post", post)
+
+    KernelCIClient(cfg=cfg, instance="test").retry_job("n1")
+
+    assert post.call_args[0][0] == "https://pipeline.example.org/api/jobretry"
 
 
 def test_retry_job_failure_raises(monkeypatch):
