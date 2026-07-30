@@ -10,10 +10,10 @@
 Name:           kci-dev
 Version:        0
 Release:        0
-Summary:        Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI
+Summary:        KernelCI command-line tools for kernel developers
 License:        LGPL-2.1-or-later
 URL:            https://github.com/kernelci/kci-dev
-Source0:        %{srcname}-%{version}.tar.gz
+Source0:        https://github.com/kernelci/kci-dev/archive/refs/tags/v%{version}.tar.gz
 BuildArch:      noarch
 
 %if 0%{?suse_version}
@@ -35,7 +35,8 @@ BuildRequires: python3-devel
 %endif
 
 %description
-Stand alone tool for Linux Kernel developers and maintainers to interact with KernelCI
+kci-dev provides command-line tools for Linux kernel developers and
+maintainers to submit, monitor, and inspect KernelCI test results.
 
 %prep
 %autosetup -n %{srcname}-%{version}
@@ -46,6 +47,11 @@ Stand alone tool for Linux Kernel developers and maintainers to interact with Ke
 %install
 %pyproject_install
 
+# Python library modules are not executable scripts. Remove their upstream
+# interpreter lines while retaining the generated command-line entry point.
+find %{buildroot}%{python3_sitelib}/kcidev -type f -name '*.py' \
+    -exec sed -i '1{/^#!.*python/d}' {} +
+
 %if 0%{?suse_version}
 %else
 %pyproject_save_files kcidev
@@ -54,6 +60,10 @@ Stand alone tool for Linux Kernel developers and maintainers to interact with Ke
 install -Dpm0644 completions/kci-dev-completion.bash %{buildroot}%{_datadir}/bash-completion/completions/kci-dev || :
 install -Dpm0644 completions/_kci-dev %{buildroot}%{_datadir}/zsh/site-functions/_kci-dev || :
 install -Dpm0644 completions/kci-dev.fish %{buildroot}%{_datadir}/fish/vendor_completions.d/kci-dev.fish || :
+install -Dpm0644 packaging/obs/kci-dev.1 %{buildroot}%{_mandir}/man1/kci-dev.1
+
+%check
+%{python3} -m compileall -q kcidev
 
 %if 0%{?suse_version}
 %files
@@ -71,6 +81,7 @@ install -Dpm0644 completions/kci-dev.fish %{buildroot}%{_datadir}/fish/vendor_co
 %{_datadir}/bash-completion/completions/kci-dev
 %{_datadir}/zsh/site-functions/_kci-dev
 %{_datadir}/fish/vendor_completions.d/kci-dev.fish
+%{_mandir}/man1/kci-dev.1%{?ext_man}
 /usr/lib/python3.*/site-packages/kcidev/*
 /usr/lib/python3.*/site-packages/kcidev/**/*
 /usr/lib/python3.*/site-packages/kci_dev-*.dist-info/*
@@ -82,4 +93,9 @@ install -Dpm0644 completions/kci-dev.fish %{buildroot}%{_datadir}/fish/vendor_co
 %{_datadir}/bash-completion/completions/kci-dev
 %{_datadir}/zsh/site-functions/_kci-dev
 %{_datadir}/fish/vendor_completions.d/kci-dev.fish
+%{_mandir}/man1/kci-dev.1*
 %endif
+
+%changelog
+* Thu Jul 30 2026 KernelCI Project <kernelci@groups.io> - 0-0
+- Initial RPM package
