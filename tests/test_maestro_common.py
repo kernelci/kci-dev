@@ -134,3 +134,38 @@ def test_maestro_watch_jobs_completes_with_patchset_root(monkeypatch):
         None,
         root_node="patchset",
     )
+
+
+def test_maestro_watch_jobs_times_out_waiting_for_test_result(monkeypatch):
+    nodes = [
+        {
+            "name": "checkout",
+            "state": "done",
+            "result": "pass",
+            "kind": "checkout",
+            "id": "c1",
+            "updated": "now",
+        },
+        {
+            "name": "job1",
+            "state": "done",
+            "result": "pass",
+            "kind": "job",
+            "id": "j1",
+            "updated": "now",
+        },
+    ]
+    monkeypatch.setattr(
+        maestro_common, "maestro_retrieve_treeid_nodes", Mock(return_value=nodes)
+    )
+    monkeypatch.setattr(maestro_common.time, "sleep", Mock())
+    monkeypatch.setattr(
+        maestro_common.time, "time", Mock(side_effect=[100, 100, 161, 161, 161])
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        maestro_common.maestro_watch_jobs(
+            "https://api.example.org/", "token123", "t1", ["job1"], "missing-test"
+        )
+
+    assert exc_info.value.code == 2

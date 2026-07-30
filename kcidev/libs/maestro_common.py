@@ -234,6 +234,7 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test, root_node="chec
     logging.debug(f"Watching jobs: {job_filter}, test: {test}")
     previous_nodes = None
     running = False
+    jobs_done_ts = None
 
     job_info = {}
     for job in job_filter:
@@ -248,7 +249,9 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test, root_node="chec
             kci_warning("No nodes found. Retrying...")
             time.sleep(5)
             continue
-        if previous_nodes == nodes:
+        # Keep checking the test-result deadline after the jobs have completed,
+        # even when the API response has not changed.
+        if previous_nodes == nodes and jobs_done_ts is None:
             logging.debug("No changes in nodes, waiting...")
             kci_msg_nonl(".")
             time.sleep(30)
@@ -260,7 +263,6 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test, root_node="chec
         # Tricky part in watch is that we might have one item in job_filter (job, test),
         # but it might spawn multiple nodes with same name
         test_result = None
-        jobs_done_ts = None
         logging.debug(f"Processing {len(nodes)} nodes")
         for node in nodes:
             if node["name"] == test:
@@ -304,7 +306,7 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test, root_node="chec
             if not test:
                 return
             else:
-                if not jobs_done_ts:
+                if jobs_done_ts is None:
                     jobs_done_ts = time.time()
                     logging.debug("All jobs done, waiting for test results")
                 # if all jobs done, usually test results must be available
@@ -321,6 +323,10 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test, root_node="chec
                 elif test_result:
                     logging.info(f"Test {test} failed with result: {test_result}")
                     sys.exit(1)
+                else:
+                    logging.error(f"Test {test} result was not available after 60s")
+                    kci_err(f"Test {test} result was not available after 60s")
+                    sys.exit(2)
 
         running = True
         kci_msg_nonl(f"\rRunning job...")
