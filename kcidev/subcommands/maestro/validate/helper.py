@@ -127,12 +127,11 @@ def get_build_stats(
     )
     if dashboard_builds is None:
         return []
-    missing_build_ids = []
     summary_flag = "✅"
-    if len(dashboard_builds) != len(maestro_builds):
-        missing_build_ids = find_missing_items(
-            maestro_builds, dashboard_builds, "build", verbose
-        )
+    missing_build_ids = find_missing_items(
+        maestro_builds, dashboard_builds, "build", verbose
+    )
+
     builds_with_status_mismatch = validate_build_status(
         maestro_builds, dashboard_builds
     )
@@ -403,12 +402,10 @@ def get_boot_stats(
     )
     if dashboard_boots is None:
         return []
-    missing_boot_ids = []
     summary_flag = "✅"
-    if len(dashboard_boots) != len(maestro_boots):
-        missing_boot_ids = find_missing_items(
-            maestro_boots, dashboard_boots, "boot", verbose
-        )
+    missing_boot_ids = find_missing_items(
+        maestro_boots, dashboard_boots, "boot", verbose
+    )
     boots_with_status_mismatch = validate_boot_status(maestro_boots, dashboard_boots)
     if (
         len(dashboard_boots) != len(maestro_boots)
