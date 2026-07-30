@@ -118,11 +118,9 @@ def patchset(ctx, nodeid, patch, patchurl, job_filter, platform_filter, watch, t
     if not patch and not patchurl:
         raise click.UsageError("Either --patch or --patchurl is required")
     if watch and not job_filter:
-        kci_err("No job filter defined. Can't watch for a job(s)!")
-        return
+        raise click.UsageError("No job filter defined. Can't watch for a job(s)!")
     if test and not watch:
-        kci_err("Test option only works with watch option")
-        return
+        raise click.UsageError("Test option only works with watch option")
 
     cfg = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
@@ -171,8 +169,7 @@ def patchset(ctx, nodeid, patch, patchurl, job_filter, platform_filter, watch, t
     if watch:
         if not treeid:
             logging.error("No treeid in response, cannot watch jobs")
-            kci_err("No treeid returned. Can't watch for a job(s)!")
-            return
+            raise click.ClickException("No treeid returned. Can't watch for a job(s)!")
         click.secho(f"Watching for jobs on treeid: {treeid}", fg="green")
         if test:
             click.secho(f"Watching for test result: {test}", fg="green")

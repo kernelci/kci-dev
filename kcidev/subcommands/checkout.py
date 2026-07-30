@@ -143,14 +143,11 @@ def checkout(
         job_filter = None
         click.secho("No job filter defined. All jobs will be triggered!", fg="yellow")
     if watch and not job_filter:
-        kci_err("No job filter defined. Can't watch for a job(s)!")
-        return
+        raise click.UsageError("No job filter defined. Can't watch for a job(s)!")
     if test and not watch:
-        kci_err("Test option only works with watch option")
-        return
+        raise click.UsageError("Test option only works with watch option")
     if not commit and not tipoftree:
-        kci_err("No commit or tree/branch latest commit defined")
-        return
+        raise click.UsageError("No commit or tree/branch latest commit defined")
     if tipoftree:
         click.secho(
             f"Retrieving latest commit on tree: {giturl} branch: {branch}", fg="green"
@@ -159,8 +156,9 @@ def checkout(
         commit = retrieve_tot_commit(giturl, branch)
         if not commit or len(commit) != 40:
             logging.error(f"Invalid commit retrieved: {commit}")
-            kci_err("Unable to retrieve latest commit. Wrong tree/branch?")
-            return
+            raise click.ClickException(
+                "Unable to retrieve latest commit. Wrong tree/branch?"
+            )
         click.secho(f"Commit to checkout: {commit}", fg="green")
     resp = send_checkout_full(
         url,
@@ -198,8 +196,7 @@ def checkout(
         treeid = node.get("treeid")
         if not treeid:
             logging.error("No treeid in response, cannot watch jobs")
-            kci_err("No treeid returned. Can't watch for a job(s)!")
-            return
+            raise click.ClickException("No treeid returned. Can't watch for a job(s)!")
         click.secho(f"Watching for jobs on treeid: {treeid}", fg="green")
         if test:
             click.secho(f"Watching for test result: {test}", fg="green")
