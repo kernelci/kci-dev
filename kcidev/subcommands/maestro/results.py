@@ -155,7 +155,7 @@ def results(
 
     logging.debug(f"Displaying results with fields: {field if field else 'all'}")
 
-    if verbose:
+    if verbose and not (nodes and count):
         maestro_print_nodes(results, field)
     return results
 

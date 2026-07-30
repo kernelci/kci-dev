@@ -42,6 +42,17 @@ def test_maestro_get_node_missing_raises_clean_error(monkeypatch):
         maestro_common.maestro_get_node("https://api.example.org/", "0" * 24)
 
 
+def test_maestro_print_nodes_emits_one_json_document(capsys):
+    nodes = [{"id": "node-1", "name": "first"}, {"id": "node-2", "name": "second"}]
+
+    maestro_common.maestro_print_nodes(nodes, ("id",))
+
+    assert json.loads(capsys.readouterr().out) == [
+        {"id": "node-1"},
+        {"id": "node-2"},
+    ]
+
+
 def _response(status_code=200, json_data=None):
     response = Mock(status_code=status_code)
     response.json.return_value = json_data
