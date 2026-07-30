@@ -11,7 +11,6 @@ import requests
 
 from kcidev.libs.common import *
 
-
 PIPELINE_ENDPOINTS = {
     "checkout": "api/checkout",
     "jobretry": "api/jobretry",

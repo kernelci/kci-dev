@@ -133,7 +133,14 @@ def boots(
                 commit = tree["git_commit_hash"]
                 tree_name = tree["tree_name"]
                 stats = get_boot_stats(
-                    ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors,
+                    ctx,
+                    giturl,
+                    branch,
+                    commit,
+                    tree_name,
+                    verbose,
+                    arch,
+                    raise_errors,
                 )
                 if stats:
                     final_stats.append(stats)
@@ -143,7 +150,14 @@ def boots(
             )
             tree_name = get_tree_name(origin, giturl, branch)
             stats = get_boot_stats(
-                ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors,
+                ctx,
+                giturl,
+                branch,
+                commit,
+                tree_name,
+                verbose,
+                arch,
+                raise_errors,
             )
             if stats:
                 final_stats.append(stats)

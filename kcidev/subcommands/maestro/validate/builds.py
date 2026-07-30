@@ -148,7 +148,14 @@ def builds(
                     branch = tree["git_repository_branch"]
                     tree_name = tree["tree_name"]
                     stats = get_builds_history_stats(
-                        ctx, giturl, branch, tree_name, arch, days, verbose, raise_errors,
+                        ctx,
+                        giturl,
+                        branch,
+                        tree_name,
+                        arch,
+                        days,
+                        verbose,
+                        raise_errors,
                     )
                     if stats:
                         final_stats.extend(stats)
@@ -160,14 +167,28 @@ def builds(
                     commit = tree["git_commit_hash"]
                     tree_name = tree["tree_name"]
                     stats = get_build_stats(
-                        ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors,
+                        ctx,
+                        giturl,
+                        branch,
+                        commit,
+                        tree_name,
+                        verbose,
+                        arch,
+                        raise_errors,
                     )
                     if stats:
                         final_stats.append(stats)
         elif history:
             tree_name = get_tree_name(origin, giturl, branch)
             final_stats = get_builds_history_stats(
-                ctx, giturl, branch, tree_name, arch, days, verbose, raise_errors,
+                ctx,
+                giturl,
+                branch,
+                tree_name,
+                arch,
+                days,
+                verbose,
+                raise_errors,
             )
         else:
             giturl, branch, commit = set_giturl_branch_commit(
@@ -175,7 +196,14 @@ def builds(
             )
             tree_name = get_tree_name(origin, giturl, branch)
             stats = get_build_stats(
-                ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors,
+                ctx,
+                giturl,
+                branch,
+                commit,
+                tree_name,
+                verbose,
+                arch,
+                raise_errors,
             )
             if stats:
                 final_stats.append(stats)
