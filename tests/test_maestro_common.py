@@ -8,6 +8,30 @@ import pytest
 from kcidev.libs import maestro_common
 
 
+@pytest.mark.parametrize(
+    ("baseurl", "endpoint", "expected"),
+    [
+        (
+            "https://pipeline.example.org",
+            "checkout",
+            "https://pipeline.example.org/api/checkout",
+        ),
+        (
+            "https://pipeline.example.org/",
+            "jobretry",
+            "https://pipeline.example.org/api/jobretry",
+        ),
+        (
+            "https://pipeline.example.org//",
+            "patchset",
+            "https://pipeline.example.org/api/patchset",
+        ),
+    ],
+)
+def test_pipeline_url_uses_the_requested_endpoint(baseurl, endpoint, expected):
+    assert maestro_common._pipeline_url(baseurl, endpoint) == expected
+
+
 def test_maestro_get_node_missing_raises_clean_error(monkeypatch):
     response = Mock(status_code=200)
     response.json.return_value = None
@@ -36,6 +60,7 @@ def test_send_patchset_posts_inline_patches(monkeypatch):
         job_filter=["baseline-x86"],
     )
     assert result == result_json
+    post.assert_called_once()
     args, kwargs = post.call_args
     assert args[0] == "https://pipeline.example.org/api/patchset"
     assert kwargs["headers"]["Authorization"] == "token123"

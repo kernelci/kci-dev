@@ -124,15 +124,13 @@ class KernelCIClient:
         dashboard_api=None,
     ):
         self.cfg = cfg
-        self.instance = instance
+        self.instance = instance or (cfg or {}).get("default_instance")
         self.kcidb_rest_url = kcidb_rest_url
         self.kcidb_token = kcidb_token
         if dashboard_api:
             set_dashboard_api(dashboard_api)
         else:
-            configure_dashboard_api(
-                cfg, instance or (cfg or {}).get("default_instance")
-            )
+            configure_dashboard_api(cfg, self.instance)
 
     def run_command(self, args, *, catch_exceptions=True, env=None, input=None):
         """Run a kci-dev subcommand using the same command tree as the CLI."""

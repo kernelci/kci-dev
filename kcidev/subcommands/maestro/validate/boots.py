@@ -114,6 +114,7 @@ def boots(
     fail_on_mismatch,
 ):
     final_stats = []
+    raise_errors = use_json or fail_on_mismatch
     stdout = sys.stdout
     if use_json:
         sys.stdout = sys.stderr
@@ -132,7 +133,14 @@ def boots(
                 commit = tree["git_commit_hash"]
                 tree_name = tree["tree_name"]
                 stats = get_boot_stats(
-                    ctx, giturl, branch, commit, tree_name, verbose, arch, use_json
+                    ctx,
+                    giturl,
+                    branch,
+                    commit,
+                    tree_name,
+                    verbose,
+                    arch,
+                    raise_errors,
                 )
                 if stats:
                     final_stats.append(stats)
@@ -142,7 +150,14 @@ def boots(
             )
             tree_name = get_tree_name(origin, giturl, branch)
             stats = get_boot_stats(
-                ctx, giturl, branch, commit, tree_name, verbose, arch, use_json
+                ctx,
+                giturl,
+                branch,
+                commit,
+                tree_name,
+                verbose,
+                arch,
+                raise_errors,
             )
             if stats:
                 final_stats.append(stats)

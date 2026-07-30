@@ -11,6 +11,18 @@ import requests
 
 from kcidev.libs.common import *
 
+PIPELINE_ENDPOINTS = {
+    "checkout": "api/checkout",
+    "jobretry": "api/jobretry",
+    "patchset": "api/patchset",
+}
+
+
+def _pipeline_url(baseurl, endpoint):
+    """Return the URL for a named Pipeline endpoint."""
+    path = PIPELINE_ENDPOINTS[endpoint]
+    return f"{baseurl.rstrip('/')}/{path}"
+
 
 def maestro_print_api_call(host, data=None):
     kci_info("maestro api endpoint: " + host)
@@ -335,7 +347,7 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test, root_node="chec
 
 
 def send_jobretry(baseurl, jobid, token):
-    url = baseurl + "api/jobretry"
+    url = _pipeline_url(baseurl, "jobretry")
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": f"{token}",
@@ -367,7 +379,7 @@ def send_jobretry(baseurl, jobid, token):
 
 
 def send_checkout_full(baseurl, token, **kwargs):
-    url = baseurl + "api/checkout"
+    url = _pipeline_url(baseurl, "checkout")
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": f"{token}",
@@ -416,7 +428,7 @@ def send_patchset(
     job_filter=None,
     platform_filter=None,
 ):
-    url = baseurl + "api/patchset"
+    url = _pipeline_url(baseurl, "patchset")
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": f"{token}",

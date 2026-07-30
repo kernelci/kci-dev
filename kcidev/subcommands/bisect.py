@@ -373,26 +373,19 @@ def bisect(
 
         # Validate required parameters for new bisection
         if not giturl:
-            kci_err("--giturl is required")
-            return
+            raise click.UsageError("--giturl is required")
         if not branch:
-            kci_err("--branch is required")
-            return
+            raise click.UsageError("--branch is required")
         if not good:
-            kci_err("--good is required")
-            return
+            raise click.UsageError("--good is required")
         if not bad:
-            kci_err("--bad is required")
-            return
+            raise click.UsageError("--bad is required")
         if not job_filter:
-            kci_err("--job-filter is required")
-            return
+            raise click.UsageError("--job-filter is required")
         if not platform_filter:
-            kci_err("--platform-filter is required")
-            return
+            raise click.UsageError("--platform-filter is required")
         if not test:
-            kci_err("--test is required")
-            return
+            raise click.UsageError("--test is required")
 
         state["giturl"] = giturl
         state["branch"] = branch

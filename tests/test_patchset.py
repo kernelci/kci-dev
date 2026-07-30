@@ -177,6 +177,7 @@ def test_patchset_watch_requires_job_filter(patch_file):
         ["--nodeid", "0" * 24, "--patch", patch_file, "--watch"],
         obj=_cli_obj(),
     )
+    assert result.exit_code == 2
     assert "job filter" in result.output
 
 
@@ -187,6 +188,7 @@ def test_patchset_test_requires_watch(patch_file):
         ["--nodeid", "0" * 24, "--patch", patch_file, "--test", "baseline.login"],
         obj=_cli_obj(),
     )
+    assert result.exit_code == 2
     assert "watch" in result.output
 
 
