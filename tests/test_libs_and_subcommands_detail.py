@@ -173,6 +173,48 @@ def test_execute_cmdline_raises_click_exception_on_failure():
         )
 
 
+@pytest.mark.parametrize(
+    ("returncodes", "expected_result"),
+    [([1, 1, 1], "bad"), ([1, 0], "good")],
+)
+def test_bisection_loop_retries_failures_before_marking_commit(
+    tmp_path, monkeypatch, returncodes, expected_result
+):
+    state = bisect.new_state()
+    state.update(
+        {
+            "giturl": "https://git.example/linux.git",
+            "branch": "main",
+            "retry_fail": 2,
+            "test": "baseline.login",
+            "workdir": str(tmp_path),
+            "next_commit": "deadbeef",
+        }
+    )
+    executions = [Mock(returncode=code) for code in returncodes]
+    kcidev_exec = Mock(side_effect=executions)
+    git_exec_getcommit = Mock(return_value=("cafebabe", False))
+    monkeypatch.setattr(bisect, "kcidev_exec", kcidev_exec)
+    monkeypatch.setattr(bisect, "git_exec_getcommit", git_exec_getcommit)
+
+    result = bisect.bisection_loop(state)
+
+    assert kcidev_exec.call_count == len(returncodes)
+    git_exec_getcommit.assert_called_once_with(["git", "bisect", expected_result])
+    assert result["history"] == [{"deadbeef": expected_result}]
+
+
+def test_bisect_rejects_negative_retry_count():
+    result = CliRunner().invoke(
+        bisect.bisect,
+        ["--retry-fail", "-1"],
+        obj={"CFG": {}, "INSTANCE": None},
+    )
+
+    assert result.exit_code == 2
+    assert "not in the range x>=0" in result.output
+
+
 def test_update_tree_preserves_bisect_commit_when_resuming(tmp_path):
     origin = tmp_path / "origin"
     origin.mkdir()
