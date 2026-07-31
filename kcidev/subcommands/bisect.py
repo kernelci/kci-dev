@@ -125,7 +125,11 @@ def kcidev_exec(cmd):
     click.secho("Executing kci-dev command: " + " " + str(cmd), fg="green")
     logging.info(f"Executing kci-dev command: {' '.join(cmd)}")
     with subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
     ) as process:
         try:
             for line in process.stdout:
