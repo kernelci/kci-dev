@@ -27,3 +27,26 @@ def test_count_does_not_print_nodes(monkeypatch):
     assert result.exit_code == 0
     assert result.output == "2\n"
     print_nodes.assert_not_called()
+
+
+def test_nodes_filter_by_tree(monkeypatch):
+    get_nodes = Mock(return_value=[])
+    monkeypatch.setattr(results_module, "maestro_get_nodes", get_nodes)
+
+    result = CliRunner().invoke(
+        results_command,
+        ["--nodes", "--tree", "mainline"],
+        obj={
+            "CFG": {"production": {"api": "https://api.example.org/"}},
+            "INSTANCE": "production",
+        },
+    )
+
+    assert result.exit_code == 0
+    get_nodes.assert_called_once_with(
+        "https://api.example.org/",
+        50,
+        0,
+        ["data.kernel_revision.tree=mainline"],
+        True,
+    )

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import copy
 import json
 import logging
 import os
@@ -39,6 +40,11 @@ default_state = {
     "next_commit": None,
     "first_bad": None,
 }
+
+
+def new_state():
+    """Return an independent state object for a new bisection."""
+    return copy.deepcopy(default_state)
 
 
 def load_state(file="state.json"):
@@ -234,15 +240,32 @@ def bisection_loop(state):
         kci_err(f"Error executing kci-dev, no returncode: {e}")
         sys.exit(1)
 
+    retry_fail = state.get("retry_fail", 0)
+    for retry in range(retry_fail):
+        if testret != 1:
+            break
+        attempt = retry + 1
+        click.secho(f"Test failed; retrying ({attempt}/{retry_fail})", fg="yellow")
+        logging.warning(
+            "Test failed for commit %s; retrying (%d/%d)",
+            commit,
+            attempt,
+            retry_fail,
+        )
+        result = kcidev_exec(cmd)
+        testret = result.returncode
+
     logging.info(f"Test completed with return code: {testret}")
 
     if testret == 0:
         bisect_result = "good"
         logging.info(f"Commit {commit} marked as GOOD (test passed)")
     elif testret == 1:
-        # TBD: Retry failed test to make sure it is not a flaky test
         bisect_result = "bad"
-        logging.info(f"Commit {commit} marked as BAD (test failed)")
+        logging.info(
+            f"Commit {commit} marked as BAD (test failed after "
+            f"{retry_fail} retries)"
+        )
     elif testret == 2:
         # TBD: Retry failed test to make sure it is not a flaky test
         bisect_result = "skip"
@@ -306,7 +329,11 @@ Examples:
 @click.option("--good", help="Known good commit (tag, SHA, or ref)")
 @click.option("--bad", help="Known bad commit (tag, SHA, or ref)")
 @click.option(
-    "--retry-fail", help="Number of times to retry failed tests (default: 2)", default=2
+    "--retry-fail",
+    help="Number of times to retry failed tests",
+    default=2,
+    type=click.IntRange(min=0),
+    show_default=True,
 )
 @click.option(
     "--workdir",
@@ -372,7 +399,7 @@ def bisect(
             logging.info("Ignoring saved state, starting fresh bisection")
         else:
             logging.info("No saved state found, starting new bisection")
-        state = default_state
+        state = new_state()
         # Check if user provided any required parameters
         if not any([giturl, branch, good, bad, job_filter, platform_filter, test]):
             # No parameters provided and no state file - show help
@@ -412,6 +439,12 @@ def bisect(
     else:
         logging.info("Resuming bisection from saved state")
         print_state(state)
+        if state.get("first_bad"):
+            click.secho(
+                f"Bisection already complete. First bad commit: {state['first_bad']}",
+                fg="green",
+            )
+            return
         repo = update_tree(
             state["workdir"], state["branch"], state["giturl"], reset=False
         )
