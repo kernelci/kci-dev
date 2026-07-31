@@ -39,14 +39,14 @@ jobs:
             -e "s/^Version:.*/Version:        ${VERSION}/" \
             -e 's/^Release:.*/Release:        1%{?dist}/' \
             -e "0,/ - 0-0$/s// - ${VERSION}-1/" \
-            packaging/obs/kci-dev.spec
+            packaging/fedora/kci-dev.spec
           echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
           echo "Building version: ${VERSION}"
 
       - name: Validate RPM spec
         run: |
-          rpmspec --parse packaging/obs/kci-dev.spec >/dev/null
-          rpmlint --ignore-unused-rpmlintrc packaging/obs/kci-dev.spec
+          rpmspec --parse packaging/fedora/kci-dev.spec >/dev/null
+          rpmlint --ignore-unused-rpmlintrc packaging/fedora/kci-dev.spec
 
       - name: Create source archive
         run: |
@@ -58,13 +58,13 @@ jobs:
             HEAD
 
       - name: Build Fedora package
-        run: rpmbuild -ba packaging/obs/kci-dev.spec
+        run: rpmbuild -ba packaging/fedora/kci-dev.spec
 
       - name: Verify built package digests
         run: rpm --checksig "${HOME}"/rpmbuild/RPMS/noarch/*.rpm "${HOME}"/rpmbuild/SRPMS/*.rpm
 
       - name: Report rpmlint findings for built packages
-        run: rpmlint -r packaging/obs/kci-dev.rpmlintrc "${HOME}"/rpmbuild/RPMS/noarch/*.rpm "${HOME}"/rpmbuild/SRPMS/*.rpm
+        run: rpmlint -r packaging/fedora/kci-dev.rpmlintrc "${HOME}"/rpmbuild/RPMS/noarch/*.rpm "${HOME}"/rpmbuild/SRPMS/*.rpm
 
       - name: Collect artifacts
         run: |
