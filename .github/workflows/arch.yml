@@ -14,13 +14,11 @@ jobs:
     container:
       image: archlinux:base-devel
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Install build dependencies
         run: |
           pacman -Syu --noconfirm
           pacman -S --noconfirm \
+            git \
             python \
             python-build \
             python-installer \
@@ -34,12 +32,31 @@ jobs:
             python-matplotlib \
             namcap
 
-      - name: Update PKGBUILD version from pyproject.toml
-        working-directory: packaging/arch
+      # Install Git before checkout so actions/checkout creates a Git worktree
+      # rather than falling back to a source download without .git metadata.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare PKGBUILD source
         run: |
-          VERSION=$(grep '^version = ' ../../pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" packaging/arch/PKGBUILD
           echo "Building version: ${VERSION}"
+
+          # Release builds use the immutable tag referenced by PKGBUILD. For all
+          # other builds, package the commit checked out by this workflow so PRs
+          # exercise their own source, including before a release tag exists.
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then
+            ARCHIVE="kci-dev-${VERSION}.tar.gz"
+            git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+            git archive --format=tar.gz \
+              --prefix="kci-dev-${VERSION}/" \
+              --output="packaging/arch/${ARCHIVE}" \
+              HEAD
+            sed -i \
+              's|^source=.*|source=("${pkgname}-${pkgver}.tar.gz")|' \
+              packaging/arch/PKGBUILD
+          fi
 
       - name: Validate PKGBUILD
         working-directory: packaging/arch
