@@ -175,7 +175,11 @@ def test_execute_cmdline_raises_click_exception_on_failure():
 
 def test_kcidev_exec_streams_stdout_and_stderr(capsys):
     process = bisect.kcidev_exec(
-        ["sh", "-c", "printf 'standard output\\n'; printf 'error output\\n' >&2; exit 7"]
+        [
+            "sh",
+            "-c",
+            "printf 'standard output\\n'; printf 'error output\\n' >&2; exit 7",
+        ]
     )
 
     output = capsys.readouterr().out
