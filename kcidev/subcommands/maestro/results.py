@@ -137,7 +137,7 @@ def results(
         filter = list(filter) if filter else []
 
         if tree:
-            filter.append(f"data.kernel_revision.tree::{tree}")
+            filter.append(f"data.kernel_revision.tree={tree}")
             logging.debug(f"Added tree filter: {tree}")
         if start_date:
             filter.append(f"created__gte={start_date}")
