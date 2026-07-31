@@ -37,6 +37,7 @@ default_state = {
     "workdir": "",
     "bisect_init": False,
     "next_commit": None,
+    "first_bad": None,
 }
 
 
@@ -87,26 +88,27 @@ def git_exec_getcommit(cmd):
         kci_err(result.stderr)
         kci_err(result.stdout)
         sys.exit(1)
-    lines = result.stdout.split(b"\n")
+    output = result.stdout.decode("utf-8", errors="replace")
+    lines = output.splitlines()
     logging.debug(f"Git output lines: {len(lines)}")
-    if len(lines) < 2:
+    if not lines:
         logging.error(f"Unexpected git output: {lines}")
         kci_err(f"git command answer length failed: {lines}")
         sys.exit(1)
     # is it last bisect?: "is the first bad commit"
-    if "is the first bad commit" in str(lines[1]):
+    if "is the first bad commit" in output:
+        first_bad = output.split()[0]
         logging.info("Bisection complete - found first bad commit")
-        click.secho(f"git command: {lines}", fg="green")
-        # TBD save state somehow?
-        sys.exit(0)
-    re_commit = re.search(r"\[([a-f0-9]+)\]", str(lines[1]))
+        click.secho(f"First bad commit: {first_bad}", fg="green")
+        return first_bad, True
+    re_commit = re.search(r"\[([a-f0-9]+)\]", output)
     if not re_commit:
         logging.error(f"Could not parse commit from git output: {lines}")
         kci_err(f"git command regex failed: {lines}")
         sys.exit(1)
     commit = re_commit.group(1)
     logging.info(f"Next commit to test: {commit}")
-    return commit
+    return commit, False
 
 
 def kcidev_exec(cmd):
@@ -136,10 +138,11 @@ def kcidev_exec(cmd):
 
 def execute_cmdline(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
     try:
-        return subprocess.run(cmd, stdout=stdout, stderr=stderr)
-    except subprocess.CalledProcessError as e:
-        kci_err(f"cmdline failed with exit code {e.returncode}")
-        click.Abort()
+        return subprocess.run(cmd, stdout=stdout, stderr=stderr, check=True)
+    except subprocess.CalledProcessError as exc:
+        raise click.ClickException(
+            f"Command failed with exit code {exc.returncode}: {' '.join(cmd)}"
+        ) from exc
 
 
 def init_bisect(repo, state):
@@ -169,7 +172,7 @@ def init_bisect(repo, state):
     return commit_sha
 
 
-def update_tree(workdir, branch, giturl):
+def update_tree(workdir, branch, giturl, reset=True):
     if not os.path.exists(workdir):
         click.secho(
             "Cloning repository (this might take significant time!)...", fg="green"
@@ -183,8 +186,11 @@ def update_tree(workdir, branch, giturl):
         logging.info(f"Updating existing repository in {workdir}")
         repo = Repo(workdir)
         repo.git.fetch("origin", branch)
-        repo.git.reset("--hard", f"origin/{branch}")
-        logging.info(f"Updated to latest {branch} branch")
+        if reset:
+            repo.git.reset("--hard", f"origin/{branch}")
+            logging.info(f"Updated to latest {branch} branch")
+        else:
+            logging.info("Fetched branch without changing the saved bisection checkout")
     return repo
 
 
@@ -254,14 +260,18 @@ def bisection_loop(state):
         kci_err(f"{' '.join(cmd)}")
         sys.exit(1)
     cmd = ["git", "bisect", bisect_result]
-    commitid = git_exec_getcommit(cmd)
+    commitid, complete = git_exec_getcommit(cmd)
     if not commitid:
         logging.error("Git bisect returned empty commit")
         kci_err("git bisect failed, commit return is empty")
         sys.exit(1)
 
     state["history"].append({commit: bisect_result})
-    state["next_commit"] = commitid
+    if complete:
+        state["first_bad"] = commitid
+        state["next_commit"] = None
+    else:
+        state["next_commit"] = commitid
     logging.info(f"Bisection history updated - {len(state['history'])} commits tested")
     os.chdir(olddir)
     return state
@@ -402,7 +412,9 @@ def bisect(
     else:
         logging.info("Resuming bisection from saved state")
         print_state(state)
-        repo = update_tree(state["workdir"], state["branch"], state["giturl"])
+        repo = update_tree(
+            state["workdir"], state["branch"], state["giturl"], reset=False
+        )
 
     if not state["bisect_init"]:
         logging.info("Initializing git bisect")
@@ -422,6 +434,12 @@ def bisect(
             continue
         state = new_state
         save_state(state, state_file)
+        if state.get("first_bad"):
+            click.secho(
+                f"Bisection complete. First bad commit: {state['first_bad']}",
+                fg="green",
+            )
+            return
 
 
 if __name__ == "__main__":
