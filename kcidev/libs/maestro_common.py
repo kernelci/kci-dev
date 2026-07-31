@@ -60,7 +60,7 @@ def maestro_print_nodes(nodes, field):
             res.append(data)
         else:
             res.append(node)
-        kci_msg(json.dumps(res, sort_keys=True, indent=4))
+    kci_msg(json.dumps(res, sort_keys=True, indent=4))
 
 
 def maestro_get_node(url, nodeid):
