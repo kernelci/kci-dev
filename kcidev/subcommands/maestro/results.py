@@ -8,7 +8,6 @@ import click
 from git import Repo
 
 from kcidev.libs.common import *
-from kcidev.libs.filter_options import add_filter_options
 from kcidev.libs.maestro_common import *
 
 
@@ -74,19 +73,20 @@ Examples:
     help="Print only count of nodes",
 )
 @click.option(
-    "--paginate",
-    is_flag=True,
-    required=False,
+    "--paginate/--no-paginate",
     default=True,
-    help="Set True if pagination is required in the output. Default is True",
+    help="Enable or disable pagination parameters in the API request",
 )
 @click.option(
-    "--verbose",
-    is_flag=True,
+    "--verbose/--no-verbose",
     default=True,
     help="Print results on stdout",
 )
-@add_filter_options
+@click.option(
+    "--start-date",
+    help="Filter results after this date (ISO format: YYYY-MM-DD or full timestamp)",
+)
+@click.option("--end-date", help="Filter results before this date")
 @click.pass_context
 def results(
     ctx,
@@ -97,12 +97,8 @@ def results(
     filter,
     field,
     tree,
-    status,
     start_date,
     end_date,
-    compiler,
-    config,
-    git_branch,
     count,
     paginate,
     verbose,
@@ -111,9 +107,7 @@ def results(
     logging.debug(
         f"Parameters - nodeid: {nodeid}, nodes: {nodes}, limit: {limit}, offset: {offset}"
     )
-    logging.debug(
-        f"Filters - tree: {tree}, status: {status}, dates: {start_date} to {end_date}"
-    )
+    logging.debug(f"Filters - tree: {tree}, dates: {start_date} to {end_date}")
 
     config_data = ctx.obj.get("CFG")
     instance = ctx.obj.get("INSTANCE")
