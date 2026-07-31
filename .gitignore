@@ -2,3 +2,4 @@
 kcidev-src/
 __pycache__/
 poetry.lock
+.tox/
