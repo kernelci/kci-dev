@@ -194,9 +194,10 @@ def test_maestro_watch_jobs_times_out_waiting_for_test_result(monkeypatch):
     monkeypatch.setattr(
         maestro_common, "maestro_retrieve_treeid_nodes", Mock(return_value=nodes)
     )
-    monkeypatch.setattr(maestro_common.time, "sleep", Mock())
+    sleep = Mock()
+    monkeypatch.setattr(maestro_common.time, "sleep", sleep)
     monkeypatch.setattr(
-        maestro_common.time, "time", Mock(side_effect=[100, 100, 161, 161, 161])
+        maestro_common.time, "monotonic", Mock(side_effect=[100, 100, 161])
     )
 
     with pytest.raises(SystemExit) as exc_info:
@@ -205,3 +206,4 @@ def test_maestro_watch_jobs_times_out_waiting_for_test_result(monkeypatch):
         )
 
     assert exc_info.value.code == 2
+    sleep.assert_called_once_with(30)

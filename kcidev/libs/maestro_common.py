@@ -319,14 +319,16 @@ def maestro_watch_jobs(baseurl, token, treeid, job_filter, test, root_node="chec
                 return
             else:
                 if jobs_done_ts is None:
-                    jobs_done_ts = time.time()
+                    jobs_done_ts = time.monotonic()
                     logging.debug("All jobs done, waiting for test results")
                 # if all jobs done, usually test results must be available
                 # max within 60s. Safeguard in case of test node is not available
-                if not test_result and time.time() - jobs_done_ts < 60:
+                test_result_wait = time.monotonic() - jobs_done_ts
+                if not test_result and test_result_wait < 60:
                     logging.debug(
-                        f"Waiting for test results ({int(time.time() - jobs_done_ts)}s elapsed)"
+                        f"Waiting for test results ({int(test_result_wait)}s elapsed)"
                     )
+                    time.sleep(30)
                     continue
 
                 if test_result and test_result == "pass":
