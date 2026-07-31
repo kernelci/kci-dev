@@ -21,8 +21,8 @@ overview of a commit's results.
 def create_server(cfg=None, instance=None, host="127.0.0.1", port=8000):
     server = FastMCP("kci-dev", instructions=SERVER_INSTRUCTIONS, host=host, port=port)
     server._mcp_server.version = kcidev_version
-    tools_dashboard.register_tools(server)
     client = KernelCIClient(cfg=cfg, instance=instance)
+    tools_dashboard.register_tools(server, client)
     icfg = (cfg or {}).get(client.instance) or {}
     tools_maestro.register_tools(
         server, client, icfg.get("api"), icfg.get("pipeline"), icfg.get("token")

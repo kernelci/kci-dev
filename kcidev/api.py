@@ -14,7 +14,7 @@ import click
 from click.testing import CliRunner
 
 from kcidev.libs.dashboard import (
-    configure_dashboard_api,
+    dashboard_api_url,
     dashboard_fetch_boot_issues,
     dashboard_fetch_boots,
     dashboard_fetch_build,
@@ -36,7 +36,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_tests,
     dashboard_fetch_tree_list,
     dashboard_fetch_tree_report,
-    set_dashboard_api,
+    resolve_dashboard_api,
 )
 from kcidev.libs.git_repo import get_folder_repository
 from kcidev.libs.kcidb import (
@@ -127,10 +127,14 @@ class KernelCIClient:
         self.instance = instance or (cfg or {}).get("default_instance")
         self.kcidb_rest_url = kcidb_rest_url
         self.kcidb_token = kcidb_token
-        if dashboard_api:
-            set_dashboard_api(dashboard_api)
-        else:
-            configure_dashboard_api(cfg, self.instance)
+        self.dashboard_api = resolve_dashboard_api(
+            cfg, self.instance, override=dashboard_api
+        )
+
+    def _dashboard_request(self, action, func, *args):
+        """Run one dashboard request with this client's endpoint."""
+        with dashboard_api_url(self.dashboard_api):
+            return _as_library_error(action, func, *args)
 
     def run_command(self, args, *, catch_exceptions=True, env=None, input=None):
         """Run a kci-dev subcommand using the same command tree as the CLI."""
@@ -253,7 +257,7 @@ class KernelCIClient:
         return self.submit_kcidb(self.build_kcidb_build_submission(**kwargs))
 
     def get_summary(self, origin, giturl, branch, commit, arch=None):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard summary request failed",
             dashboard_fetch_summary,
             origin,
@@ -275,7 +279,7 @@ class KernelCIClient:
         start_date=None,
         end_date=None,
     ):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard builds request failed",
             dashboard_fetch_builds,
             origin,
@@ -301,7 +305,7 @@ class KernelCIClient:
         end_date=None,
         boot_origin=None,
     ):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard boots request failed",
             dashboard_fetch_boots,
             origin,
@@ -327,7 +331,7 @@ class KernelCIClient:
         start_date=None,
         end_date=None,
     ):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard tests request failed",
             dashboard_fetch_tests,
             origin,
@@ -342,7 +346,7 @@ class KernelCIClient:
         )
 
     def get_commits_history(self, origin, giturl, branch, commit):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard history request failed",
             dashboard_fetch_commits_history,
             origin,
@@ -353,17 +357,17 @@ class KernelCIClient:
         )
 
     def get_build(self, build_id):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard build request failed", dashboard_fetch_build, build_id, True
         )
 
     def get_test(self, test_id):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard test request failed", dashboard_fetch_test, test_id, True
         )
 
     def get_tree_list(self, origin, days=7):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard tree list request failed",
             dashboard_fetch_tree_list,
             origin,
@@ -372,7 +376,7 @@ class KernelCIClient:
         )
 
     def get_hardware_list(self, origin):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard hardware list request failed",
             dashboard_fetch_hardware_list,
             origin,
@@ -380,7 +384,7 @@ class KernelCIClient:
         )
 
     def get_hardware_summary(self, name, origin):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard hardware summary request failed",
             dashboard_fetch_hardware_summary,
             name,
@@ -389,7 +393,7 @@ class KernelCIClient:
         )
 
     def get_hardware_boots(self, name, origin):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard hardware boots request failed",
             dashboard_fetch_hardware_boots,
             name,
@@ -398,7 +402,7 @@ class KernelCIClient:
         )
 
     def get_hardware_builds(self, name, origin):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard hardware builds request failed",
             dashboard_fetch_hardware_builds,
             name,
@@ -407,7 +411,7 @@ class KernelCIClient:
         )
 
     def get_hardware_tests(self, name, origin):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard hardware tests request failed",
             dashboard_fetch_hardware_tests,
             name,
@@ -416,7 +420,7 @@ class KernelCIClient:
         )
 
     def get_build_issues(self, build_id):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard build issues request failed",
             dashboard_fetch_build_issues,
             build_id,
@@ -425,7 +429,7 @@ class KernelCIClient:
         )
 
     def get_boot_issues(self, test_id):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard boot issues request failed",
             dashboard_fetch_boot_issues,
             test_id,
@@ -434,7 +438,7 @@ class KernelCIClient:
         )
 
     def get_issue_list(self, origin=None, days=7):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard issue list request failed",
             dashboard_fetch_issue_list,
             origin,
@@ -443,12 +447,12 @@ class KernelCIClient:
         )
 
     def get_issue(self, issue_id):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard issue request failed", dashboard_fetch_issue, issue_id, True
         )
 
     def get_issue_builds(self, issue_id, origin=None):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard issue builds request failed",
             dashboard_fetch_issue_builds,
             origin,
@@ -457,7 +461,7 @@ class KernelCIClient:
         )
 
     def get_issue_tests(self, issue_id, origin=None):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard issue tests request failed",
             dashboard_fetch_issue_tests,
             origin,
@@ -466,7 +470,7 @@ class KernelCIClient:
         )
 
     def get_issues_extra(self, issues):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard issues extra request failed",
             dashboard_fetch_issues_extra,
             issues,
@@ -483,7 +487,7 @@ class KernelCIClient:
         max_age_in_hours=None,
         min_age_in_hours=None,
     ):
-        return _as_library_error(
+        return self._dashboard_request(
             "Dashboard tree report request failed",
             dashboard_fetch_tree_report,
             origin,

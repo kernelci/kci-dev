@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from contextvars import ContextVar
+from functools import wraps
+
 from kcidev.api import KciDevError, KernelCIClient
 from kcidev.libs.filters import StatusFilter
 from kcidev.mcp.errors import tool_errors
 
-_client = KernelCIClient()
+_active_client = ContextVar("dashboard_tool_client", default=None)
+
+
+def _current_client():
+    return _active_client.get() or KernelCIClient()
 
 
 def _page(data, key, status, limit, offset, fields=None):
@@ -34,7 +41,7 @@ def list_trees(origin: str = "maestro", days: int = 7):
     the given origin over the last N days. Use this first to discover
     valid giturl/branch/commit values for the other query tools.
     """
-    return _client.get_tree_list(origin, days)
+    return _current_client().get_tree_list(origin, days)
 
 
 _COMPACT_SUMMARY_KEYS = ("status", "architectures", "issues", "failed_platforms")
@@ -55,7 +62,7 @@ def get_summary(
     detail=True for the full dashboard summary (much larger). Use
     list_trees to find giturl, branch and commit values.
     """
-    data = _client.get_summary(origin, giturl, branch, commit, arch)
+    data = _current_client().get_summary(origin, giturl, branch, commit, arch)
     if detail or not isinstance(data, dict):
         return data
     summary = data.get("summary")
@@ -83,7 +90,7 @@ def list_commits(giturl: str, branch: str, commit: str, origin: str = "maestro")
     hash from list_trees; other commits have no history record.
     """
     try:
-        commits = _client.get_commits_history(origin, giturl, branch, commit)
+        commits = _current_client().get_commits_history(origin, giturl, branch, commit)
     except KciDevError as e:
         if "not found" in str(e).lower():
             raise KciDevError(
@@ -121,7 +128,7 @@ def list_builds(
     fields projects each entry to only those keys.
     Returns build entries with ids usable with get_build.
     """
-    data = _client.get_builds(
+    data = _current_client().get_builds(
         origin, giturl, branch, commit, arch, tree, start_date, end_date
     )
     return _page(data, "builds", status, limit, offset, fields)
@@ -152,7 +159,7 @@ def list_boots(
     fields projects each entry to only those keys.
     Returns boot entries with ids usable with get_test.
     """
-    data = _client.get_boots(
+    data = _current_client().get_boots(
         origin, giturl, branch, commit, arch, tree, start_date, end_date, boot_origin
     )
     return _page(data, "boots", status, limit, offset, fields)
@@ -183,7 +190,7 @@ def list_tests(
     each entry to only those keys.
     Returns test entries with ids usable with get_test.
     """
-    data = _client.get_tests(
+    data = _current_client().get_tests(
         origin, giturl, branch, commit, arch, tree, start_date, end_date
     )
     return _page(data, "tests", status, limit, offset, fields)
@@ -196,7 +203,7 @@ def get_build(build_id: str):
     Build ids look like 'maestro:<hex>'. Returns config, compiler, logs
     and status for the build.
     """
-    return _client.get_build(build_id)
+    return _current_client().get_build(build_id)
 
 
 @tool_errors
@@ -206,7 +213,7 @@ def get_test(test_id: str):
     Test ids look like 'maestro:<hex>'. Returns status, logs, environment
     and misc data for the test.
     """
-    return _client.get_test(test_id)
+    return _current_client().get_test(test_id)
 
 
 @tool_errors
@@ -215,7 +222,7 @@ def list_hardware(origin: str = "maestro"):
 
     Returns platform names usable with get_hardware_summary.
     """
-    return _client.get_hardware_list(origin)
+    return _current_client().get_hardware_list(origin)
 
 
 @tool_errors
@@ -224,7 +231,7 @@ def get_hardware_summary(name: str, origin: str = "maestro"):
 
     Covers the last 7 days. Use list_hardware to find platform names.
     """
-    return _client.get_hardware_summary(name, origin)
+    return _current_client().get_hardware_summary(name, origin)
 
 
 @tool_errors
@@ -234,7 +241,7 @@ def list_issues(origin: str = "maestro", days: int = 7):
     Returns issue ids and descriptions for the last N days. Issue ids
     are usable with get_issue, get_issue_builds and get_issue_tests.
     """
-    return _client.get_issue_list(origin, days)
+    return _current_client().get_issue_list(origin, days)
 
 
 @tool_errors
@@ -243,7 +250,7 @@ def get_issue(issue_id: str):
 
     Issue ids look like 'maestro:<hex>'.
     """
-    return _client.get_issue(issue_id)
+    return _current_client().get_issue(issue_id)
 
 
 @tool_errors
@@ -261,7 +268,7 @@ def get_issue_builds(
     limit/offset pagination; the response carries 'total' and 'matched'
     counts; fields projects each entry to only those keys.
     """
-    data = _client.get_issue_builds(issue_id, origin)
+    data = _current_client().get_issue_builds(issue_id, origin)
     return _page(data, "builds", status, limit, offset, fields)
 
 
@@ -280,7 +287,7 @@ def get_issue_tests(
     limit/offset pagination; the response carries 'total' and 'matched'
     counts; fields projects each entry to only those keys.
     """
-    data = _client.get_issue_tests(issue_id, origin)
+    data = _current_client().get_issue_tests(issue_id, origin)
     return _page(data, "tests", status, limit, offset, fields)
 
 
@@ -302,8 +309,17 @@ READ_ONLY_TOOLS = (
 )
 
 
-def register_tools(server):
+def register_tools(server, client):
     from mcp.types import ToolAnnotations
 
     for tool in READ_ONLY_TOOLS:
-        server.tool(annotations=ToolAnnotations(readOnlyHint=True))(tool)
+
+        @wraps(tool)
+        def bound_tool(*args, __tool=tool, **kwargs):
+            token = _active_client.set(client)
+            try:
+                return __tool(*args, **kwargs)
+            finally:
+                _active_client.reset(token)
+
+        server.tool(annotations=ToolAnnotations(readOnlyHint=True))(bound_tool)

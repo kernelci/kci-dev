@@ -113,9 +113,10 @@ def test_kernelci_client_sets_dashboard_api_from_config(monkeypatch):
         "internal": {"dashboard_api": "https://internal.example.com/api/"},
     }
 
-    KernelCIClient(cfg=cfg)
+    client = KernelCIClient(cfg=cfg)
 
-    assert dashboard.get_dashboard_api() == "https://internal.example.com/api/"
+    assert client.dashboard_api == "https://internal.example.com/api/"
+    assert dashboard.get_dashboard_api() == dashboard.DASHBOARD_API_DEFAULT
 
 
 def test_kernelci_client_dashboard_api_argument_wins(monkeypatch):
@@ -127,6 +128,31 @@ def test_kernelci_client_dashboard_api_argument_wins(monkeypatch):
         "internal": {"dashboard_api": "https://instance.example.com/api/"},
     }
 
-    KernelCIClient(cfg=cfg, dashboard_api="https://override.example.com/api/")
+    client = KernelCIClient(cfg=cfg, dashboard_api="https://override.example.com/api/")
 
-    assert dashboard.get_dashboard_api() == "https://override.example.com/api/"
+    assert client.dashboard_api == "https://override.example.com/api/"
+    assert dashboard.get_dashboard_api() == dashboard.DASHBOARD_API_DEFAULT
+
+
+def test_kernelci_clients_keep_independent_dashboard_endpoints(monkeypatch):
+    from kcidev.api import KernelCIClient
+
+    response = Mock(status_code=200)
+    response.json.return_value = {"id": "build"}
+    get = Mock(return_value=response)
+    monkeypatch.setattr(dashboard.kcidev_session, "get", get)
+
+    first = KernelCIClient(dashboard_api="https://one.example/api")
+    second = KernelCIClient()
+    third = KernelCIClient(dashboard_api="https://three.example/api")
+
+    first.get_build("one")
+    second.get_build("default")
+    third.get_build("three")
+    first.get_build("one-again")
+
+    urls = [call.args[0] for call in get.call_args_list]
+    assert urls[0].startswith("https://one.example/api/")
+    assert urls[1].startswith(dashboard.DASHBOARD_API_DEFAULT)
+    assert urls[2].startswith("https://three.example/api/")
+    assert urls[3].startswith("https://one.example/api/")
