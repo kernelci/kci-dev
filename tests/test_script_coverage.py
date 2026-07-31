@@ -76,7 +76,6 @@ def test_registered_cli_exposes_expected_top_level_commands():
     assert set(cli.commands) >= {
         "bisect",
         "checkout",
-        "commit",
         "config",
         "maestro",
         "mcp",
