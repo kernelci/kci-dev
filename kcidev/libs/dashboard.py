@@ -137,12 +137,12 @@ def _dashboard_request(func):
 
 @_dashboard_request
 def dashboard_api_post(endpoint, params, use_json, body, max_retries=3):
-    return kcidev_session.post(endpoint, json=body)
+    return kcidev_session.post(endpoint, json=body, timeout=HTTP_TIMEOUT)
 
 
 @_dashboard_request
 def dashboard_api_fetch(endpoint, params, use_json, max_retries=3, error_verbose=True):
-    return kcidev_session.get(endpoint)
+    return kcidev_session.get(endpoint, timeout=HTTP_TIMEOUT)
 
 
 def dashboard_fetch_summary(origin, giturl, branch, commit, arch, use_json):

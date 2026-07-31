@@ -361,7 +361,9 @@ def send_jobretry(baseurl, jobid, token):
 
     try:
         logging.debug("Sending POST request for job retry")
-        response = kcidev_session.post(url, headers=headers, data=jdata)
+        response = kcidev_session.post(
+            url, headers=headers, data=jdata, timeout=HTTP_TIMEOUT
+        )
         logging.debug(f"Response status: {response.status_code}")
     except requests.exceptions.RequestException as e:
         logging.error(f"Failed to send job retry request: {e}")
