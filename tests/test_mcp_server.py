@@ -111,6 +111,26 @@ def test_call_tool_success(monkeypatch):
     assert "maestro:b1" in result.content[0].text
 
 
+def test_servers_keep_independent_dashboard_endpoints(monkeypatch):
+    response = Mock(status_code=200)
+    response.json.return_value = {"id": "maestro:b1"}
+    get = Mock(return_value=response)
+    monkeypatch.setattr(dashboard.kcidev_session, "get", get)
+    first_cfg = {"dashboard_api": "https://one.example/api"}
+    second_cfg = {"dashboard_api": "https://two.example/api"}
+
+    first = create_server(first_cfg)
+    second = create_server(second_cfg)
+    _call_tool(first, "get_build", {"build_id": "maestro:b1"})
+    _call_tool(second, "get_build", {"build_id": "maestro:b1"})
+    _call_tool(first, "get_build", {"build_id": "maestro:b1"})
+
+    urls = [call.args[0] for call in get.call_args_list]
+    assert urls[0].startswith("https://one.example/api/")
+    assert urls[1].startswith("https://two.example/api/")
+    assert urls[2].startswith("https://one.example/api/")
+
+
 def test_call_tool_failure_is_tool_error_not_crash(monkeypatch):
     monkeypatch.setattr(
         dashboard.kcidev_session,

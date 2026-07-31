@@ -2,6 +2,8 @@ import json
 import logging
 import time
 import urllib
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timedelta
 from functools import wraps
 from urllib.parse import urlparse
@@ -12,21 +14,25 @@ from kcidev.libs.common import *
 
 DASHBOARD_API_DEFAULT = "https://dashboard.kernelci.org/api/"
 _dashboard_api = DASHBOARD_API_DEFAULT
+_dashboard_api_override = ContextVar("dashboard_api_override", default=None)
+
+
+def normalize_dashboard_api(url):
+    """Return a dashboard API base URL with the required trailing slash."""
+    return url if url.endswith("/") else url + "/"
 
 
 def set_dashboard_api(url):
     global _dashboard_api
-    if not url.endswith("/"):
-        url += "/"
-    _dashboard_api = url
+    _dashboard_api = normalize_dashboard_api(url)
 
 
 def get_dashboard_api():
-    return _dashboard_api
+    return _dashboard_api_override.get() or _dashboard_api
 
 
 def get_dashboard_url():
-    parsed = urlparse(_dashboard_api)
+    parsed = urlparse(get_dashboard_api())
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
@@ -39,6 +45,25 @@ def configure_dashboard_api(cfg, instance):
     url = icfg.get("dashboard_api") or cfg.get("dashboard_api")
     if url:
         set_dashboard_api(url)
+
+
+def resolve_dashboard_api(cfg=None, instance=None, override=None):
+    """Resolve a client dashboard URL without changing CLI global state."""
+    icfg = (cfg or {}).get(instance) if instance else None
+    if not isinstance(icfg, dict):
+        icfg = {}
+    url = override or icfg.get("dashboard_api") or (cfg or {}).get("dashboard_api")
+    return normalize_dashboard_api(url or DASHBOARD_API_DEFAULT)
+
+
+@contextmanager
+def dashboard_api_url(url):
+    """Use ``url`` for dashboard calls in the current execution context."""
+    token = _dashboard_api_override.set(url)
+    try:
+        yield
+    finally:
+        _dashboard_api_override.reset(token)
 
 
 def _dashboard_request(func):
