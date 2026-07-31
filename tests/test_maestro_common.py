@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import click
 import pytest
+import requests
 
 from kcidev.libs import maestro_common
 
@@ -32,6 +33,25 @@ def test_pipeline_url_uses_the_requested_endpoint(baseurl, endpoint, expected):
     assert maestro_common._pipeline_url(baseurl, endpoint) == expected
 
 
+@pytest.mark.parametrize(
+    ("baseurl", "path", "expected"),
+    [
+        (
+            "https://api.example.org",
+            "latest/node/n1",
+            "https://api.example.org/latest/node/n1",
+        ),
+        (
+            "https://api.example.org/",
+            "/latest/node/n1",
+            "https://api.example.org/latest/node/n1",
+        ),
+    ],
+)
+def test_api_url_normalizes_slashes(baseurl, path, expected):
+    assert maestro_common._api_url(baseurl, path) == expected
+
+
 def test_maestro_get_node_missing_raises_clean_error(monkeypatch):
     response = Mock(status_code=200)
     response.json.return_value = None
@@ -40,6 +60,74 @@ def test_maestro_get_node_missing_raises_clean_error(monkeypatch):
     )
     with pytest.raises(click.ClickException, match="not found"):
         maestro_common.maestro_get_node("https://api.example.org/", "0" * 24)
+
+
+def test_maestro_get_node_normalizes_url_and_sets_timeout(monkeypatch):
+    get = Mock(return_value=_response(json_data={"id": "n1"}))
+    monkeypatch.setattr(maestro_common.kcidev_session, "get", get)
+
+    assert maestro_common.maestro_get_node("https://api.example.org", "n1") == {
+        "id": "n1"
+    }
+    get.assert_called_once_with(
+        "https://api.example.org/latest/node/n1",
+        headers={"Content-Type": "application/json; charset=utf-8"},
+        timeout=30,
+    )
+
+
+def test_maestro_get_nodes_uses_request_query_parameters(monkeypatch):
+    get = Mock(return_value=_response(json_data=[]))
+    monkeypatch.setattr(maestro_common.kcidev_session, "get", get)
+
+    maestro_common.maestro_get_nodes(
+        "https://api.example.org", 25, 10, ["state=done", "name=a=b"], True
+    )
+
+    get.assert_called_once_with(
+        "https://api.example.org/latest/nodes/fast",
+        headers={"Content-Type": "application/json; charset=utf-8"},
+        params=[("limit", 25), ("offset", 10), ("state", "done"), ("name", "a=b")],
+        timeout=30,
+    )
+
+
+def test_maestro_retrieve_tree_nodes_normalizes_url_and_uses_params(monkeypatch):
+    get = Mock(return_value=_response(json_data=[]))
+    monkeypatch.setattr(maestro_common.kcidev_session, "get", get)
+
+    assert (
+        maestro_common.maestro_retrieve_treeid_nodes(
+            "https://api.example.org", "token", "tree-1"
+        )
+        == []
+    )
+    get.assert_called_once_with(
+        "https://api.example.org/latest/nodes/fast",
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": "token",
+        },
+        params={"treeid": "tree-1"},
+        timeout=30,
+    )
+
+
+def test_maestro_get_node_plain_text_http_error_is_clean(monkeypatch):
+    response = Mock(status_code=500, url="https://api.example.org/latest/node/n1")
+    response.text = "upstream unavailable"
+    response.json.side_effect = requests.exceptions.JSONDecodeError("bad", "", 0)
+    response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        "server error", response=response
+    )
+    monkeypatch.setattr(
+        maestro_common.kcidev_session, "get", Mock(return_value=response)
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        maestro_common.maestro_get_node("https://api.example.org", "n1")
+
+    assert exc_info.value.code == 2
 
 
 def test_maestro_print_nodes_emits_one_json_document(capsys):

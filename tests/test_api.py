@@ -61,16 +61,37 @@ def test_get_node_http_error_raises_library_error(monkeypatch):
         _client().get_node("n1")
 
 
+def test_get_node_plain_text_http_error_raises_library_error(monkeypatch):
+    response = Mock(
+        status_code=503,
+        url="https://api.example.org/latest/node/n1",
+        text="service unavailable",
+    )
+    response.json.side_effect = requests.exceptions.JSONDecodeError("bad", "", 0)
+    response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        response=response
+    )
+    monkeypatch.setattr(
+        maestro_common.kcidev_session, "get", Mock(return_value=response)
+    )
+
+    with pytest.raises(KciDevError, match="Maestro node request failed"):
+        _client().get_node("n1")
+
+
 def test_get_nodes_passes_pagination_and_filters(monkeypatch):
     response = Mock(status_code=200)
     response.json.return_value = []
     get = Mock(return_value=response)
     monkeypatch.setattr(maestro_common.kcidev_session, "get", get)
     _client().get_nodes(limit=5, offset=10, filters=["name=checkout"])
-    url = get.call_args[0][0]
-    assert "limit=5" in url
-    assert "offset=10" in url
-    assert "name=checkout" in url
+    assert get.call_args[0][0] == "https://api.example.org/latest/nodes/fast"
+    assert get.call_args.kwargs["params"] == [
+        ("limit", 5),
+        ("offset", 10),
+        ("name", "checkout"),
+    ]
+    assert get.call_args.kwargs["timeout"] == 30
 
 
 def test_retry_job_posts_with_token(monkeypatch):

@@ -18,10 +18,14 @@ PIPELINE_ENDPOINTS = {
 }
 
 
+def _api_url(base_url, path):
+    """Join an API base URL and path without requiring a trailing slash."""
+    return f"{base_url.rstrip('/')}/{path.lstrip('/')}"
+
+
 def _pipeline_url(baseurl, endpoint):
     """Return the URL for a named Pipeline endpoint."""
-    path = PIPELINE_ENDPOINTS[endpoint]
-    return f"{baseurl.rstrip('/')}/{path}"
+    return _api_url(baseurl, PIPELINE_ENDPOINTS[endpoint])
 
 
 def maestro_print_api_call(host, data=None):
@@ -38,8 +42,8 @@ def maestro_api_error(response):
     try:
         error_data = response.json()
         logging.error(f"API error response: {json.dumps(error_data, indent=2)}")
-        kci_err(response.json())
-    except json.decoder.JSONDecodeError:
+        kci_err(error_data)
+    except (json.decoder.JSONDecodeError, requests.exceptions.JSONDecodeError):
         logging.warning(f"No JSON in error response: {response.text}")
         kci_warning(f"No JSON response. Plain text: {response.text}")
     except Exception as e:
@@ -67,18 +71,18 @@ def maestro_get_node(url, nodeid):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    url = url + "latest/node/" + nodeid
+    url = _api_url(url, f"latest/node/{nodeid}")
     logging.info(f"Fetching Maestro node: {nodeid}")
     logging.debug(f"Node URL: {url}")
     maestro_print_api_call(url)
 
     try:
-        response = kcidev_session.get(url, headers=headers)
+        response = kcidev_session.get(url, headers=headers, timeout=30)
         logging.debug(f"Node request status: {response.status_code}")
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
         logging.error(f"HTTP error fetching node {nodeid}: {ex}")
-        kci_err(ex.response.json().get("detail"))
+        maestro_api_error(ex.response)
         sys.exit(errno.ENOENT)
     except Exception as ex:
         logging.error(f"Unexpected error fetching node {nodeid}: {ex}")
@@ -99,34 +103,26 @@ def maestro_get_nodes(url, limit, offset, filter, paginate):
         "Content-Type": "application/json; charset=utf-8",
     }
 
+    url = _api_url(url, "latest/nodes/fast")
+    params = []
     if paginate:
-        url = url + "latest/nodes/fast?limit=" + str(limit) + "&offset=" + str(offset)
+        params.extend((("limit", limit), ("offset", offset)))
         logging.info(f"Fetching Maestro nodes - limit: {limit}, offset: {offset}")
-        if filter:
-            for f in filter:
-                logging.debug(f"Applying filters: {filter}")
-                # TBD: We need to add translate filter to API
-                # if we need anything more complex than eq(=)
-                url = url + "&" + f
-
-    else:
-        url = url + "latest/nodes/fast"
-        if filter:
-            url = url + "?"
-            for f in filter:
-                # TBD: We need to add translate filter to API
-                # if we need anything more complex than eq(=)
-                url = url + "&" + f
+    if filter:
+        logging.debug(f"Applying filters: {filter}")
+        # TBD: We need to translate filters if the API supports operators
+        # more complex than equality.
+        params.extend(tuple(f.split("=", 1)) for f in filter)
     logging.debug(f"Full nodes URL: {url}")
     maestro_print_api_call(url)
 
     try:
-        response = kcidev_session.get(url, headers=headers)
+        response = kcidev_session.get(url, headers=headers, params=params, timeout=30)
         logging.debug(f"Nodes request status: {response.status_code}")
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
         logging.error(f"HTTP error fetching nodes: {ex}")
-        kci_err(ex.response.json().get("detail"))
+        maestro_api_error(ex.response)
         sys.exit(errno.ENOENT)
     except Exception as ex:
         logging.error(f"Unexpected error fetching nodes: {ex}")
@@ -173,7 +169,7 @@ def maestro_check_node(node, root_node="checkout"):
 
 
 def maestro_retrieve_treeid_nodes(baseurl, token, treeid):
-    url = baseurl + "latest/nodes/fast?treeid=" + treeid
+    url = _api_url(baseurl, "latest/nodes/fast")
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Authorization": f"{token}",
@@ -183,7 +179,9 @@ def maestro_retrieve_treeid_nodes(baseurl, token, treeid):
     logging.debug(f"Tree nodes URL: {url}")
 
     try:
-        response = kcidev_session.get(url, headers=headers, timeout=30)
+        response = kcidev_session.get(
+            url, headers=headers, params={"treeid": treeid}, timeout=30
+        )
         logging.debug(f"Tree nodes request status: {response.status_code}")
     except requests.exceptions.RequestException as e:
         logging.warning(f"Request exception retrieving tree nodes: {e}")
