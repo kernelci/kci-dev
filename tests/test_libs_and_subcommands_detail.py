@@ -78,6 +78,84 @@ def test_bisect_state_round_trip(tmp_path):
     assert bisect.load_state(str(path)) == state
 
 
+def _commit_file(repo, name, contents):
+    (repo / name).write_text(contents, encoding="utf-8")
+    subprocess.run(["git", "add", name], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", contents.strip()], cwd=repo, check=True)
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _init_git_repo(repo):
+    subprocess.run(
+        ["git", "init", "-b", "main", str(repo)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.org"], cwd=repo, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, check=True)
+
+
+def test_git_exec_getcommit_detects_completed_real_bisect(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+    good = _commit_file(repo, "one", "one\n")
+    first_bad = _commit_file(repo, "two", "two\n")
+    bad = _commit_file(repo, "three", "three\n")
+    subprocess.run(["git", "bisect", "start", bad, good], cwd=repo, check=True)
+    monkeypatch.chdir(repo)
+
+    commit, complete = bisect.git_exec_getcommit(["git", "bisect", "bad"])
+
+    assert complete is True
+    assert commit == first_bad
+
+
+def test_execute_cmdline_raises_click_exception_on_failure():
+    with pytest.raises(click.ClickException, match="exit code 7"):
+        bisect.execute_cmdline(
+            ["sh", "-c", "exit 7"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+
+def test_update_tree_preserves_bisect_commit_when_resuming(tmp_path):
+    origin = tmp_path / "origin"
+    origin.mkdir()
+    _init_git_repo(origin)
+    good = _commit_file(origin, "one", "one\n")
+    _commit_file(origin, "two", "two\n")
+    bad = _commit_file(origin, "three", "three\n")
+    worktree = tmp_path / "worktree"
+    subprocess.run(
+        ["git", "clone", "--branch", "main", str(origin), str(worktree)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "bisect", "start", bad, good], cwd=worktree, check=True)
+    saved_next_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=worktree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    repo = bisect.update_tree(str(worktree), "main", str(origin), reset=False)
+
+    assert repo.head.commit.hexsha == saved_next_commit
+    assert saved_next_commit != bad
+
+
 def test_commit_find_diff_returns_latest_patch(tmp_path):
     subprocess.run(
         ["git", "init", "-b", "master", str(tmp_path)],
