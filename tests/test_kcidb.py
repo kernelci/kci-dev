@@ -288,10 +288,10 @@ def test_public_api_can_run_subcommand_help(tmp_path):
 
     settings = tmp_path / ".kci-dev.toml"
     add_config(settings)
-    result = run_command(["--settings", str(settings), "commit", "--help"])
+    result = run_command(["--settings", str(settings), "patchset", "--help"])
 
     assert result.exit_code == 0
-    assert "Test local commits" in result.output
+    assert "Test patches on top of an existing KernelCI checkout" in result.output
 
 
 def test_public_client_can_run_nested_subcommand_help(tmp_path):

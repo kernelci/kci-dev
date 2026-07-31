@@ -30,23 +30,12 @@ def test_kcidev_help():
     assert result.returncode == 0
 
 
-def test_kcidev_commit_help(kcidev_config):
-    command = [
-        "poetry",
-        "run",
-        "kci-dev",
-        "--settings",
-        kcidev_config,
-        "commit",
-        "--help",
-    ]
+def test_kcidev_commit_is_not_advertised():
+    command = ["poetry", "run", "kci-dev", "--help"]
     result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
+
     assert result.returncode == 0
+    assert not re.search(r"^\s+commit\s", result.stdout, re.MULTILINE)
 
 
 def test_kcidev_results_help(kcidev_config):
@@ -162,65 +151,13 @@ def test_create_repo():
     r.index.commit("test")
 
 
-def test_kcidev_commit(kcidev_config):
-    command = [
-        "poetry",
-        "run",
-        "kci-dev",
-        "--settings",
-        kcidev_config,
-        "--instance",
-        "staging",
-        "commit",
-        "--repository",
-        "linux-next",
-        "--origin",
-        "master",
-        "--branch",
-        "test",
-        "--path",
-        ".",
-    ]
-    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    print("returncode: " + str(result.returncode))
-    print("#### stdout ####")
-    print(result.stdout)
-    print("#### stderr ####")
-    print(result.stderr)
-    assert result.returncode == 1
-    assert "commit command is not implemented" in result.stderr
-    assert "kci-dev patchset" in result.stderr
-
-
-def test_kcidev_commit_does_not_expose_token(tmp_path):
-    token = "release-blocker-secret-token"
-    settings = tmp_path / "kci-dev.toml"
-    settings.write_text(
-        'default_instance = "staging"\n'
-        "[staging]\n"
-        'pipeline = "https://pipeline.example.org/"\n'
-        'api = "https://api.example.org/"\n'
-        f'token = "{token}"\n',
-        encoding="utf-8",
-    )
-
-    command = [
-        "poetry",
-        "run",
-        "kci-dev",
-        "--settings",
-        settings,
-        "--instance",
-        "staging",
-        "--debug",
-        "commit",
-    ]
+def test_kcidev_commit_is_rejected_without_requiring_config():
+    command = ["poetry", "run", "kci-dev", "commit"]
     result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
 
-    assert result.returncode == 1
-    assert "commit command is not implemented" in result.stderr
-    assert token not in result.stdout
-    assert token not in result.stderr
+    assert result.returncode == 2
+    assert "No such command 'commit'" in result.stderr
+    assert "No instance defined" not in result.stderr
 
 
 def test_kcidev_results_summary_history_help():

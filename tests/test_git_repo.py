@@ -1,8 +1,15 @@
+import os
 import subprocess
 
+import click
 import pytest
 
-from kcidev.libs.git_repo import get_repository_url, repository_url_cleaner
+from kcidev.libs.git_repo import (
+    get_folder_repository,
+    get_repository_url,
+    is_inside_work_tree,
+    repository_url_cleaner,
+)
 
 
 @pytest.mark.parametrize(
@@ -63,3 +70,23 @@ def test_get_repository_url_from_linked_worktree(tmp_path):
 
     assert (worktree / ".git").is_file()
     assert get_repository_url(worktree) == "https://github.com/kernelci/kci-dev.git"
+
+
+def test_bare_repository_has_no_work_tree(tmp_path, monkeypatch, capsys):
+    repository = tmp_path / "repository.git"
+    subprocess.run(
+        ["git", "init", "--bare", str(repository)], check=True, capture_output=True
+    )
+    original_folder = os.getcwd()
+    monkeypatch.chdir(repository)
+
+    assert is_inside_work_tree() is False
+    with pytest.raises(click.Abort):
+        get_folder_repository(repository, None)
+
+    assert os.getcwd() == str(repository)
+    assert (
+        "The selected repository is bare and has no working tree."
+        in capsys.readouterr().err
+    )
+    os.chdir(original_folder)

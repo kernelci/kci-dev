@@ -20,7 +20,21 @@ def test_dashboard_api_fetch_retries_retryable_status(monkeypatch):
 
     assert result == {"ok": True}
     assert get.call_count == 2
+    assert all(
+        call.kwargs["timeout"] == dashboard.HTTP_TIMEOUT for call in get.call_args_list
+    )
     sleep.assert_called_once_with(2)
+
+
+def test_dashboard_api_post_uses_default_timeout(monkeypatch):
+    response = Mock(status_code=200)
+    response.json.return_value = {"ok": True}
+    post = Mock(return_value=response)
+    monkeypatch.setattr(dashboard.kcidev_session, "post", post)
+
+    dashboard.dashboard_api_post("issue/", {}, False, {"id": "issue"})
+
+    assert post.call_args.kwargs["timeout"] == dashboard.HTTP_TIMEOUT
 
 
 def test_dashboard_api_defaults_to_production():

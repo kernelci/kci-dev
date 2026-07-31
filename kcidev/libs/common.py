@@ -23,6 +23,9 @@ except PackageNotFoundError:
 kcidev_session = requests.Session()
 kcidev_session.headers["User-Agent"] = f"kci-dev/{kcidev_version}"
 
+# Default connect and read timeouts for HTTP operations.
+HTTP_TIMEOUT = (10, 60)
+
 
 def load_toml(settings, subcommand):
     fname = "kci-dev.toml"

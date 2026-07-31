@@ -10,7 +10,6 @@ from kcidev.libs.dashboard import configure_dashboard_api
 from kcidev.subcommands import (
     bisect,
     checkout,
-    commit,
     config,
     maestro,
     mcp,
@@ -70,7 +69,6 @@ def register_commands(command_group=None):
     command_group = command_group or cli
     command_group.add_command(bisect.bisect)
     command_group.add_command(checkout.checkout)
-    command_group.add_command(commit.commit)
     command_group.add_command(config.config)
     command_group.add_command(maestro.maestro)
     command_group.add_command(mcp.mcp)

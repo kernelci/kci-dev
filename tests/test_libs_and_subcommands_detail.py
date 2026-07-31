@@ -9,8 +9,8 @@ import click
 import pytest
 from click.testing import CliRunner
 
-from kcidev.libs import files, git_repo, job_filters
-from kcidev.libs.common import config_path, load_toml
+from kcidev.libs import files, git_repo, job_filters, maestro_common
+from kcidev.libs.common import HTTP_TIMEOUT, config_path, load_toml
 from kcidev.subcommands import bisect, checkout, commit
 from kcidev.subcommands.config import add_config, check_configuration, config
 from kcidev.subcommands.mcp import mcp
@@ -316,6 +316,19 @@ def test_files_download_logs_to_file_decompresses_and_sanitizes(tmp_path, monkey
 
     assert url == f"file://{tmp_path / 'badnamelog.txt'}"
     assert (tmp_path / "badnamelog.txt").read_bytes() == b"boot log\n"
+    assert files.kcidev_session.get.call_args.kwargs["timeout"] == HTTP_TIMEOUT
+
+
+def test_send_jobretry_uses_default_timeout(monkeypatch):
+    response = Mock(status_code=200)
+    response.json.return_value = {"message": "retry queued"}
+    post = Mock(return_value=response)
+    monkeypatch.setattr(maestro_common.kcidev_session, "post", post)
+
+    result = maestro_common.send_jobretry("https://pipeline.example", "node-1", "token")
+
+    assert result == {"message": "retry queued"}
+    assert post.call_args.kwargs["timeout"] == HTTP_TIMEOUT
 
 
 def test_git_repo_repository_url_cleaner_removes_credentials_and_normalizes_scheme():
