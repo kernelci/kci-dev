@@ -179,7 +179,7 @@ def test_kcidev_commit(kcidev_config):
         "--branch",
         "test",
         "--path",
-        "my-new-repo",
+        ".",
     ]
     result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
     print("returncode: " + str(result.returncode))
@@ -187,15 +187,40 @@ def test_kcidev_commit(kcidev_config):
     print(result.stdout)
     print("#### stderr ####")
     print(result.stderr)
-    assert result.returncode == 0
+    assert result.returncode == 1
+    assert "commit command is not implemented" in result.stderr
+    assert "kci-dev patchset" in result.stderr
 
 
-def test_main():
-    from kcidev.subcommands.commit import api_connection
+def test_kcidev_commit_does_not_expose_token(tmp_path):
+    token = "release-blocker-secret-token"
+    settings = tmp_path / "kci-dev.toml"
+    settings.write_text(
+        'default_instance = "staging"\n'
+        "[staging]\n"
+        'pipeline = "https://pipeline.example.org/"\n'
+        'api = "https://api.example.org/"\n'
+        f'token = "{token}"\n',
+        encoding="utf-8",
+    )
 
-    print(api_connection("test"))
+    command = [
+        "poetry",
+        "run",
+        "kci-dev",
+        "--settings",
+        settings,
+        "--instance",
+        "staging",
+        "--debug",
+        "commit",
+    ]
+    result = run(command, stdout=PIPE, stderr=PIPE, universal_newlines=True)
 
-    pass
+    assert result.returncode == 1
+    assert "commit command is not implemented" in result.stderr
+    assert token not in result.stdout
+    assert token not in result.stderr
 
 
 def test_kcidev_results_summary_history_help():

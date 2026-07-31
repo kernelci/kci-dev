@@ -173,6 +173,21 @@ def test_execute_cmdline_raises_click_exception_on_failure():
         )
 
 
+def test_kcidev_exec_streams_stdout_and_stderr(capsys):
+    process = bisect.kcidev_exec(
+        [
+            "sh",
+            "-c",
+            "printf 'standard output\\n'; printf 'error output\\n' >&2; exit 7",
+        ]
+    )
+
+    output = capsys.readouterr().out
+    assert "standard output\n" in output
+    assert "error output\n" in output
+    assert process.returncode == 7
+
+
 @pytest.mark.parametrize(
     ("returncodes", "expected_result"),
     [([1, 1, 1], "bad"), ([1, 0], "good")],

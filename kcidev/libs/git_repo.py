@@ -1,6 +1,6 @@
-import configparser
 import logging
 import os
+import re
 import subprocess
 import urllib
 
@@ -11,6 +11,14 @@ from kcidev.libs.dashboard import dashboard_fetch_tree_list
 def repository_url_cleaner(url):
     # standardize protocol to https
     logging.debug(f"Cleaning repository URL: {url}")
+    # urlsplit treats SCP-style Git URLs as paths because they have no ``://``.
+    # Convert that syntax to a regular URL before parsing it.
+    scp_url = None
+    if "://" not in url:
+        scp_url = re.fullmatch(r"(?:[^/@:]+@)?([^/:]+):(.+)", url)
+    if scp_url:
+        url = f"ssh://{scp_url.group(1)}/{scp_url.group(2)}"
+
     parsed = urllib.parse.urlsplit(url)
     scheme = "https"
 
@@ -22,6 +30,19 @@ def repository_url_cleaner(url):
     url_cleaned = urllib.parse.urlunsplit((scheme, authority, *parsed[2:]))
     logging.debug(f"Cleaned URL: {url_cleaned}")
     return url_cleaned
+
+
+def _get_origin_url(current_folder):
+    """Ask Git for origin's URL from a repository or any directory within it."""
+    git_url = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        cwd=current_folder,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    logging.debug(f"Raw git URL from Git: {git_url}")
+    return repository_url_cleaner(git_url)
 
 
 def is_inside_work_tree():
@@ -72,14 +93,9 @@ def get_folder_repository(git_folder, branch):
     # Check if we are in a git repository
     if os.path.exists(dot_git_folder):
         logging.info(f"Found .git folder at: {dot_git_folder}")
-        # Get remote origin url
-        git_config_path = os.path.join(dot_git_folder, "config")
-        git_config = configparser.ConfigParser(strict=False)
-        git_config.read(git_config_path)
-        git_url = git_config.get('remote "origin"', "url")
-        logging.debug(f"Raw git URL from config: {git_url}")
-        # A way of standardize git url for API call
-        git_url = repository_url_cleaner(git_url)
+        # Let Git resolve the configuration, including linked worktrees whose
+        # .git entry is a file rather than a directory.
+        git_url = _get_origin_url(current_folder)
 
         # Get current branch name
         cmd = ["git", "branch", "--show-current"]
@@ -206,39 +222,16 @@ def get_repository_url(git_folder):
     else:
         current_folder = os.getcwd()
 
-    previous_folder = os.getcwd()
-    if os.path.isdir(current_folder):
-        os.chdir(current_folder)
-    else:
+    if not os.path.isdir(current_folder):
         logging.warning(f"Invalid directory for URL check: {current_folder}")
-        os.chdir(previous_folder)
         return None
 
-    dot_git_folder = os.path.join(current_folder, ".git")
-    if is_inside_work_tree():
-        while not os.path.exists(dot_git_folder):
-            current_folder = os.path.join(current_folder, "..")
-            dot_git_folder = os.path.join(current_folder, ".git")
-            logging.debug(f"Looking for .git in parent: {current_folder}")
-
-    if os.path.exists(dot_git_folder):
-        git_config_path = os.path.join(dot_git_folder, "config")
-        logging.debug(f"Reading git config from: {git_config_path}")
-        git_config = configparser.ConfigParser(strict=False)
-        git_config.read(git_config_path)
-        try:
-            git_url = git_config.get('remote "origin"', "url")
-            git_url = repository_url_cleaner(git_url)
-            logging.info(f"Repository URL: {git_url}")
-            os.chdir(previous_folder)
-            return git_url
-        except Exception as e:
-            logging.error(f"Failed to get repository URL: {e}")
-            os.chdir(previous_folder)
-            return None
-    else:
-        logging.debug(f"No .git folder found at: {dot_git_folder}")
-        os.chdir(previous_folder)
+    try:
+        git_url = _get_origin_url(current_folder)
+        logging.info(f"Repository URL: {git_url}")
+        return git_url
+    except (OSError, subprocess.CalledProcessError) as error:
+        logging.error(f"Failed to get repository URL: {error}")
         return None
 
 
