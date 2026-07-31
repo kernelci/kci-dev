@@ -22,10 +22,7 @@ to know immediately when specific tests complete.
 
 \b
 Examples:
-  # Watch all jobs for a given node
-  kci-dev watch --nodeid 65a5c89f1234567890abcdef
-
-  # Watch only specific job types
+  # Watch specific job types
   kci-dev watch --nodeid 65a5c89f1234567890abcdef \\
                 --job-filter baseline --job-filter ltp
 
@@ -41,8 +38,12 @@ Examples:
 )
 @click.option(
     "--job-filter",
-    help="Filter jobs to watch by name (e.g., baseline, ltp). Can be used multiple times",
+    help=(
+        "Job name to watch (e.g., baseline, ltp). Required and can be used "
+        "multiple times"
+    ),
     multiple=True,
+    required=True,
 )
 @click.option(
     "--test",

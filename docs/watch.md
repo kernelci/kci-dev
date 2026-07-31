@@ -4,7 +4,10 @@ date = 2025-01-30T07:07:07+01:00
 description = 'Watch for the results of given node'
 +++
 
-This command waits for the results of particular node id.
+This command waits for the results of selected jobs for a particular node id.
+At least one `--job-filter` must be supplied; repeat the option to watch multiple
+jobs. Watching without a job filter is not supported because jobs can be added to
+the node dynamically.
 
 Example:
 ```sh
@@ -19,7 +22,7 @@ The Maestro node id to watch for.
 
 ## --job-filter
 
-Pass one or more job filters:
+Pass one or more job filters. This option is required:
 
 ```sh
 kci-dev watch --nodeid 679a91b565fae3351e2fac77 --job-filter "kbuild-gcc-12-x86-chromeos-amd" --job-filter baseline-nfs-arm64-qualcomm --job-filter kbuild-gcc-12-arm64-chromeos-qualcomm
