@@ -52,7 +52,7 @@ def is_inside_work_tree():
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
     std_out, std_err = process.communicate()
-    is_inside_work_tree = std_out.strip()
+    is_inside_work_tree = std_out.strip() == "true"
 
     if process.returncode != 0:
         logging.debug(f"Not in git work tree: {std_err.strip()}")
@@ -83,12 +83,25 @@ def get_folder_repository(git_folder, branch):
         logging.error(f"Invalid directory: {current_folder}")
         kci_err("Not a folder")
         raise click.Abort()
+    bare_process = subprocess.run(
+        ["git", "rev-parse", "--is-bare-repository"],
+        capture_output=True,
+        text=True,
+    )
+    if bare_process.returncode == 0 and bare_process.stdout.strip() == "true":
+        os.chdir(previous_folder)
+        logging.error("Selected repository is bare and has no working tree")
+        kci_err("The selected repository is bare and has no working tree.")
+        raise click.Abort()
+
+    top_level_process = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    if top_level_process.returncode == 0:
+        current_folder = top_level_process.stdout.strip()
     dot_git_folder = os.path.join(current_folder, ".git")
-    if is_inside_work_tree():
-        while not os.path.exists(dot_git_folder):
-            current_folder = os.path.join(current_folder, "..")
-            dot_git_folder = os.path.join(current_folder, ".git")
-            logging.debug(f"Looking for .git in parent: {current_folder}")
 
     # Check if we are in a git repository
     if os.path.exists(dot_git_folder):
