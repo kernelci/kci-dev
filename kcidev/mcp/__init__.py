@@ -23,7 +23,7 @@ def create_server(cfg=None, instance=None, host="127.0.0.1", port=8000):
     server._mcp_server.version = kcidev_version
     tools_dashboard.register_tools(server)
     client = KernelCIClient(cfg=cfg, instance=instance)
-    icfg = (cfg or {}).get(instance) or {}
+    icfg = (cfg or {}).get(client.instance) or {}
     tools_maestro.register_tools(
         server, client, icfg.get("api"), icfg.get("pipeline"), icfg.get("token")
     )

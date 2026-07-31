@@ -60,6 +60,15 @@ def test_maestro_tools_registered_with_full_config():
     assert "trigger_patchset" in tools
 
 
+def test_maestro_tools_registered_with_default_instance():
+    tools = _list_tools(create_server(CFG))
+    assert "get_node" in tools
+    assert "list_nodes" in tools
+    assert "retry_job" in tools
+    assert "trigger_checkout" in tools
+    assert "trigger_patchset" in tools
+
+
 def test_action_tools_not_registered_without_token():
     cfg = {"test": {"api": "https://api.example.org/"}}
     tools = _list_tools(create_server(cfg, "test"))
