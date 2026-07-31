@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import copy
 import json
 import logging
 import os
@@ -39,6 +40,11 @@ default_state = {
     "next_commit": None,
     "first_bad": None,
 }
+
+
+def new_state():
+    """Return an independent state object for a new bisection."""
+    return copy.deepcopy(default_state)
 
 
 def load_state(file="state.json"):
@@ -372,7 +378,7 @@ def bisect(
             logging.info("Ignoring saved state, starting fresh bisection")
         else:
             logging.info("No saved state found, starting new bisection")
-        state = default_state
+        state = new_state()
         # Check if user provided any required parameters
         if not any([giturl, branch, good, bad, job_filter, platform_filter, test]):
             # No parameters provided and no state file - show help
@@ -412,6 +418,12 @@ def bisect(
     else:
         logging.info("Resuming bisection from saved state")
         print_state(state)
+        if state.get("first_bad"):
+            click.secho(
+                f"Bisection already complete. First bad commit: {state['first_bad']}",
+                fg="green",
+            )
+            return
         repo = update_tree(
             state["workdir"], state["branch"], state["giturl"], reset=False
         )

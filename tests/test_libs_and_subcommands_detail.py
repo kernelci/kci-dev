@@ -78,6 +78,51 @@ def test_bisect_state_round_trip(tmp_path):
     assert bisect.load_state(str(path)) == state
 
 
+def test_bisect_new_state_has_independent_mutable_values():
+    state = bisect.new_state()
+
+    state["history"].append({"deadbeef": "bad"})
+    state["job_filter"].append("baseline")
+    state["platform_filter"].append("qemu-x86")
+
+    assert bisect.default_state["history"] == []
+    assert bisect.default_state["job_filter"] == []
+    assert bisect.default_state["platform_filter"] == []
+
+
+def test_bisect_completed_state_exits_immediately(tmp_path, monkeypatch):
+    first_bad = "deadbeef"
+    state = bisect.new_state()
+    state.update(
+        {
+            "giturl": "https://git.example/linux.git",
+            "branch": "main",
+            "good": "good",
+            "bad": "bad",
+            "workdir": str(tmp_path),
+            "bisect_init": True,
+            "next_commit": None,
+            "first_bad": first_bad,
+        }
+    )
+    bisect.save_state(state, str(tmp_path / "state.json"))
+    update_tree = Mock()
+    bisection_loop = Mock()
+    monkeypatch.setattr(bisect, "update_tree", update_tree)
+    monkeypatch.setattr(bisect, "bisection_loop", bisection_loop)
+
+    result = CliRunner().invoke(
+        bisect.bisect,
+        ["--workdir", str(tmp_path)],
+        obj={"CFG": {}, "INSTANCE": None},
+    )
+
+    assert result.exit_code == 0, result.output
+    assert f"Bisection already complete. First bad commit: {first_bad}" in result.output
+    update_tree.assert_not_called()
+    bisection_loop.assert_not_called()
+
+
 def _commit_file(repo, name, contents):
     (repo / name).write_text(contents, encoding="utf-8")
     subprocess.run(["git", "add", name], cwd=repo, check=True)
