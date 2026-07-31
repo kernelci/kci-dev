@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 import click
 import requests
@@ -40,6 +41,9 @@ default_state = {
     "next_commit": None,
     "first_bad": None,
 }
+
+MAESTRO_RETRY_LIMIT = 3
+MAESTRO_RETRY_BASE_DELAY = 2
 
 
 def new_state():
@@ -206,7 +210,14 @@ def update_tree(workdir, branch, giturl, reset=True):
 
 def bisection_loop(state):
     olddir = os.getcwd()
-    os.chdir(state["workdir"])
+    try:
+        os.chdir(state["workdir"])
+        return _bisection_loop(state)
+    finally:
+        os.chdir(olddir)
+
+
+def _bisection_loop(state):
     commit = state["next_commit"]
     if commit is None:
         logging.error(
@@ -300,7 +311,6 @@ def bisection_loop(state):
     else:
         state["next_commit"] = commitid
     logging.info(f"Bisection history updated - {len(state['history'])} commits tested")
-    os.chdir(olddir)
     return state
 
 
@@ -464,11 +474,27 @@ def bisect(
         logging.info(
             f"Starting bisection iteration - commits tested: {len(state.get('history', []))}"
         )
-        new_state = bisection_loop(state)
-        if new_state is None:
-            logging.warning("Test failed, retrying")
-            click.secho("Retry failed test", fg="green")
-            continue
+        for attempt in range(1, MAESTRO_RETRY_LIMIT + 1):
+            new_state = bisection_loop(state)
+            if new_state is not None:
+                break
+            if attempt == MAESTRO_RETRY_LIMIT:
+                raise click.ClickException(
+                    "Maestro failed repeatedly; bisection state was preserved."
+                )
+            delay = MAESTRO_RETRY_BASE_DELAY**attempt
+            logging.warning(
+                "Maestro failed; retrying in %d seconds (%d/%d)",
+                delay,
+                attempt,
+                MAESTRO_RETRY_LIMIT,
+            )
+            click.secho(
+                f"Retrying Maestro in {delay} seconds "
+                f"({attempt}/{MAESTRO_RETRY_LIMIT})",
+                fg="yellow",
+            )
+            time.sleep(delay)
         state = new_state
         save_state(state, state_file)
         if state.get("first_bad"):

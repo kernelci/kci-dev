@@ -219,6 +219,62 @@ def test_bisection_loop_retries_failures_before_marking_commit(
     assert result["history"] == [{"deadbeef": expected_result}]
 
 
+def test_bisection_loop_restores_working_directory_after_maestro_error(
+    tmp_path, monkeypatch
+):
+    original_dir = tmp_path / "original"
+    workdir = tmp_path / "worktree"
+    original_dir.mkdir()
+    workdir.mkdir()
+    monkeypatch.chdir(original_dir)
+    state = bisect.new_state()
+    state.update(
+        {
+            "giturl": "https://git.example/linux.git",
+            "branch": "main",
+            "test": "baseline.login",
+            "workdir": str(workdir),
+            "next_commit": "deadbeef",
+        }
+    )
+    monkeypatch.setattr(bisect, "kcidev_exec", Mock(return_value=Mock(returncode=3)))
+
+    assert bisect.bisection_loop(state) is None
+    assert os.getcwd() == str(original_dir)
+
+
+def test_bisect_limits_maestro_retries_and_uses_backoff(tmp_path, monkeypatch):
+    state = bisect.new_state()
+    state.update(
+        {
+            "giturl": "https://git.example/linux.git",
+            "branch": "main",
+            "good": "good",
+            "bad": "bad",
+            "workdir": str(tmp_path),
+            "bisect_init": True,
+            "next_commit": "deadbeef",
+        }
+    )
+    bisect.save_state(state, str(tmp_path / "state.json"))
+    bisection_loop = Mock(return_value=None)
+    sleep = Mock()
+    monkeypatch.setattr(bisect, "update_tree", Mock())
+    monkeypatch.setattr(bisect, "bisection_loop", bisection_loop)
+    monkeypatch.setattr(bisect.time, "sleep", sleep)
+
+    result = CliRunner().invoke(
+        bisect.bisect,
+        ["--workdir", str(tmp_path)],
+        obj={"CFG": {}, "INSTANCE": None},
+    )
+
+    assert result.exit_code == 1
+    assert "Maestro failed repeatedly; bisection state was preserved." in result.output
+    assert bisection_loop.call_count == bisect.MAESTRO_RETRY_LIMIT
+    assert [call.args[0] for call in sleep.call_args_list] == [2, 4]
+
+
 def test_bisect_rejects_negative_retry_count():
     result = CliRunner().invoke(
         bisect.bisect,
