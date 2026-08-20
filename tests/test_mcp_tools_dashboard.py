@@ -196,6 +196,7 @@ def test_get_summary_compact_by_default(monkeypatch):
     assert result["summary"]["builds"] == {
         "status": {"PASS": 10, "FAIL": 1},
         "architectures": {"x86_64": {"PASS": 5}},
+        "labs": {"lab-1": {}},
         "issues": [],
     }
     assert result["summary"]["boots"] == {
@@ -356,3 +357,103 @@ def test_issue_tools_validate_before_any_request(monkeypatch):
     with pytest.raises(ToolExecutionError):
         tools_dashboard.get_issue_tests("maestro:i1", status="borked")
     get.assert_not_called()
+def test_list_labs_returns_lab_counts(monkeypatch):
+    get = _mock_get(
+        monkeypatch,
+        {
+            "n_builds": 100,
+            "lab_maps": {
+                "lava-collabora": {"builds": 161, "boots": 987, "tests": 100105},
+                "opentest-ti": {"builds": 4, "boots": 80, "tests": 0},
+            },
+        },
+    )
+    result = tools_dashboard.list_labs(days=3)
+    url = get.call_args[0][0]
+    assert "metrics/" in url
+    assert "start_days_ago=3" in url
+    assert result["days"] == 3
+    assert result["labs"]["opentest-ti"] == {"builds": 4, "boots": 80, "tests": 0}
+    assert "n_builds" not in result
+
+
+def test_list_labs_without_lab_data_errors(monkeypatch):
+    _mock_get(monkeypatch, {"n_builds": 100})
+    with pytest.raises(ToolExecutionError, match="lab data"):
+        tools_dashboard.list_labs()
+
+
+def test_list_boots_filters_by_lab(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {
+            "boots": [
+                {"id": "b1", "status": "PASS", "lab": "lava-collabora"},
+                {"id": "b2", "status": "FAIL", "lab": "opentest-ti"},
+                {"id": "b3", "status": "FAIL", "lab": "lava-collabora"},
+                {"id": "b4", "status": "PASS", "lab": None},
+            ]
+        },
+    )
+    result = tools_dashboard.list_boots(
+        giturl="https://git.example.org/linux.git",
+        branch="master",
+        commit="deadbeef",
+        lab="LAVA-Collabora",
+    )
+    assert result["total"] == 4
+    assert result["matched"] == 2
+    assert [b["id"] for b in result["boots"]] == ["b1", "b3"]
+
+
+def test_list_tests_combines_lab_and_status_filters(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {
+            "tests": [
+                {"id": "t1", "status": "FAIL", "lab": "lava-collabora"},
+                {"id": "t2", "status": "PASS", "lab": "lava-collabora"},
+                {"id": "t3", "status": "FAIL", "lab": "maestro"},
+            ]
+        },
+    )
+    result = tools_dashboard.list_tests(
+        giturl="https://git.example.org/linux.git",
+        branch="master",
+        commit="deadbeef",
+        status="fail",
+        lab="lava-collabora",
+    )
+    assert result["total"] == 3
+    assert result["matched"] == 1
+    assert [t["id"] for t in result["tests"]] == ["t1"]
+
+
+def test_list_builds_matches_lab_in_misc(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {
+            "builds": [
+                {"id": "b1", "status": "PASS", "misc": {"lab": "maestro"}},
+                {"id": "b2", "status": "PASS", "misc": {"runtime": "k8s-all"}},
+                {"id": "b3", "status": "PASS", "misc": None},
+                {"id": "b4", "status": "PASS"},
+            ]
+        },
+    )
+    result = tools_dashboard.list_builds(
+        giturl="https://git.example.org/linux.git",
+        branch="master",
+        commit="deadbeef",
+        lab="k8s-all",
+    )
+    assert result["matched"] == 1
+    assert [b["id"] for b in result["builds"]] == ["b2"]
+
+
+def test_get_summary_keeps_lab_breakdown(monkeypatch):
+    _mock_get(monkeypatch, SUMMARY_PAYLOAD)
+    result = tools_dashboard.get_summary(
+        giturl="https://git.example.org/linux.git", branch="master", commit="deadbeef"
+    )
+    assert result["summary"]["builds"]["labs"] == {"lab-1": {}}

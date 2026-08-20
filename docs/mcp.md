@@ -59,3 +59,28 @@ compact aggregates unless `detail=true` is passed, and the list tools
 paginate (default `limit` of 20) and accept a `fields` list to return
 only the named keys per entry. Prefer `status`/`arch` filters, small
 limits and field projection when exploring large trees.
+
+## Querying a single lab
+
+To look at one lab (test runtime) rather than a whole tree, start from
+`list_labs`, which returns the labs reporting to KernelCI with their
+build, boot and test counts for the last N days. Those names are then
+usable as:
+
+- the `lab` filter of `list_builds`, `list_boots` and `list_tests`,
+  which narrows a commit's results to that lab;
+- the `data.runtime` filter of `list_nodes`, for example
+  `list_nodes(filters=["kind=job", "data.runtime=lava-collabora",
+  "data.platform__re=^qcom"])`. Maestro applies this filter server-side,
+  so it is the cheapest way to ask what one lab is doing with a family
+  of boards.
+
+For the status of a lab rather than its individual results, `get_summary`
+and `get_hardware_summary` both carry a per-lab breakdown of pass/fail
+counts under `summary.<section>.labs`, which answers "how is this tree or
+platform doing in lab X" in a single call.
+
+The dashboard has no server-side lab filter, so the `lab` option of the
+list tools is applied to the fetched page after the request. It shrinks
+the response, not the query: `total` counts entries before filtering and
+`matched` after.

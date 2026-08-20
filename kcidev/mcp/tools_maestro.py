@@ -36,14 +36,24 @@ def register_tools(server, client, api_url, pipeline_url, token):
             """List Maestro nodes, oldest first, optionally filtered.
 
             Filters are 'field=value' strings, for example 'name=checkout',
-            'state=done', 'result=fail' or 'treeid=<tree id>'. Matching is
-            exact; append '__re' to a field for a regex match, for example
-            'name__re=baseline' matches all baseline job variants. Results
-            are returned oldest first, so to reach recent nodes window the
-            query with a filter such as 'created__gt=2026-07-01' rather
-            than paginating from the start. Use limit and offset to
-            paginate within the window; full nodes are large, so use
-            fields to project each node to only those keys.
+            'state=done', 'result=fail' or 'treeid=<tree id>'. Nested node
+            fields are addressed with a dot, most usefully
+            'data.runtime=<lab>' to restrict results to one lab or runtime
+            (for example 'data.runtime=lava-collabora') and
+            'data.platform=<platform>' for one board; both are applied by
+            the server, so prefer them over listing everything and
+            filtering afterwards. Matching is exact; append '__re' to a
+            field for a regex match, for example 'name__re=baseline'
+            matches all baseline job variants and
+            'data.platform__re=sc7180' all sc7180 boards. Filters combine,
+            so 'data.runtime=lava-collabora' with
+            'data.platform__re=^qcom' answers "what is this lab doing with
+            qcom boards" in one query. Results are returned oldest first,
+            so to reach recent nodes window the query with a filter such as
+            'created__gt=2026-07-01' rather than paginating from the start.
+            Use limit and offset to paginate within the window; full nodes
+            are large, so use fields to project each node to only those
+            keys.
             """
             check_page_bounds(limit, offset)
             nodes = client.get_nodes(

@@ -316,6 +316,18 @@ def dashboard_fetch_tree_list(origin, use_json, days=7):
     return dashboard_api_fetch("tree", params, use_json)
 
 
+def dashboard_fetch_metrics(use_json, start_days_ago=7, end_days_ago=0):
+    """Fetch global KernelCI metrics, including per-lab result counts."""
+    params = {
+        "start_days_ago": start_days_ago,
+        "end_days_ago": end_days_ago,
+    }
+    logging.info(
+        f"Fetching metrics for days {start_days_ago} to {end_days_ago} days ago"
+    )
+    return dashboard_api_fetch("metrics/", params, use_json)
+
+
 def dashboard_fetch_hardware_list(origin, use_json):
     # TODO: add date filter
     now = datetime.today()

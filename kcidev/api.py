@@ -39,6 +39,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_issue_list,
     dashboard_fetch_issue_tests,
     dashboard_fetch_issues_extra,
+    dashboard_fetch_metrics,
     dashboard_fetch_summary,
     dashboard_fetch_test,
     dashboard_fetch_tests,
@@ -733,6 +734,15 @@ class KernelCIClient:
             origin,
             True,
             days,
+        )
+
+    def get_metrics(self, start_days_ago=7, end_days_ago=0):
+        return self._dashboard_request(
+            "Dashboard metrics request failed",
+            dashboard_fetch_metrics,
+            True,
+            start_days_ago,
+            end_days_ago,
         )
 
     def get_hardware_list(self, origin):
