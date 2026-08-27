@@ -7,7 +7,12 @@ from functools import wraps
 from kcidev.api import KciDevError, KernelCIClient
 from kcidev.libs.filters import StatusFilter
 from kcidev.mcp.errors import tool_errors
-from kcidev.mcp.validation import check_page_args, check_page_bounds, checked_status
+from kcidev.mcp.validation import (
+    check_page_args,
+    check_page_bounds,
+    checked_days,
+    checked_status,
+)
 
 _active_client = ContextVar("dashboard_tool_client", default=None)
 
@@ -34,19 +39,25 @@ def _page(data, key, status, limit, offset, fields=None, lab=None):
     if status:
         status_filter = StatusFilter(checked_status(status))
         items = [item for item in items if status_filter.matches(item)]
+    candidates = items
     if lab:
         wanted = lab.lower()
         items = [item for item in items if wanted in _entry_labs(item)]
     page = items[offset : offset + limit]
     if fields:
         page = [{k: item[k] for k in fields if k in item} for item in page]
-    return {
+    result = {
         key: page,
         "total": total,
         "matched": len(items),
         "limit": limit,
         "offset": offset,
     }
+    if lab and not items:
+        result["labs_present"] = sorted(
+            {name for item in candidates for name in _entry_labs(item)}
+        )
+    return result
 
 
 @tool_errors
@@ -165,13 +176,17 @@ def list_builds(
     """List kernel builds for one commit of a tree.
 
     Optional filters: arch (e.g. 'arm64'), tree name, ISO date range,
-    status ('pass', 'fail', 'inconclusive' or 'all'), and lab, the lab or
-    runtime that produced the build (builds report this as 'misc.lab'
-    and 'misc.runtime', for example 'maestro' or 'k8s-all'); use
-    list_labs to find valid names. Results are paginated with
-    limit/offset; the response carries 'total' (before filtering) and
-    'matched' counts so you know whether to fetch further pages;
-    fields projects each entry to only those keys.
+    status ('pass', 'fail', 'inconclusive' or 'all'), and lab, the lab
+    or runtime that produced the build (builds report this as
+    'misc.lab' and 'misc.runtime'; 'misc.lab' is effectively the
+    origin, so the runtime cluster such as 'k8s-all' is the value that
+    discriminates); use list_labs to find valid names. Results are
+    paginated with limit/offset; the response carries 'total' (before
+    filtering) and 'matched' counts so you know whether to fetch
+    further pages, and a lab matching nothing returns 'labs_present',
+    the labs the entries actually report, so a mistyped name shows up
+    without a second call; fields projects each entry to only those
+    keys.
     Returns build entries with ids usable with get_build.
     """
     check_page_args(status, limit, offset)
@@ -201,13 +216,16 @@ def list_boots(
     """List boot test results for one commit of a tree.
 
     Optional filters: arch, tree name, ISO date range, boot origin,
-    status ('pass', 'fail', 'inconclusive' or 'all'), and lab, the lab or
-    runtime that ran the boot (for example 'lava-collabora'); use
+    status ('pass', 'fail', 'inconclusive' or 'all'), and lab, the lab
+    or runtime that ran the boot (for example 'lava-collabora'); use
     list_labs to find valid names, or get_summary, whose per-section
     'labs' counts show which labs ran this commit at all. Results are
     paginated with limit/offset; the response carries 'total' (before
-    filtering) and 'matched' counts so you know whether to fetch further
-    pages; fields projects each entry to only those keys.
+    filtering) and 'matched' counts so you know whether to fetch
+    further pages, and a lab matching nothing returns 'labs_present',
+    the labs the entries actually report, so a mistyped name shows up
+    without a second call; fields projects each entry to only those
+    keys.
     Returns boot entries with ids usable with get_test.
     """
     check_page_args(status, limit, offset)
@@ -236,14 +254,16 @@ def list_tests(
     """List test results for one commit of a tree.
 
     Optional filters: arch, tree name, ISO date range, status ('pass',
-    'fail', 'inconclusive' or 'all'), and lab, the lab or runtime that ran the
-    test (for example 'lava-collabora'); use list_labs to find valid
-    names, or get_summary, whose per-section 'labs' counts show which
-    labs ran this commit at all. A full commit can carry tens of
+    'fail', 'inconclusive' or 'all'), and lab, the lab or runtime that
+    ran the test (for example 'lava-collabora'); use list_labs to find
+    valid names, or get_summary, whose per-section 'labs' counts show
+    which labs ran this commit at all. A full commit can carry tens of
     thousands of tests, so filter by lab and status and paginate with
     limit/offset; the response carries 'total' (before filtering) and
-    'matched' counts so you know whether to fetch further pages; fields
-    projects each entry to only those keys.
+    'matched' counts so you know whether to fetch further pages, and a
+    lab matching nothing returns 'labs_present', the labs the entries
+    actually report, so a mistyped name shows up without a second call;
+    fields projects each entry to only those keys.
     Returns test entries with ids usable with get_test.
     """
     check_page_args(status, limit, offset)
@@ -317,6 +337,7 @@ def get_build_issues(build_id: str):
     return _current_client().get_build_issues(build_id)
 
 
+@tool_errors
 def list_labs(days: int = 7):
     """List the labs (test runtimes) reporting to KernelCI.
 
@@ -327,8 +348,10 @@ def list_labs(days: int = 7):
     'data.runtime' filter of list_nodes. Counts cover all origins and
     trees; for the labs that ran one specific tree or platform, use the
     per-section 'labs' counts of get_summary or get_hardware_summary.
+    The window is capped at 7 days; wider windows time out in the
+    dashboard's metrics aggregation.
     """
-    data = _current_client().get_metrics(start_days_ago=days)
+    data = _current_client().get_metrics(start_days_ago=checked_days(days))
     labs = data.get("lab_maps") if isinstance(data, dict) else None
     if not isinstance(labs, dict):
         raise KciDevError("dashboard metrics response carried no lab data")

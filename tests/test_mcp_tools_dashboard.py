@@ -357,6 +357,8 @@ def test_issue_tools_validate_before_any_request(monkeypatch):
     with pytest.raises(ToolExecutionError):
         tools_dashboard.get_issue_tests("maestro:i1", status="borked")
     get.assert_not_called()
+
+
 def test_list_labs_returns_lab_counts(monkeypatch):
     get = _mock_get(
         monkeypatch,
@@ -457,3 +459,43 @@ def test_get_summary_keeps_lab_breakdown(monkeypatch):
         giturl="https://git.example.org/linux.git", branch="master", commit="deadbeef"
     )
     assert result["summary"]["builds"]["labs"] == {"lab-1": {}}
+
+
+def test_list_labs_rejects_non_positive_days(monkeypatch):
+    get = _mock_get(monkeypatch, {"lab_maps": {}})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.list_labs(days=0)
+    get.assert_not_called()
+
+
+def test_list_labs_rejects_days_above_cap(monkeypatch):
+    get = _mock_get(monkeypatch, {"lab_maps": {}})
+    with pytest.raises(ToolExecutionError) as excinfo:
+        tools_dashboard.list_labs(days=90)
+    assert "90" in str(excinfo.value)
+    get.assert_not_called()
+
+
+def test_unmatched_lab_reports_the_labs_that_are_present(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {
+            "tests": [
+                {"id": "t1", "status": "PASS", "lab": "lava-collabora"},
+                {"id": "t2", "status": "PASS", "lab": "lava-broonie"},
+            ]
+        },
+    )
+    result = tools_dashboard.list_tests(**_tree_args(lab="lava-colabora"))
+    assert result["matched"] == 0
+    assert result["labs_present"] == ["lava-broonie", "lava-collabora"]
+
+
+def test_matched_lab_omits_the_labs_present_hint(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {"tests": [{"id": "t1", "status": "PASS", "lab": "lava-collabora"}]},
+    )
+    result = tools_dashboard.list_tests(**_tree_args(lab="lava-collabora"))
+    assert result["matched"] == 1
+    assert "labs_present" not in result
