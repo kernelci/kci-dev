@@ -5,6 +5,7 @@ import pytest
 pytest.importorskip("mcp")
 
 import anyio
+import anyio.to_thread
 import requests
 from mcp.shared.memory import (
     create_connected_server_and_client_session as client_session,
@@ -267,3 +268,39 @@ def test_list_nodes_rejects_filter_without_equals(monkeypatch):
     assert result.isError is True
     assert "state done" in result.content[0].text
     get.assert_not_called()
+
+
+def test_a_slow_tool_does_not_block_a_concurrent_one(monkeypatch):
+    import threading
+
+    started = threading.Event()
+    release = threading.Event()
+
+    def fake_get(url, *args, **kwargs):
+        response = Mock(status_code=200)
+        if "build/" in url:
+            release.set()
+            response.json.return_value = {"id": "maestro:b1"}
+        else:
+            started.set()
+            response.json.return_value = [{"released": release.wait(timeout=10)}]
+        return response
+
+    monkeypatch.setattr(dashboard.kcidev_session, "get", Mock(side_effect=fake_get))
+
+    server = create_server()
+    outcome = {}
+
+    async def run():
+        async with client_session(server._mcp_server) as session:
+
+            async def slow():
+                outcome["slow"] = await session.call_tool("list_trees", {"days": 1})
+
+            async with anyio.create_task_group() as tg:
+                tg.start_soon(slow)
+                await anyio.to_thread.run_sync(started.wait)
+                await session.call_tool("get_build", {"build_id": "maestro:b1"})
+
+    anyio.run(run)
+    assert '"released": true' in outcome["slow"].content[0].text.lower()

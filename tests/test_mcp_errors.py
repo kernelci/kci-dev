@@ -52,18 +52,6 @@ def test_tool_errors_converts_requests_error():
         fail()
 
 
-def test_tool_errors_redirects_stdout_to_stderr(capsys):
-    @tool_errors
-    def noisy():
-        print("chatter")
-        return 1
-
-    assert noisy() == 1
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    assert "chatter" in captured.err
-
-
 def test_tool_errors_preserves_signature():
     @tool_errors
     def f(x: int, y: str = "a"):
@@ -83,3 +71,34 @@ def test_tool_errors_converts_kcidev_error():
 
     with pytest.raises(ToolExecutionError, match="Dashboard build request failed"):
         fail()
+
+
+def test_stdio_run_redirects_stdout_only_after_the_transport_takes_it(monkeypatch):
+    import contextlib
+    import sys
+    from unittest.mock import Mock
+
+    import anyio
+
+    from kcidev.subcommands import mcp as mcp_cmd
+
+    seen = {}
+
+    @contextlib.asynccontextmanager
+    async def fake_stdio_server():
+        seen["at_capture"] = sys.stdout
+        yield (None, None)
+
+    monkeypatch.setattr("mcp.server.stdio.stdio_server", fake_stdio_server)
+
+    async def fake_run(read_stream, write_stream, options):
+        seen["during_run"] = sys.stdout
+
+    server = Mock()
+    server._mcp_server.run = fake_run
+    server._mcp_server.create_initialization_options = Mock(return_value={})
+
+    anyio.run(mcp_cmd._run_stdio, server)
+
+    assert seen["at_capture"] is not sys.stderr
+    assert seen["during_run"] is sys.stderr

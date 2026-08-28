@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from kcidev.mcp.errors import tool_errors
+from kcidev.mcp.offload import tool_offload
 from kcidev.mcp.validation import check_page_bounds, checked_filters
 
 
@@ -14,6 +15,7 @@ def register_tools(server, client, api_url, pipeline_url, token):
     if api_url:
 
         @server.tool(annotations=read_only)
+        @tool_offload
         @tool_errors
         def get_node(node_id: str):
             """Get a Maestro node (job, build or test run) by node id.
@@ -26,6 +28,7 @@ def register_tools(server, client, api_url, pipeline_url, token):
             return client.get_node(node_id)
 
         @server.tool(annotations=read_only)
+        @tool_offload
         @tool_errors
         def list_nodes(
             filters: list[str] | None = None,
@@ -66,6 +69,7 @@ def register_tools(server, client, api_url, pipeline_url, token):
     if pipeline_url and token:
 
         @server.tool(annotations=action)
+        @tool_offload
         @tool_errors
         def retry_job(node_id: str):
             """Retry a failed or incomplete KernelCI test job.
@@ -76,6 +80,7 @@ def register_tools(server, client, api_url, pipeline_url, token):
             return client.retry_job(node_id)
 
         @server.tool(annotations=action)
+        @tool_offload
         @tool_errors
         def trigger_checkout(
             giturl: str,
@@ -97,6 +102,7 @@ def register_tools(server, client, api_url, pipeline_url, token):
             )
 
         @server.tool(annotations=action)
+        @tool_offload
         @tool_errors
         def trigger_patchset(
             nodeid: str,

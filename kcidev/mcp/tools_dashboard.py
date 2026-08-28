@@ -7,6 +7,7 @@ from functools import wraps
 from kcidev.api import KciDevError, KernelCIClient
 from kcidev.libs.filters import StatusFilter
 from kcidev.mcp.errors import tool_errors
+from kcidev.mcp.offload import tool_offload
 from kcidev.mcp.validation import (
     check_page_args,
     check_page_bounds,
@@ -489,4 +490,6 @@ def register_tools(server, client):
             finally:
                 _active_client.reset(token)
 
-        server.tool(annotations=ToolAnnotations(readOnlyHint=True))(bound_tool)
+        server.tool(annotations=ToolAnnotations(readOnlyHint=True))(
+            tool_offload(bound_tool)
+        )

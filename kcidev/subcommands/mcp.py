@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import contextlib
 import logging
+import sys
 
 import click
 
@@ -57,4 +59,22 @@ def mcp(ctx, transport, host, port):
         "Starting MCP server %s",
         "via stdio" if transport == "stdio" else f"on {host}:{port}",
     )
-    server.run(transport="stdio" if transport == "stdio" else "streamable-http")
+    import anyio
+
+    if transport == "stdio":
+        anyio.run(_run_stdio, server)
+    else:
+        with contextlib.redirect_stdout(sys.stderr):
+            server.run(transport="streamable-http")
+
+
+async def _run_stdio(server):
+    from mcp.server.stdio import stdio_server
+
+    async with stdio_server() as (read_stream, write_stream):
+        with contextlib.redirect_stdout(sys.stderr):
+            await server._mcp_server.run(
+                read_stream,
+                write_stream,
+                server._mcp_server.create_initialization_options(),
+            )
