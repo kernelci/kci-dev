@@ -36,10 +36,10 @@ def _page(data, key, status, limit, offset, fields=None, lab=None):
     check_page_bounds(limit, offset)
     items = data[key] if isinstance(data, dict) else data
     total = len(items)
+    candidates = items
     if status:
         status_filter = StatusFilter(checked_status(status))
         items = [item for item in items if status_filter.matches(item)]
-    candidates = items
     if lab:
         wanted = lab.lower()
         items = [item for item in items if wanted in _entry_labs(item)]
@@ -184,8 +184,9 @@ def list_builds(
     paginated with limit/offset; the response carries 'total' (before
     filtering) and 'matched' counts so you know whether to fetch
     further pages, and a lab matching nothing returns 'labs_present',
-    the labs the entries actually report, so a mistyped name shows up
-    without a second call; fields projects each entry to only those
+    every lab the entries report before any status filter, so a mistyped
+    name shows up without a second call and a real lab with no matching
+    status is still listed; fields projects each entry to only those
     keys.
     Returns build entries with ids usable with get_build.
     """
@@ -223,8 +224,9 @@ def list_boots(
     paginated with limit/offset; the response carries 'total' (before
     filtering) and 'matched' counts so you know whether to fetch
     further pages, and a lab matching nothing returns 'labs_present',
-    the labs the entries actually report, so a mistyped name shows up
-    without a second call; fields projects each entry to only those
+    every lab the entries report before any status filter, so a mistyped
+    name shows up without a second call and a real lab with no matching
+    status is still listed; fields projects each entry to only those
     keys.
     Returns boot entries with ids usable with get_test.
     """
@@ -261,8 +263,9 @@ def list_tests(
     thousands of tests, so filter by lab and status and paginate with
     limit/offset; the response carries 'total' (before filtering) and
     'matched' counts so you know whether to fetch further pages, and a
-    lab matching nothing returns 'labs_present', the labs the entries
-    actually report, so a mistyped name shows up without a second call;
+    lab matching nothing returns 'labs_present', every lab the entries
+    report before any status filter, so a mistyped name shows up without
+    a second call and a real lab with no matching status is still listed;
     fields projects each entry to only those keys.
     Returns test entries with ids usable with get_test.
     """
@@ -339,17 +342,23 @@ def get_build_issues(build_id: str):
 
 @tool_errors
 def list_labs(days: int = 7):
-    """List the labs (test runtimes) reporting to KernelCI.
+    """List the labs (test runtimes) that ran boots or tests on KernelCI.
 
-    Returns each lab name with how many builds, boots and tests it
-    reported over the last N days, so you can pick a valid lab name
-    without scanning result listings. The names are usable as the 'lab'
-    filter of list_builds, list_boots and list_tests, and as the
-    'data.runtime' filter of list_nodes. Counts cover all origins and
+    Returns each lab name with how many builds, boots and tests are
+    associated with it over the last N days, so you can pick a valid lab
+    name without scanning result listings. The names are usable as the
+    'lab' filter of list_boots and list_tests, and as the 'data.runtime'
+    filter of list_nodes.
+
+    The figures come from the dashboard's test metrics, so they are
+    test-derived: the 'builds' count is builds referenced by those tests,
+    not builds a lab produced, and a lab that only produces builds and
+    runs no tests may be absent. Treat this as boot/test lab discovery,
+    not a complete lab list for list_builds. Counts cover all origins and
     trees; for the labs that ran one specific tree or platform, use the
-    per-section 'labs' counts of get_summary or get_hardware_summary.
-    The window is capped at 7 days; wider windows time out in the
-    dashboard's metrics aggregation.
+    per-section 'labs' counts of get_summary or get_hardware_summary. The
+    window is capped at 7 days; wider windows time out in the dashboard's
+    metrics aggregation.
     """
     data = _current_client().get_metrics(start_days_ago=checked_days(days))
     labs = data.get("lab_maps") if isinstance(data, dict) else None

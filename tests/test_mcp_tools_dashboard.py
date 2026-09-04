@@ -499,3 +499,22 @@ def test_matched_lab_omits_the_labs_present_hint(monkeypatch):
     result = tools_dashboard.list_tests(**_tree_args(lab="lava-collabora"))
     assert result["matched"] == 1
     assert "labs_present" not in result
+
+
+def test_labs_present_ignores_the_status_filter(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {
+            "tests": [
+                {"id": "p1", "status": "PASS", "lab": "lava-collabora"},
+                {"id": "f1", "status": "FAIL", "lab": "lava-broonie"},
+            ]
+        },
+    )
+
+    result = tools_dashboard.list_tests(
+        **_tree_args(status="fail", lab="lava-collabora")
+    )
+
+    assert result["matched"] == 0
+    assert "lava-collabora" in result["labs_present"]
