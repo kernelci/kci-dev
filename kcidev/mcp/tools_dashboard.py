@@ -7,7 +7,12 @@ from functools import wraps
 from kcidev.api import KciDevError, KernelCIClient
 from kcidev.libs.filters import StatusFilter
 from kcidev.mcp.errors import tool_errors
-from kcidev.mcp.validation import check_page_args, check_page_bounds, checked_status
+from kcidev.mcp.validation import (
+    check_page_args,
+    check_page_bounds,
+    checked_days,
+    checked_status,
+)
 
 _active_client = ContextVar("dashboard_tool_client", default=None)
 
@@ -16,23 +21,43 @@ def _current_client():
     return _active_client.get() or KernelCIClient()
 
 
-def _page(data, key, status, limit, offset, fields=None):
+def _entry_labs(item):
+    """Return the lab/runtime names an entry reports, lowercased.
+
+    Boots and tests carry a top-level 'lab'; builds report the same
+    information as 'misc.lab' and 'misc.runtime'.
+    """
+    misc = item.get("misc") or {}
+    names = (item.get("lab"), misc.get("lab"), misc.get("runtime"))
+    return {name.lower() for name in names if isinstance(name, str)}
+
+
+def _page(data, key, status, limit, offset, fields=None, lab=None):
     check_page_bounds(limit, offset)
     items = data[key] if isinstance(data, dict) else data
     total = len(items)
+    candidates = items
     if status:
         status_filter = StatusFilter(checked_status(status))
         items = [item for item in items if status_filter.matches(item)]
+    if lab:
+        wanted = lab.lower()
+        items = [item for item in items if wanted in _entry_labs(item)]
     page = items[offset : offset + limit]
     if fields:
         page = [{k: item[k] for k in fields if k in item} for item in page]
-    return {
+    result = {
         key: page,
         "total": total,
         "matched": len(items),
         "limit": limit,
         "offset": offset,
     }
+    if lab and not items:
+        result["labs_present"] = sorted(
+            {name for item in candidates for name in _entry_labs(item)}
+        )
+    return result
 
 
 @tool_errors
@@ -46,7 +71,13 @@ def list_trees(origin: str = "maestro", days: int = 7):
     return _current_client().get_tree_list(origin, days)
 
 
-_COMPACT_SUMMARY_KEYS = ("status", "architectures", "issues", "failed_platforms")
+_COMPACT_SUMMARY_KEYS = (
+    "status",
+    "architectures",
+    "labs",
+    "issues",
+    "failed_platforms",
+)
 
 
 @tool_errors
@@ -137,24 +168,33 @@ def list_builds(
     start_date: str | None = None,
     end_date: str | None = None,
     status: str | None = None,
+    lab: str | None = None,
     limit: int = 20,
     offset: int = 0,
     fields: list[str] | None = None,
 ):
     """List kernel builds for one commit of a tree.
 
-    Optional filters: arch (e.g. 'arm64'), tree name, ISO date range, and
-    status ('pass', 'fail', 'inconclusive' or 'all'). Results are paginated with
-    limit/offset; the response carries 'total' (before status filtering)
-    and 'matched' counts so you know whether to fetch further pages;
-    fields projects each entry to only those keys.
+    Optional filters: arch (e.g. 'arm64'), tree name, ISO date range,
+    status ('pass', 'fail', 'inconclusive' or 'all'), and lab, the lab
+    or runtime that produced the build (builds report this as
+    'misc.lab' and 'misc.runtime'; 'misc.lab' is effectively the
+    origin, so the runtime cluster such as 'k8s-all' is the value that
+    discriminates); use list_labs to find valid names. Results are
+    paginated with limit/offset; the response carries 'total' (before
+    filtering) and 'matched' counts so you know whether to fetch
+    further pages, and a lab matching nothing returns 'labs_present',
+    every lab the entries report before any status filter, so a mistyped
+    name shows up without a second call and a real lab with no matching
+    status is still listed; fields projects each entry to only those
+    keys.
     Returns build entries with ids usable with get_build.
     """
     check_page_args(status, limit, offset)
     data = _current_client().get_builds(
         origin, giturl, branch, commit, arch, tree, start_date, end_date
     )
-    return _page(data, "builds", status, limit, offset, fields)
+    return _page(data, "builds", status, limit, offset, fields, lab)
 
 
 @tool_errors
@@ -169,24 +209,32 @@ def list_boots(
     end_date: str | None = None,
     boot_origin: str | None = None,
     status: str | None = None,
+    lab: str | None = None,
     limit: int = 20,
     offset: int = 0,
     fields: list[str] | None = None,
 ):
     """List boot test results for one commit of a tree.
 
-    Optional filters: arch, tree name, ISO date range, boot origin, and
-    status ('pass', 'fail', 'inconclusive' or 'all'). Results are paginated with
-    limit/offset; the response carries 'total' (before status filtering)
-    and 'matched' counts so you know whether to fetch further pages;
-    fields projects each entry to only those keys.
+    Optional filters: arch, tree name, ISO date range, boot origin,
+    status ('pass', 'fail', 'inconclusive' or 'all'), and lab, the lab
+    or runtime that ran the boot (for example 'lava-collabora'); use
+    list_labs to find valid names, or get_summary, whose per-section
+    'labs' counts show which labs ran this commit at all. Results are
+    paginated with limit/offset; the response carries 'total' (before
+    filtering) and 'matched' counts so you know whether to fetch
+    further pages, and a lab matching nothing returns 'labs_present',
+    every lab the entries report before any status filter, so a mistyped
+    name shows up without a second call and a real lab with no matching
+    status is still listed; fields projects each entry to only those
+    keys.
     Returns boot entries with ids usable with get_test.
     """
     check_page_args(status, limit, offset)
     data = _current_client().get_boots(
         origin, giturl, branch, commit, arch, tree, start_date, end_date, boot_origin
     )
-    return _page(data, "boots", status, limit, offset, fields)
+    return _page(data, "boots", status, limit, offset, fields, lab)
 
 
 @tool_errors
@@ -200,25 +248,32 @@ def list_tests(
     start_date: str | None = None,
     end_date: str | None = None,
     status: str | None = None,
+    lab: str | None = None,
     limit: int = 20,
     offset: int = 0,
     fields: list[str] | None = None,
 ):
     """List test results for one commit of a tree.
 
-    Optional filters: arch, tree name, ISO date range, and status ('pass',
-    'fail', 'inconclusive' or 'all'). A full commit can carry tens of thousands
-    of tests, so filter by status and paginate with limit/offset; the
-    response carries 'total' (before status filtering) and 'matched'
-    counts so you know whether to fetch further pages; fields projects
-    each entry to only those keys.
+    Optional filters: arch, tree name, ISO date range, status ('pass',
+    'fail', 'inconclusive' or 'all'), and lab, the lab or runtime that
+    ran the test (for example 'lava-collabora'); use list_labs to find
+    valid names, or get_summary, whose per-section 'labs' counts show
+    which labs ran this commit at all. A full commit can carry tens of
+    thousands of tests, so filter by lab and status and paginate with
+    limit/offset; the response carries 'total' (before filtering) and
+    'matched' counts so you know whether to fetch further pages, and a
+    lab matching nothing returns 'labs_present', every lab the entries
+    report before any status filter, so a mistyped name shows up without
+    a second call and a real lab with no matching status is still listed;
+    fields projects each entry to only those keys.
     Returns test entries with ids usable with get_test.
     """
     check_page_args(status, limit, offset)
     data = _current_client().get_tests(
         origin, giturl, branch, commit, arch, tree, start_date, end_date
     )
-    return _page(data, "tests", status, limit, offset, fields)
+    return _page(data, "tests", status, limit, offset, fields, lab)
 
 
 @tool_errors
@@ -286,6 +341,33 @@ def get_build_issues(build_id: str):
 
 
 @tool_errors
+def list_labs(days: int = 7):
+    """List the labs (test runtimes) that ran boots or tests on KernelCI.
+
+    Returns each lab name with how many builds, boots and tests are
+    associated with it over the last N days, so you can pick a valid lab
+    name without scanning result listings. The names are usable as the
+    'lab' filter of list_boots and list_tests, and as the 'data.runtime'
+    filter of list_nodes.
+
+    The figures come from the dashboard's test metrics, so they are
+    test-derived: the 'builds' count is builds referenced by those tests,
+    not builds a lab produced, and a lab that only produces builds and
+    runs no tests may be absent. Treat this as boot/test lab discovery,
+    not a complete lab list for list_builds. Counts cover all origins and
+    trees; for the labs that ran one specific tree or platform, use the
+    per-section 'labs' counts of get_summary or get_hardware_summary. The
+    window is capped at 7 days; wider windows time out in the dashboard's
+    metrics aggregation.
+    """
+    data = _current_client().get_metrics(start_days_ago=checked_days(days))
+    labs = data.get("lab_maps") if isinstance(data, dict) else None
+    if not isinstance(labs, dict):
+        raise KciDevError("dashboard metrics response carried no lab data")
+    return {"labs": labs, "days": days}
+
+
+@tool_errors
 def list_hardware(origin: str = "maestro"):
     """List hardware platforms with results over the last 7 days.
 
@@ -299,6 +381,9 @@ def get_hardware_summary(name: str, origin: str = "maestro"):
     """Get the build/boot/test summary for one hardware platform.
 
     Covers the last 7 days. Use list_hardware to find platform names.
+    Each build/boot/test section carries a 'labs' breakdown of status
+    counts per lab, so this answers "how is this platform doing in lab
+    X" in one call, without listing and filtering individual results.
     """
     return _current_client().get_hardware_summary(name, origin)
 
@@ -381,6 +466,7 @@ READ_ONLY_TOOLS = (
     get_log,
     get_test_issues,
     get_build_issues,
+    list_labs,
     list_hardware,
     get_hardware_summary,
     list_issues,
