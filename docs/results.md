@@ -7,6 +7,7 @@ description = 'Fetch results from the KernelCI ecosystem.'
 ## Regression comparison and CI gates
 
 ```shell
+kci-dev results compare --giturl URL --branch BRANCH --format json
 kci-dev results compare --giturl URL --branch BRANCH --format json BASE HEAD
 kci-dev results gate --giturl URL --branch BRANCH --base BASE --head HEAD \
   --fail-on regression --format json
@@ -138,7 +139,12 @@ Compare test results between commits with summary statistics and regressions.
 
 This command compares test results between commits showing summary statistics for both commits and identifying tests that transitioned from PASS to FAIL status. This helps identify genuine regressions while distinguishing them from boot-related infrastructure issues.
 
-By default, it compares the latest two commits from history. You can also specify two specific commit hashes to compare.
+With no positional commits, it fetches checkout history and compares index 1
+as `BASE` with index 0 as `HEAD`. History responses in either list form or
+`{"commits": [...]}` form are supported. You can instead specify exactly two
+commit hashes as `BASE HEAD`; one commit or more than two is a usage error.
+The existing `--latest` option remains accepted as a compatible spelling for
+the default no-commit behavior.
 
 Example:
 
@@ -146,12 +152,19 @@ Example:
 # Compare latest two commits with summary stats
 kci-dev results compare --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master
 
+# Equivalent legacy --latest invocation
+kci-dev results compare --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master --latest
+
 # Compare specific commits
 kci-dev results compare --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master <older> <newer>
 
 # JSON output format
 kci-dev results compare --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master --json
 ```
+
+If history cannot be retrieved or contains fewer than two checkouts, the
+command exits with status 2. JSON output contains one error document on
+standard output in that case.
 
 Output shows:
 - Summary statistics table comparing both commits (pass/fail/inconclusive counts)
