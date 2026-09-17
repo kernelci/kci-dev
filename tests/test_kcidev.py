@@ -916,3 +916,39 @@ def test_kcidev_mcp_help():
     print(result.stderr)
     assert result.returncode == 0
     assert "MCP" in result.stdout
+
+
+def test_cli_imports_without_the_optional_mcp_extra():
+    """The CLI must load when kci-dev is installed without [mcp].
+
+    kcidev.main imports every subcommand at startup, so anything the mcp
+    subcommand imports at module level becomes a hard dependency of the
+    whole CLI. anyio arrives only with the mcp extra.
+    """
+    import sys
+    import textwrap
+
+    script = textwrap.dedent(
+        """
+        import sys
+
+        class Blocker:
+            def find_spec(self, name, path=None, target=None):
+                if name.split(".")[0] in ("anyio", "mcp"):
+                    raise ImportError(name)
+                return None
+
+        sys.meta_path.insert(0, Blocker())
+        import kcidev.main
+
+        assert "anyio" not in sys.modules, "anyio was imported despite the blocker"
+        assert "mcp" not in sys.modules, "mcp was imported despite the blocker"
+        """
+    )
+    result = run(
+        [sys.executable, "-c", script],
+        stdout=PIPE,
+        stderr=PIPE,
+        universal_newlines=True,
+    )
+    assert result.returncode == 0, result.stderr
