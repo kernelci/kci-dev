@@ -741,3 +741,224 @@ def test_get_log_deadline_returns_partial_gzip(monkeypatch):
 
     assert out["deadline_exceeded"] is True
     assert out["truncated"] is True
+
+
+def _job_node(callback_url="https://files.kernelci.org/cb.json.gz"):
+    return {
+        "id": "6a90b63cc5867fba9468b9b1",
+        "kind": "job",
+        "result": "incomplete",
+        "data": {"error_code": "Infrastructure", "error_msg": "Unable to flash"},
+        "artifacts": {"callback_data": callback_url} if callback_url else {},
+    }
+
+
+def _mock_node(monkeypatch, node):
+    response = Mock(status_code=200)
+    response.json.return_value = node
+    monkeypatch.setattr(
+        maestro_common.kcidev_session, "get", Mock(return_value=response)
+    )
+
+
+def _no_dashboard_test(monkeypatch):
+    def boom(self, tid):
+        raise api.KciDevError("Dashboard test request failed: Test not found")
+
+    monkeypatch.setattr(KernelCIClient, "get_test", boom)
+
+
+def test_get_log_falls_back_to_the_maestro_job_callback(monkeypatch):
+    import gzip
+
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    payload = gzip.compress(json.dumps({"log": "flash failed\nboom\n"}).encode())
+    _mock_stream(monkeypatch, [payload])
+
+    out = _client().get_log("6a90b63cc5867fba9468b9b1")
+
+    assert "flash failed" in out["text"]
+    assert out["source"] == "maestro-callback"
+
+
+def test_get_log_fallback_accepts_the_prefixed_id(monkeypatch):
+    import gzip
+
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    _mock_stream(monkeypatch, [gzip.compress(json.dumps({"log": "hello"}).encode())])
+
+    out = _client().get_log("maestro:6a90b63cc5867fba9468b9b1")
+
+    assert out["text"] == "hello"
+
+
+def test_get_log_fallback_without_a_callback_is_a_clean_error(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node(callback_url=None))
+
+    with pytest.raises(api.KciDevError, match="No log available"):
+        _client().get_log("6a90b63cc5867fba9468b9b1")
+
+
+def test_get_log_dashboard_path_is_still_preferred(monkeypatch):
+    monkeypatch.setattr(KernelCIClient, "get_test", lambda self, tid: _log_test())
+    _mock_stream(monkeypatch, [b"from the dashboard"])
+
+    out = _client().get_log("maestro:abc")
+
+    assert out["source"] == "dashboard"
+    assert out["text"] == "from the dashboard"
+
+
+def test_get_log_fallback_caps_an_oversized_callback(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    huge = b"x" * (api.MAX_CALLBACK_BYTES + 1)
+    _mock_stream(monkeypatch, [huge])
+
+    with pytest.raises(api.KciDevError, match="exceeds"):
+        _client().get_log("6a90b63cc5867fba9468b9b1")
+
+
+def test_get_log_fallback_bounds_the_extracted_log(monkeypatch):
+    import gzip
+
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    body = json.dumps({"log": "A" * 100 + "TAILEND"}).encode()
+    _mock_stream(monkeypatch, [gzip.compress(body)])
+
+    out = _client().get_log("6a90b63cc5867fba9468b9b1", max_bytes=7, tail=True)
+
+    assert out["text"] == "TAILEND"
+    assert out["truncated"] is True
+    assert out["total_bytes"] == 107
+
+
+def test_get_log_fallback_refuses_a_decompression_bomb(monkeypatch):
+    import gzip
+
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    bomb = gzip.compress(b"\0" * (api.MAX_CALLBACK_BYTES * 8))
+    assert len(bomb) < api.MAX_CALLBACK_BYTES
+    _mock_stream(monkeypatch, [bomb])
+
+    with pytest.raises(api.KciDevError, match="exceeds"):
+        _client().get_log("6a90b63cc5867fba9468b9b1")
+
+
+def test_get_log_does_not_fall_back_on_a_non_not_found_error(monkeypatch):
+    def boom(self, tid):
+        raise api.KciDevError("Dashboard test request failed: upstream exploded")
+
+    monkeypatch.setattr(KernelCIClient, "get_test", boom)
+    node = Mock(side_effect=AssertionError("fallback must not run"))
+    monkeypatch.setattr(KernelCIClient, "get_node", node)
+
+    with pytest.raises(api.KciDevError, match="upstream exploded"):
+        _client().get_log("maestro:abc")
+
+
+def test_get_log_reports_both_errors_when_the_fallback_also_fails(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+
+    def no_node(self, nid):
+        raise api.KciDevError("No Maestro api URL configured")
+
+    monkeypatch.setattr(KernelCIClient, "get_node", no_node)
+
+    with pytest.raises(api.KciDevError) as excinfo:
+        _client().get_log("maestro:abc")
+
+    assert "Test not found" in str(excinfo.value)
+    assert "No Maestro api URL configured" in str(excinfo.value)
+
+
+def test_get_log_fallback_reads_an_uncompressed_callback(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    _mock_stream(monkeypatch, [json.dumps({"log": "plain json"}).encode()])
+
+    assert _client().get_log("6a90b63c")["text"] == "plain json"
+
+
+def test_get_log_fallback_without_a_log_field_is_a_clean_error(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    _mock_stream(monkeypatch, [json.dumps({"results": {}}).encode()])
+
+    with pytest.raises(api.KciDevError, match="carries no log"):
+        _client().get_log("6a90b63c")
+
+
+def test_get_log_fallback_head_bounding(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    _mock_stream(monkeypatch, [json.dumps({"log": "HEADSTART" + "z" * 90}).encode()])
+
+    out = _client().get_log("6a90b63c", max_bytes=9, tail=False)
+    assert out["text"] == "HEADSTART"
+
+
+def test_get_log_fallback_stops_at_the_deadline(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    _mock_stream(monkeypatch, [b"x" * 1000 for _ in range(50)])
+    ticks = iter([0.0] + [api.LOG_DEADLINE_SECONDS + 1] * 200)
+    monkeypatch.setattr(api, "monotonic", lambda: next(ticks))
+
+    with pytest.raises(api.KciDevError, match="deadline|too long|timed out"):
+        _client().get_log("6a90b63c")
+
+
+def test_get_log_does_not_fall_back_for_a_non_maestro_origin(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    monkeypatch.setattr(
+        KernelCIClient,
+        "get_node",
+        Mock(side_effect=AssertionError("must not query Maestro")),
+    )
+
+    with pytest.raises(api.KciDevError, match="Test not found"):
+        _client().get_log("redhat:6a90b63cc5867fba9468b9b1")
+
+
+def test_get_log_fallback_malformed_gzip_is_a_clean_error(monkeypatch):
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    _mock_stream(monkeypatch, [b"\x1f\x8b\x08\x00" + b"\xff" * 200])
+
+    with pytest.raises(api.KciDevError):
+        _client().get_log("6a90b63cc5867fba9468b9b1")
+
+
+def test_get_log_prefers_the_lava_log_artifact(monkeypatch):
+    import gzip
+
+    node = _job_node()
+    node["artifacts"]["lava_log"] = "https://files.kernelci.org/log.txt.gz"
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, node)
+    _mock_stream(monkeypatch, [gzip.compress(b"from the lava_log artifact\n")])
+
+    out = _client().get_log("6a90b63cc5867fba9468b9b1")
+
+    assert "from the lava_log artifact" in out["text"]
+    assert out["source"] == "maestro-log"
+    assert out["log_url"] == "https://files.kernelci.org/log.txt.gz"
+
+
+def test_get_log_uses_the_callback_when_there_is_no_lava_log(monkeypatch):
+    import gzip
+
+    _no_dashboard_test(monkeypatch)
+    _mock_node(monkeypatch, _job_node())
+    _mock_stream(monkeypatch, [gzip.compress(json.dumps({"log": "from cb"}).encode())])
+
+    out = _client().get_log("6a90b63cc5867fba9468b9b1")
+
+    assert out["text"] == "from cb"
+    assert out["source"] == "maestro-callback"

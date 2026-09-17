@@ -9,6 +9,7 @@ without invoking Click commands or shelling out to ``kci-dev``.
 """
 
 import ipaddress
+import json
 import socket
 import zlib
 from datetime import datetime, timezone
@@ -117,6 +118,7 @@ NOTHING_RELATED_MARKERS = (
 )
 
 MAX_LOG_BYTES = 1 << 20
+MAX_CALLBACK_BYTES = 8 << 20
 LOG_SCAN_LIMIT = 64 << 20
 LOG_DEADLINE_SECONDS = 60
 _LOG_CHUNK = 1 << 16
@@ -192,6 +194,27 @@ def _gunzip_iter(raw_iter):
         yield rest
     if not decomp.eof:
         raise KciDevError("Log gzip stream is incomplete or malformed")
+
+
+def _maestro_node_id(node_id):
+    """Return the Maestro node id, or None when the id is not Maestro's.
+
+    The dashboard prefixes ids with their origin while Maestro takes the
+    bare hex, so only a bare id or an explicitly maestro-prefixed one may
+    be looked up. Stripping any prefix would let a missing
+    other-origin:<id> resolve to an unrelated Maestro <id>.
+    """
+    if ":" not in node_id:
+        return node_id
+    origin, _, rest = node_id.partition(":")
+    return rest if origin == "maestro" else None
+
+
+def _bounded_text(raw, max_bytes, tail):
+    """Apply the head/tail bound to text already held in memory."""
+    if len(raw) <= max_bytes:
+        return raw, len(raw)
+    return (raw[-max_bytes:] if tail else raw[:max_bytes]), len(raw)
 
 
 def _pick_log_url(test):
@@ -496,6 +519,15 @@ class KernelCIClient:
         ``total_bytes`` is likewise a floor. The log URL is validated (scheme
         and resolved address) before fetching, though a DNS rebind between
         that check and the request remains a residual gap.
+
+        A job that failed before producing results has no dashboard test,
+        so its log is read from Maestro instead: the ``lava_log``
+        artifact where present, which is a plain log this same path
+        streams, otherwise the log field of the LAVA callback. The
+        returned ``source`` says which was used, and for the callback
+        ``log_url`` is that document rather than a log file. Only bare
+        or maestro-prefixed ids are looked up, so a missing test from
+        another origin keeps its dashboard error.
         """
         if isinstance(max_bytes, bool) or not isinstance(max_bytes, int):
             raise KciDevError("max_bytes must be a positive integer")
@@ -503,10 +535,21 @@ class KernelCIClient:
             raise KciDevError("max_bytes must be a positive integer")
         max_bytes = min(max_bytes, MAX_LOG_BYTES)
 
-        test = self.get_test(test_id)
-        log_url = _pick_log_url(test)
-        if not log_url:
-            raise KciDevError(f"No log available for test {test_id}")
+        try:
+            test = self.get_test(test_id)
+        except KciDevError as exc:
+            if "not found" not in str(exc).lower():
+                raise
+            if _maestro_node_id(test_id) is None:
+                raise
+            log_url, log_source, callback = self._job_log_source(test_id, exc)
+            if callback is not None:
+                return self._callback_log(test_id, callback, max_bytes, tail)
+        else:
+            log_url = _pick_log_url(test)
+            log_source = "dashboard"
+            if not log_url:
+                raise KciDevError(f"No log available for test {test_id}")
 
         buf = bytearray()
         total = 0
@@ -583,6 +626,103 @@ class KernelCIClient:
             "scan_limited": scan_limited,
             "deadline_exceeded": deadline_exceeded,
             "tail": tail,
+            "source": log_source,
+            "text": returned.decode("utf-8", errors="replace"),
+        }
+
+    def _job_log_source(self, test_id, dashboard_error):
+        """Resolve a Maestro job's log, preferring a plain log artifact.
+
+        lava_log is a gzipped log file the normal streaming path can read.
+        The LAVA callback carries the log as a JSON field instead, which
+        has to be read whole, and the pipeline treats that field as
+        temporary, so it is only the fallback.
+        """
+        try:
+            node = self.get_node(_maestro_node_id(test_id))
+        except KciDevError as exc:
+            raise KciDevError(
+                f"{dashboard_error}; the Maestro fallback also failed: {exc}"
+            ) from exc
+        artifacts = node.get("artifacts") or {}
+        if artifacts.get("lava_log"):
+            return artifacts["lava_log"], "maestro-log", None
+        if artifacts.get("callback_data"):
+            return None, "maestro-callback", artifacts["callback_data"]
+        raise KciDevError(f"No log available for {test_id}")
+
+    def _callback_log(self, test_id, callback_url, max_bytes, tail):
+        """Fall back to the Maestro job callback when the dashboard has none.
+
+        A job that fails before producing results never reaches the
+        dashboard, so its log is only in the LAVA callback Maestro keeps.
+        That callback is a JSON document rather than a log file, so it has
+        to be read whole before the log field can be taken out; it is
+        capped at ``MAX_CALLBACK_BYTES`` rather than streamed.
+        """
+        response = None
+        try:
+            response = _stream_public_get(callback_url)
+            response.raise_for_status()
+            body = bytearray()
+            deadline = monotonic() + LOG_DEADLINE_SECONDS
+            for chunk in response.iter_content(_LOG_CHUNK):
+                if not chunk:
+                    continue
+                if monotonic() > deadline:
+                    raise KciDevError(
+                        f"Job callback download for {test_id} passed the "
+                        f"{LOG_DEADLINE_SECONDS}s deadline"
+                    )
+                body += chunk
+                if len(body) > MAX_CALLBACK_BYTES:
+                    raise KciDevError(
+                        f"Job callback for {test_id} exceeds "
+                        f"{MAX_CALLBACK_BYTES} bytes"
+                    )
+            raw = bytes(body)
+            if raw[:2] == b"\x1f\x8b":
+                expanded = bytearray()
+                for piece in _gunzip_iter(iter([raw])):
+                    expanded += piece
+                    if len(expanded) > MAX_CALLBACK_BYTES:
+                        raise KciDevError(
+                            f"Job callback for {test_id} exceeds "
+                            f"{MAX_CALLBACK_BYTES} bytes decompressed"
+                        )
+                raw = bytes(expanded)
+            callback = json.loads(raw.decode("utf-8", errors="replace"))
+        except KciDevError:
+            raise
+        except (
+            requests.exceptions.RequestException,
+            zlib.error,
+            OSError,
+            ValueError,
+        ) as exc:
+            raise KciDevError(
+                f"Job callback download failed for {test_id}: {exc}"
+            ) from exc
+        finally:
+            if response is not None:
+                response.close()
+
+        log = callback.get("log")
+        if not isinstance(log, str):
+            raise KciDevError(f"Job callback for {test_id} carries no log")
+
+        encoded = log.encode("utf-8", errors="replace")
+        returned, total = _bounded_text(encoded, max_bytes, tail)
+        return {
+            "test_id": test_id,
+            "log_url": callback_url,
+            "total_bytes": total,
+            "returned_bytes": len(returned),
+            "truncated": total > len(returned),
+            "scan_limited": False,
+            "deadline_exceeded": False,
+            "tail": tail,
+            "source": "maestro-callback",
             "text": returned.decode("utf-8", errors="replace"),
         }
 

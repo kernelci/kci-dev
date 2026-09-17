@@ -253,7 +253,11 @@ def get_log(test_id: str, max_bytes: int = 16384, tail: bool = True):
     if needed, up to a 1 MiB ceiling: asking for more returns that
     ceiling rather than the whole log, so compare returned_bytes with
     total_bytes rather than retrying the same call. A download that runs
-    past about a minute stops early and sets deadline_exceeded. Use
+    past about a minute stops early and sets deadline_exceeded. Jobs that
+    failed before producing results never reach the dashboard, so for
+    those the log comes from Maestro instead and 'source' says which was
+    used; get_node carries the infra diagnosis itself, which is usually
+    the better answer. Use
     get_test first for the shorter log_excerpt.
     """
     return _current_client().get_log(test_id, max_bytes=max_bytes, tail=tail)
