@@ -282,3 +282,77 @@ def test_get_issue_tests_still_reports_other_errors(monkeypatch):
     _mock_get(monkeypatch, {"error": "Issue not found"})
     with pytest.raises(ToolExecutionError):
         tools_dashboard.get_issue_tests("maestro:nope")
+
+
+def _tree_args(**extra):
+    args = {
+        "giturl": "https://git.example.org/linux.git",
+        "branch": "master",
+        "commit": "deadbeef",
+    }
+    args.update(extra)
+    return args
+
+
+def test_list_tests_accepts_uppercase_status(monkeypatch):
+    _mock_get(
+        monkeypatch,
+        {"tests": [{"id": "p1", "status": "PASS"}, {"id": "f1", "status": "FAIL"}]},
+    )
+    result = tools_dashboard.list_tests(**_tree_args(status="FAIL"))
+    assert result["matched"] == 1
+    assert result["tests"] == [{"id": "f1", "status": "FAIL"}]
+
+
+def test_list_tests_rejects_unknown_status(monkeypatch):
+    _mock_get(monkeypatch, {"tests": [{"id": "f1", "status": "FAIL"}]})
+    with pytest.raises(ToolExecutionError) as excinfo:
+        tools_dashboard.list_tests(**_tree_args(status="borked"))
+    assert "borked" in str(excinfo.value)
+
+
+def test_list_tests_rejects_negative_limit(monkeypatch):
+    _mock_get(monkeypatch, {"tests": [{"id": str(i)} for i in range(5)]})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.list_tests(**_tree_args(limit=-1))
+
+
+def test_list_tests_rejects_negative_offset(monkeypatch):
+    _mock_get(monkeypatch, {"tests": [{"id": str(i)} for i in range(5)]})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.list_tests(**_tree_args(offset=-1))
+
+
+def test_get_issue_rejects_empty_id(monkeypatch):
+    get = _mock_get(monkeypatch, {"issues": [{"id": "maestro:one"}]})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.get_issue("")
+    get.assert_not_called()
+
+
+def test_invalid_status_is_rejected_before_any_request(monkeypatch):
+    get = _mock_get(monkeypatch, {"tests": []})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.list_tests(**_tree_args(status="borked"))
+    get.assert_not_called()
+
+
+def test_invalid_limit_is_rejected_before_any_request(monkeypatch):
+    get = _mock_get(monkeypatch, {"tests": []})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.list_tests(**_tree_args(limit=-1))
+    get.assert_not_called()
+
+
+def test_invalid_offset_is_rejected_before_any_request(monkeypatch):
+    get = _mock_get(monkeypatch, {"builds": []})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.list_builds(**_tree_args(offset=-1))
+    get.assert_not_called()
+
+
+def test_issue_tools_validate_before_any_request(monkeypatch):
+    get = _mock_get(monkeypatch, {"tests": []})
+    with pytest.raises(ToolExecutionError):
+        tools_dashboard.get_issue_tests("maestro:i1", status="borked")
+    get.assert_not_called()

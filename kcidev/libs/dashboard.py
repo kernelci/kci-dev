@@ -400,12 +400,19 @@ def dashboard_fetch_issue_list(origin, days, use_json):
     return dashboard_api_fetch("issue/", params, use_json)
 
 
+def _require_issue_id(issue_id):
+    if not issue_id or not issue_id.strip():
+        raise click.ClickException("Issue id is required")
+
+
 def dashboard_fetch_issue(issue_id, use_json):
+    _require_issue_id(issue_id)
     logging.info(f"Fetching issue details for issue ID: {issue_id}")
     return dashboard_api_fetch(f"issue/{issue_id}", {}, use_json)
 
 
 def dashboard_fetch_issue_builds(origin, issue_id, use_json, error_verbose=True):
+    _require_issue_id(issue_id)
     logging.info(f"Fetching builds for issue ID: {issue_id}")
     params = {"filter_origin": origin} if origin else {}
     return dashboard_api_fetch(
@@ -414,6 +421,7 @@ def dashboard_fetch_issue_builds(origin, issue_id, use_json, error_verbose=True)
 
 
 def dashboard_fetch_issue_tests(origin, issue_id, use_json, error_verbose=True):
+    _require_issue_id(issue_id)
     logging.info(f"Fetching tests for issue ID: {issue_id}")
     params = {"filter_origin": origin} if origin else {}
     return dashboard_api_fetch(

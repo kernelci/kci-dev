@@ -235,3 +235,35 @@ def test_list_nodes_http_error_keeps_api_detail(monkeypatch):
     result = _call_tool(create_server(CFG, "test"), "list_nodes", {})
     assert result.isError is True
     assert "422" in result.content[0].text
+
+
+def _no_http(monkeypatch):
+    from kcidev.libs import maestro_common
+
+    get = Mock()
+    monkeypatch.setattr(maestro_common.kcidev_session, "get", get)
+    return get
+
+
+def test_list_nodes_rejects_negative_limit(monkeypatch):
+    get = _no_http(monkeypatch)
+    result = _call_tool(create_server(CFG, "test"), "list_nodes", {"limit": -1})
+    assert result.isError is True
+    get.assert_not_called()
+
+
+def test_list_nodes_rejects_negative_offset(monkeypatch):
+    get = _no_http(monkeypatch)
+    result = _call_tool(create_server(CFG, "test"), "list_nodes", {"offset": -1})
+    assert result.isError is True
+    get.assert_not_called()
+
+
+def test_list_nodes_rejects_filter_without_equals(monkeypatch):
+    get = _no_http(monkeypatch)
+    result = _call_tool(
+        create_server(CFG, "test"), "list_nodes", {"filters": ["state done"]}
+    )
+    assert result.isError is True
+    assert "state done" in result.content[0].text
+    get.assert_not_called()

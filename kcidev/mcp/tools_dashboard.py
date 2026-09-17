@@ -7,6 +7,7 @@ from functools import wraps
 from kcidev.api import KciDevError, KernelCIClient
 from kcidev.libs.filters import StatusFilter
 from kcidev.mcp.errors import tool_errors
+from kcidev.mcp.validation import check_page_args, check_page_bounds, checked_status
 
 _active_client = ContextVar("dashboard_tool_client", default=None)
 
@@ -16,10 +17,11 @@ def _current_client():
 
 
 def _page(data, key, status, limit, offset, fields=None):
+    check_page_bounds(limit, offset)
     items = data[key] if isinstance(data, dict) else data
     total = len(items)
     if status:
-        status_filter = StatusFilter(status)
+        status_filter = StatusFilter(checked_status(status))
         items = [item for item in items if status_filter.matches(item)]
     page = items[offset : offset + limit]
     if fields:
@@ -142,12 +144,13 @@ def list_builds(
     """List kernel builds for one commit of a tree.
 
     Optional filters: arch (e.g. 'arm64'), tree name, ISO date range, and
-    status ('pass', 'fail' or 'inconclusive'). Results are paginated with
+    status ('pass', 'fail', 'inconclusive' or 'all'). Results are paginated with
     limit/offset; the response carries 'total' (before status filtering)
     and 'matched' counts so you know whether to fetch further pages;
     fields projects each entry to only those keys.
     Returns build entries with ids usable with get_build.
     """
+    check_page_args(status, limit, offset)
     data = _current_client().get_builds(
         origin, giturl, branch, commit, arch, tree, start_date, end_date
     )
@@ -173,12 +176,13 @@ def list_boots(
     """List boot test results for one commit of a tree.
 
     Optional filters: arch, tree name, ISO date range, boot origin, and
-    status ('pass', 'fail' or 'inconclusive'). Results are paginated with
+    status ('pass', 'fail', 'inconclusive' or 'all'). Results are paginated with
     limit/offset; the response carries 'total' (before status filtering)
     and 'matched' counts so you know whether to fetch further pages;
     fields projects each entry to only those keys.
     Returns boot entries with ids usable with get_test.
     """
+    check_page_args(status, limit, offset)
     data = _current_client().get_boots(
         origin, giturl, branch, commit, arch, tree, start_date, end_date, boot_origin
     )
@@ -203,13 +207,14 @@ def list_tests(
     """List test results for one commit of a tree.
 
     Optional filters: arch, tree name, ISO date range, and status ('pass',
-    'fail' or 'inconclusive'). A full commit can carry tens of thousands
+    'fail', 'inconclusive' or 'all'). A full commit can carry tens of thousands
     of tests, so filter by status and paginate with limit/offset; the
     response carries 'total' (before status filtering) and 'matched'
     counts so you know whether to fetch further pages; fields projects
     each entry to only those keys.
     Returns test entries with ids usable with get_test.
     """
+    check_page_args(status, limit, offset)
     data = _current_client().get_tests(
         origin, giturl, branch, commit, arch, tree, start_date, end_date
     )
@@ -327,10 +332,11 @@ def get_issue_builds(
     An empty list means the issue has no builds recorded against it, and
     also what an unknown issue id returns, since the dashboard reports
     both the same way; confirm the id with get_issue if it matters.
-    Optional status filter ('pass', 'fail' or 'inconclusive') and
+    Optional status filter ('pass', 'fail', 'inconclusive' or 'all') and
     limit/offset pagination; the response carries 'total' and 'matched'
     counts; fields projects each entry to only those keys.
     """
+    check_page_args(status, limit, offset)
     data = _current_client().get_issue_builds(issue_id, origin)
     return _page(data, "builds", status, limit, offset, fields)
 
@@ -349,10 +355,11 @@ def get_issue_tests(
     An empty list means the issue has no tests recorded against it, and
     also what an unknown issue id returns, since the dashboard reports
     both the same way; confirm the id with get_issue if it matters.
-    Optional status filter ('pass', 'fail' or 'inconclusive') and
+    Optional status filter ('pass', 'fail', 'inconclusive' or 'all') and
     limit/offset pagination; the response carries 'total' and 'matched'
     counts; fields projects each entry to only those keys.
     """
+    check_page_args(status, limit, offset)
     data = _current_client().get_issue_tests(issue_id, origin)
     return _page(data, "tests", status, limit, offset, fields)
 

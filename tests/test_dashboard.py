@@ -198,3 +198,50 @@ def test_other_dashboard_errors_are_passed_through_unchanged(monkeypatch):
         dashboard.dashboard_api_fetch("build/x", {}, False)
 
     assert excinfo.value.message == "Build not found"
+
+
+def _issue_collection_get(monkeypatch):
+    response = Mock(status_code=200)
+    response.json.return_value = {"issues": [{"id": "maestro:one"}]}
+    get = Mock(return_value=response)
+    monkeypatch.setattr(dashboard.kcidev_session, "get", get)
+    return get
+
+
+def test_dashboard_fetch_issue_rejects_empty_id(monkeypatch):
+    get = _issue_collection_get(monkeypatch)
+
+    with pytest.raises(click.ClickException):
+        dashboard.dashboard_fetch_issue("", False)
+
+    get.assert_not_called()
+
+
+def test_dashboard_fetch_issue_builds_rejects_empty_id(monkeypatch):
+    get = _issue_collection_get(monkeypatch)
+
+    with pytest.raises(click.ClickException):
+        dashboard.dashboard_fetch_issue_builds(None, "", False)
+
+    get.assert_not_called()
+
+
+def test_dashboard_fetch_issue_tests_rejects_empty_id(monkeypatch):
+    get = _issue_collection_get(monkeypatch)
+
+    with pytest.raises(click.ClickException):
+        dashboard.dashboard_fetch_issue_tests(None, "", False)
+
+    get.assert_not_called()
+
+
+def test_cli_issue_command_rejects_empty_id(monkeypatch):
+    from kcidev.main import get_cli
+
+    get = _issue_collection_get(monkeypatch)
+
+    runner = CliRunner()
+    result = runner.invoke(get_cli(), ["results", "issue", "--id", ""])
+
+    assert result.exit_code != 0
+    get.assert_not_called()
