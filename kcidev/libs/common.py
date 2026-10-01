@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import platform
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
@@ -20,8 +21,18 @@ try:
 except PackageNotFoundError:
     kcidev_version = "unknown"
 
+
+def client_os_family() -> str:
+    system = platform.system()
+    if system == "Darwin":
+        return "macOS"
+    return system or "unknown"
+
+
 kcidev_session = requests.Session()
-kcidev_session.headers["User-Agent"] = f"kci-dev/{kcidev_version}"
+kcidev_session.headers["User-Agent"] = (
+    f"kci-dev/{kcidev_version} ({client_os_family()})"
+)
 
 # Default connect and read timeouts for HTTP operations.
 HTTP_TIMEOUT = (10, 60)
