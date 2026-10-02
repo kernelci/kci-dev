@@ -6,6 +6,7 @@ from mcp.server.fastmcp import FastMCP
 from kcidev.api import KernelCIClient
 from kcidev.libs.common import kcidev_version
 from kcidev.mcp import tools_dashboard, tools_maestro
+from kcidev.mcp.analytics import instrument_tools
 
 SERVER_INSTRUCTIONS = """KernelCI MCP server (experimental: tools,
 parameters and response formats may change between releases).
@@ -27,4 +28,5 @@ def create_server(cfg=None, instance=None, host="127.0.0.1", port=8000):
     tools_maestro.register_tools(
         server, client, icfg.get("api"), icfg.get("pipeline"), icfg.get("token")
     )
+    instrument_tools(server, client.instance)
     return server

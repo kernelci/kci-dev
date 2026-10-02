@@ -84,3 +84,29 @@ The dashboard has no server-side lab filter, so the `lab` option of the
 list tools is applied to the fetched page after the request. It shrinks
 the response, not the query: `total` counts entries before filtering and
 `matched` after.
+
+## Analytics logging
+
+The server writes newline-delimited JSON analytics to stderr by default,
+without requiring `--debug`. To collect analytics in a separate file:
+
+```sh
+kci-dev mcp --transport http --log-file /var/log/kci-dev-mcp.jsonl
+```
+
+The file is opened in append mode; its parent directory must exist and be
+writable. File rotation and retention are managed externally. Other diagnostic
+messages continue to use stderr, and stdio protocol output stays on stdout.
+
+Each `tool_call` event includes a UTC `timestamp`, a generated unique `call_id`,
+`tool`, configured `instance` (or null), `outcome` (`success`, `error`, or
+`cancelled`), and `duration_ms`. Duration covers validation and tool execution.
+Invalid arguments and unknown tools count as errors. These records support
+tool usage counts, error rates, and latency percentiles. Calls are logged when
+they finish; a process killed abruptly cannot log its unfinished calls.
+
+`server_start` and `server_stop` events include the transport and instance.
+Analytics records omit arguments, results, credentials, and exception messages.
+This does not change the contents of existing diagnostic logs. When embedding
+`create_server()` in Python, configure the `kcidev.mcp.analytics` logger at INFO
+to collect the tool events through your application's logging setup.
