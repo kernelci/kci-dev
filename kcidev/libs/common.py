@@ -26,7 +26,9 @@ def client_os_family() -> str:
     system = platform.system()
     if system == "Darwin":
         return "macOS"
-    return system or "unknown"
+    if system == "Linux" or system == "Windows":
+        return system
+    return "unknown"
 
 
 kcidev_session = requests.Session()
