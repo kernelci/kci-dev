@@ -6,7 +6,7 @@ from subprocess import PIPE, run
 import git
 import pytest
 
-from kcidev.libs.common import kcidev_session, kcidev_version
+from kcidev.libs.common import client_os_family, kcidev_session, kcidev_version
 from kcidev.subcommands.config import add_config
 
 
@@ -869,9 +869,27 @@ def test_kcidev_results_build_with_real_id():
             pass
 
 
+@pytest.mark.parametrize(
+    ("system", "expected"),
+    [
+        ("Linux", "Linux"),
+        ("Darwin", "macOS"),
+        ("Windows", "Windows"),
+        ("", "unknown"),
+        ("FreeBSD", "unknown"),
+    ],
+)
+def test_client_os_family(monkeypatch, system, expected):
+    monkeypatch.setattr("kcidev.libs.common.platform.system", lambda: system)
+    assert client_os_family() == expected
+
+
 def test_kcidev_session_user_agent():
     ua = kcidev_session.headers["User-Agent"]
-    assert ua == f"kci-dev/{kcidev_version}"
+    assert re.fullmatch(
+        rf"kci-dev/{re.escape(kcidev_version)} \((Linux|macOS|Windows|unknown)\)",
+        ua,
+    )
 
 
 def test_kcidev_version_from_metadata():
