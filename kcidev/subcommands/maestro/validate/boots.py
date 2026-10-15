@@ -7,6 +7,7 @@ from kcidev.subcommands.results import trees
 
 from .helper import (
     get_boot_stats,
+    load_boot_job_names,
     print_simple_list,
     print_table_stats,
     print_validation_human,
@@ -32,6 +33,7 @@ checkout from the git folder specified.
 Examples:
     kci-dev maestro validate boots --all-checkouts --days <number-of-days>
     kci-dev maestro validate boots -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    kci-dev maestro validate boots --all-checkouts --pipeline-config <kernelci-pipeline>/config
     """,
 )
 @click.option(
@@ -98,6 +100,11 @@ Examples:
     help="Print a human-readable validation summary. With --json, text is written to stderr.",
 )
 @click.option(
+    "--pipeline-config",
+    type=click.Path(exists=True),
+    help="kernelci-pipeline config directory or file used to select boot jobs by kcidb_test_suite. Without it, boot jobs are matched by name.",
+)
+@click.option(
     "--fail-on-mismatch",
     is_flag=True,
     default=False,
@@ -119,9 +126,11 @@ def boots(
     table_output,
     use_json,
     human_readable,
+    pipeline_config,
     fail_on_mismatch,
 ):
     final_stats = []
+    boot_jobs = load_boot_job_names(pipeline_config) if pipeline_config else None
     raise_errors = use_json or fail_on_mismatch
     stdout = sys.stdout
     if use_json:
@@ -149,6 +158,7 @@ def boots(
                     verbose,
                     arch,
                     raise_errors,
+                    boot_jobs=boot_jobs,
                 )
                 if stats:
                     final_stats.append(stats)
@@ -166,6 +176,7 @@ def boots(
                 verbose,
                 arch,
                 raise_errors,
+                boot_jobs=boot_jobs,
             )
             if stats:
                 final_stats.append(stats)

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
 import json
+import os
+import re
 from datetime import datetime, timedelta
 
 import click
+import yaml
 from tabulate import tabulate
 
 from kcidev.libs.common import kci_msg, kci_msg_bold, kci_msg_json, kci_msg_red
@@ -491,14 +494,59 @@ def validate_boot_status(maestro_boots, dashboard_boots):
     return boots_with_status_mismatch
 
 
-def get_boots(ctx, giturl, branch, commit, arch, raise_errors=False):
+def iter_yaml_files(config_path):
+    """Yield a single YAML file, or all YAML files under a directory"""
+    if os.path.isfile(config_path):
+        yield config_path
+        return
+    for root, dirs, files in os.walk(config_path):
+        dirs.sort()
+        for name in sorted(files):
+            if name.endswith((".yaml", ".yml")):
+                yield os.path.join(root, name)
+
+
+def load_boot_job_names(config_path):
+    """
+    Return names of jobs reported to KCIDB as boots.
+
+    Read the kernelci-pipeline YAML config (a directory or a single file) and
+    select jobs whose kcidb_test_suite starts with "boot", the same rule the
+    pipeline's KCIDB bridge uses to classify boots.
+    """
+    jobs = {}
+    for path in iter_yaml_files(config_path):
+        with open(path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        if isinstance(data, dict) and isinstance(data.get("jobs"), dict):
+            jobs.update(data["jobs"])
+    boot_jobs = sorted(
+        name
+        for name, job in jobs.items()
+        if isinstance(job, dict)
+        and str(job.get("kcidb_test_suite") or "").startswith("boot")
+    )
+    if not boot_jobs:
+        raise click.UsageError(f"No boot jobs found in pipeline config: {config_path}")
+    return boot_jobs
+
+
+def boot_name_filter(boot_jobs=None):
+    """Return the Maestro node name filter matching boot jobs"""
+    if not boot_jobs:
+        # CIP boot jobs are named job-*-cip rather than baseline-*, but are
+        # still sent to KCIDB as boots (kcidb_test_suite: boot / boot.nfs)
+        return "name__re=^(baseline|job-.*-cip)"
+    names = "|".join(re.escape(name) for name in boot_jobs)
+    return f"name__re=^({names})$"
+
+
+def get_boots(ctx, giturl, branch, commit, arch, raise_errors=False, boot_jobs=None):
     """Get boots matching git URL, branch, and commit"""
     maestro_boots = []
     dashboard_boots = []
-    # CIP boot jobs are named job-*-cip rather than baseline-*, but are
-    # still sent to KCIDB as boots (kcidb_test_suite: boot / boot.nfs)
     filters = [
-        "name__re=^(baseline|job-.*-cip)",
+        boot_name_filter(boot_jobs),
         "data.kernel_revision.url=" + giturl,
         "data.kernel_revision.branch=" + branch,
         "data.kernel_revision.commit=" + commit,
@@ -540,11 +588,19 @@ def get_boots(ctx, giturl, branch, commit, arch, raise_errors=False):
 
 
 def get_boot_stats(
-    ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors=False
+    ctx,
+    giturl,
+    branch,
+    commit,
+    tree_name,
+    verbose,
+    arch,
+    raise_errors=False,
+    boot_jobs=None,
 ):
     """Get boot stats"""
     maestro_boots, dashboard_boots = get_boots(
-        ctx, giturl, branch, commit, arch, raise_errors
+        ctx, giturl, branch, commit, arch, raise_errors, boot_jobs=boot_jobs
     )
     if dashboard_boots is None:
         return []

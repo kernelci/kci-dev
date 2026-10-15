@@ -2,6 +2,7 @@ import importlib
 import json
 
 import click
+import pytest
 from click.testing import CliRunner
 
 from kcidev.subcommands.maestro.validate.helper import (
@@ -87,7 +88,7 @@ def _patch_boots_command(monkeypatch, stats):
     monkeypatch.setattr(
         boots_module,
         "get_boot_stats",
-        lambda ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors=False: stats,
+        lambda ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors=False, boot_jobs=None: stats,
     )
     return boots_module.boots
 
@@ -510,7 +511,7 @@ def test_boot_stats_uses_retry_filtered_maestro_count_and_status(monkeypatch):
     monkeypatch.setattr(
         helper_module,
         "get_boots",
-        lambda ctx, giturl, branch, commit, arch, raise_errors=False: (
+        lambda ctx, giturl, branch, commit, arch, raise_errors=False, boot_jobs=None: (
             maestro_boots,
             dashboard_boots,
         ),
@@ -560,3 +561,56 @@ def test_boot_retry_filter_keeps_failed_cip_jobs():
     filtered = helper_module.filter_maestro_items_for_validation(maestro_boots, "boot")
 
     assert [b["id"] for b in filtered] == ["cip-fail"]
+
+
+def test_load_boot_job_names_uses_kcidb_test_suite(tmp_path):
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    (tmp_path / "jobs.yaml").write_text(
+        """
+jobs:
+  baseline-x86:
+    kcidb_test_suite: boot
+  kbuild-gcc-14-x86:
+    kind: kbuild
+  kselftest-dt:
+    kcidb_test_suite: kselftest.dt
+"""
+    )
+    (tmp_path / "cip").mkdir()
+    (tmp_path / "cip" / "jobs-cip.yaml").write_text(
+        """
+_anchors:
+  boot-job: &boot-job
+    kind: job
+    kcidb_test_suite: boot.nfs
+jobs:
+  job-gcc-14-x86-612-cip: *boot-job
+"""
+    )
+
+    boot_jobs = helper_module.load_boot_job_names(str(tmp_path))
+
+    assert boot_jobs == ["baseline-x86", "job-gcc-14-x86-612-cip"]
+    assert helper_module.boot_name_filter(boot_jobs) == (
+        r"name__re=^(baseline\-x86|job\-gcc\-14\-x86\-612\-cip)$"
+    )
+
+
+def test_load_boot_job_names_rejects_config_without_boot_jobs(tmp_path):
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    (tmp_path / "jobs.yaml").write_text("jobs:\n  kbuild-x86:\n    kind: kbuild\n")
+
+    with pytest.raises(click.UsageError):
+        helper_module.load_boot_job_names(str(tmp_path))
+
+
+def test_boot_name_filter_falls_back_to_name_regex():
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+
+    assert helper_module.boot_name_filter() == "name__re=^(baseline|job-.*-cip)"
