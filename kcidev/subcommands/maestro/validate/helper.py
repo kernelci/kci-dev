@@ -495,8 +495,10 @@ def get_boots(ctx, giturl, branch, commit, arch, raise_errors=False):
     """Get boots matching git URL, branch, and commit"""
     maestro_boots = []
     dashboard_boots = []
+    # CIP boot jobs are named job-*-cip rather than baseline-*, but are
+    # still sent to KCIDB as boots (kcidb_test_suite: boot / boot.nfs)
     filters = [
-        "name__re=^baseline",
+        "name__re=^(baseline|job-.*-cip)",
         "data.kernel_revision.url=" + giturl,
         "data.kernel_revision.branch=" + branch,
         "data.kernel_revision.commit=" + commit,
