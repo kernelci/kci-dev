@@ -72,11 +72,15 @@ def filter_maestro_items_for_validation(maestro_data, item_type):
             if (b["result"] != "incomplete" or b["retry_counter"] == 3)
         ]
     if item_type == "boot":
-        # Exclude boot retries
+        # Exclude boot retries; job-retry only retries failed baseline jobs
         return [
             b
             for b in maestro_data
-            if (b["result"] not in {"incomplete", "fail"} or b["retry_counter"] == 3)
+            if b["retry_counter"] == 3
+            or not (
+                b["result"] == "incomplete"
+                or (b["result"] == "fail" and b["name"].startswith("baseline"))
+            )
         ]
     return maestro_data
 

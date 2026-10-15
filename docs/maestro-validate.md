@@ -89,7 +89,7 @@ Invoking `kci-dev maestro validate` without a subcommand prints help and exits w
 
     * **MISS** if error_code ∈ {`Bug`, `Configuration`, `invalid_job_params`, `Job`, `job_generation_error`, `ObjectNotPersisted`, `RequestBodyTooLarge`, `submit_error`, `Unexisting permission codename.`, `kbuild_internal_error`}
     * **ERROR** if error_code ∈ {`Canceled`, `Infrastructure`, `LAVATimeout`, `MultinodeTimeout`, `Test`}
-* Boot retries excluded unless `retry_counter == 3`.
+* Boot retries excluded unless `retry_counter == 3`: `incomplete` boots, and `fail` boots of `baseline*` jobs (the only failed jobs Maestro retries).
 * A **status mismatch** is reported when the mapped result disagrees with the dashboard.
 
 ---

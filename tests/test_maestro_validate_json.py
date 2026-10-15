@@ -488,8 +488,20 @@ def test_boot_stats_uses_retry_filtered_maestro_count_and_status(monkeypatch):
         "kcidev.subcommands.maestro.validate.helper"
     )
     maestro_boots = [
-        {"id": "boot-1", "result": "pass", "retry_counter": 0, "data": {}},
-        {"id": "boot-retry", "result": "fail", "retry_counter": 1, "data": {}},
+        {
+            "id": "boot-1",
+            "name": "baseline-x86",
+            "result": "pass",
+            "retry_counter": 0,
+            "data": {},
+        },
+        {
+            "id": "boot-retry",
+            "name": "baseline-x86",
+            "result": "fail",
+            "retry_counter": 1,
+            "data": {},
+        },
     ]
     dashboard_boots = [
         {"id": "maestro:boot-1", "status": "PASS"},
@@ -518,3 +530,33 @@ def test_boot_stats_uses_retry_filtered_maestro_count_and_status(monkeypatch):
     assert stats[3] == 2
     assert stats[6] == []
     assert stats[7] == ["boot-retry"]
+
+
+def test_boot_retry_filter_keeps_failed_cip_jobs():
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    maestro_boots = [
+        {
+            "id": "cip-fail",
+            "name": "job-gcc-14-x86-612-cip",
+            "result": "fail",
+            "retry_counter": 0,
+        },
+        {
+            "id": "cip-retry",
+            "name": "job-gcc-14-x86-612-cip",
+            "result": "incomplete",
+            "retry_counter": 0,
+        },
+        {
+            "id": "baseline-retry",
+            "name": "baseline-x86",
+            "result": "fail",
+            "retry_counter": 0,
+        },
+    ]
+
+    filtered = helper_module.filter_maestro_items_for_validation(maestro_boots, "boot")
+
+    assert [b["id"] for b in filtered] == ["cip-fail"]
