@@ -155,7 +155,19 @@ builds = client.get_builds(
     commit="0123456789abcdef0123456789abcdef01234567",
     arch="x86_64",
 )
+
+issues = client.get_issue_list(
+    origin="maestro",
+    start_date="2026-08-01T00:00:00Z",
+    end_date="2026-08-08T00:00:00Z",
+)
 ```
+
+`get_issue_list()` defaults to the last 7 days. Pass `days=N` for a relative
+window, or both `start_date` and `end_date` for exact boundaries, without
+`days`. Date-only values use midnight UTC; timestamps must include a timezone.
+The CLI equivalent is `kci-dev results issues --start-date ... --end-date ...`,
+with optional `--origin` and `--json` (see [issue commands](docs/issues.md)).
 
 ### Run kci-dev subcommands from Python
 

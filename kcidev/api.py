@@ -822,13 +822,20 @@ class KernelCIClient:
             error_verbose,
         )
 
-    def get_issue_list(self, origin=None, days=7):
+    def get_issue_list(self, origin=None, days=None, *, start_date=None, end_date=None):
+        """List issues for the last 7 days or an explicit pair of date boundaries.
+
+        Dates use UTC midnight; timestamps must include a timezone. Explicit
+        boundaries cannot be combined with days. Invalid ranges raise KciDevError.
+        """
         return self._dashboard_request(
             "Dashboard issue list request failed",
             dashboard_fetch_issue_list,
             origin,
             days,
             True,
+            start_date,
+            end_date,
         )
 
     def get_issue(self, issue_id):

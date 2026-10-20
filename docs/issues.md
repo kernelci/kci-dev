@@ -14,7 +14,8 @@ Fetch KernelCI Database (KCIDB) issues associated with **builds** and **boots**,
 
 ```bash
 kci-dev results issues [--builds | --boots | --new]
-                       [--days <N>] [--arch <ARCH>] [--origin <ORIGIN>] [--latest]
+                       [--days <N> | --start-date <DATE> --end-date <DATE>]
+                       [--arch <ARCH>] [--origin <ORIGIN>] [--latest]
                        [--giturl <URL> --branch <BRANCH> --commit <COMMIT>]
                        [--git-folder <PATH>]
 ```
@@ -32,6 +33,28 @@ kci-dev results issues [--builds | --boots | --new]
 ---
 
 ## Common Workflows
+
+### List issues within an exact date range
+
+```bash
+kci-dev results issues --origin maestro \
+  --start-date 2026-08-01T00:00:00Z \
+  --end-date 2026-08-08T00:00:00Z
+
+# Date-only boundaries mean midnight UTC, including the end boundary.
+kci-dev results issues --origin maestro \
+  --start-date 2026-08-01 --end-date 2026-08-08 --json
+```
+
+Both boundaries are required. Timestamps must include `Z` or a UTC offset, such
+as `2026-08-01T09:00:00+09:00`. Boundaries are sent as Unix seconds without
+rounding to whole days; fractional seconds are retained. The start must not be
+later than the end. A date-only end is not expanded to the end of that day.
+
+Explicit ranges apply to the issue listing, with optional `--origin` and
+`--json`. They cannot be combined with `--days`, `--new`, `--missing`, checkout
+selection, or the build/boot, architecture and tree options. Unsupported
+combinations produce a usage error rather than silently ignoring the range.
 
 ### Detect build issues
 
@@ -90,8 +113,12 @@ kci-dev results issues --builds --arch arm64 --days 3 --latest
 
 ### Dashboard Scope
 
-* `--days <N>` *(int, default: 7)*
-  Time window (in days) to consider when scanning dashboard results.
+* `--days <N>` *(int, default: 5)*
+  Time window (in days) to consider when scanning dashboard results. For the
+  issue listing, this is measured backwards from the current time in UTC.
+* `--start-date <DATE>` and `--end-date <DATE>`
+  Exact issue-listing boundaries. Accept `YYYY-MM-DD` (midnight UTC) or
+  timezone-aware ISO 8601 timestamps. Use both together, without `--days`.
 * `--origin <ORIGIN>` *(default: `maestro`)*
   KCIDB origin to query.
 * `--arch <ARCH>`
