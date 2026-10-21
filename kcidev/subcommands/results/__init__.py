@@ -932,6 +932,8 @@ def get_filtered_issues(origin, tree_name, giturl, branch, commit, arch):
 Examples:
   # Get issues
   kci-dev results issues --origin <origin> --days <number-of-days>
+  # Get issues within exact UTC boundaries
+  kci-dev results issues --start-date 2026-08-01T00:00:00Z --end-date 2026-08-08T00:00:00Z
   # Get new issues for all checkouts
   kci-dev results issues --new --days <number-of-days> --origin <origin>
   # Get new issues for a checkout
@@ -953,9 +955,17 @@ Examples:
 )
 @click.option(
     "--days",
-    help="Provide a period of time in days to get results for",
+    help="Get results for the last N days (default: 5); cannot be combined with a date range",
     type=int,
-    default="5",
+    default=None,
+)
+@click.option(
+    "--start-date",
+    help="Issue listing start: YYYY-MM-DD (UTC midnight) or timezone-aware ISO 8601; requires --end-date",
+)
+@click.option(
+    "--end-date",
+    help="Issue listing end: YYYY-MM-DD (UTC midnight) or timezone-aware ISO 8601; requires --start-date",
 )
 @click.option(
     "--new",
@@ -1007,6 +1017,8 @@ def issues(
     ctx,
     origin,
     days,
+    start_date,
+    end_date,
     new,
     giturl,
     branch,
@@ -1021,9 +1033,33 @@ def issues(
     boots,
 ):
     """Issues command handler"""
+    has_date_range = start_date is not None or end_date is not None
+    if has_date_range and any(
+        [
+            new,
+            missing,
+            giturl,
+            branch,
+            commit,
+            git_folder,
+            latest,
+            arch,
+            tree,
+            builds,
+            boots,
+        ]
+    ):
+        raise click.UsageError(
+            "--start-date and --end-date are only supported for the unfiltered issue "
+            "listing (with optional --origin and --json)"
+        )
+    if not has_date_range and days is None:
+        days = 5
     if not new and not missing:
         if not any([giturl, branch, commit]):
-            data = dashboard_fetch_issue_list(origin, days, use_json)
+            data = dashboard_fetch_issue_list(
+                origin, days, use_json, start_date, end_date
+            )
             print_issues(data, use_json)
             return
         if not all([giturl, branch, commit]):

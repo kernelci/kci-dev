@@ -1,10 +1,11 @@
 import json
 import logging
+import re
 import time
 import urllib
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from urllib.parse import urlparse
 
@@ -402,9 +403,46 @@ def dashboard_fetch_boot_issues(test_id, use_json, error_verbose):
     return dashboard_api_fetch(endpoint, {}, use_json, error_verbose=error_verbose)
 
 
-def dashboard_fetch_issue_list(origin, days, use_json):
+def _parse_issue_date(value, option):
+    """Parse a UTC calendar date or a timezone-aware ISO 8601 timestamp."""
+    try:
+        if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+            return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
+        if not re.match(r"[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt ]", value):
+            raise ValueError
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.utcoffset() is None:
+            raise ValueError
+        return parsed
+    except ValueError as exc:
+        raise click.BadParameter(
+            "Expected YYYY-MM-DD or an ISO 8601 timestamp with a timezone "
+            "(Z or an explicit UTC offset).",
+            param_hint=option,
+        ) from exc
+
+
+def dashboard_fetch_issue_list(origin, days, use_json, start_date=None, end_date=None):
+    if start_date is not None or end_date is not None:
+        if start_date is None or end_date is None:
+            raise click.UsageError("--start-date and --end-date must be used together")
+        if days is not None:
+            raise click.UsageError(
+                "An explicit date range cannot be combined with --days"
+            )
+        start = _parse_issue_date(start_date, "--start-date")
+        end = _parse_issue_date(end_date, "--end-date")
+    else:
+        end = datetime.now(timezone.utc)
+        start = end - timedelta(days=7 if days is None else days)
+    if start > end:
+        raise click.UsageError("The start date cannot be later than the end date")
+
+    # The issue endpoint uses Unix seconds, not the tree endpoint's date filters.
+    # Strings also retain fractional seconds in the dashboard's str | int schema.
     params = {
-        "interval_in_days": days,
+        "startTimestampInSeconds": str(start.timestamp()),
+        "endTimestampInSeconds": str(end.timestamp()),
     }
     if origin:
         params["filter_origin"] = origin
