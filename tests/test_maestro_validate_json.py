@@ -2,9 +2,15 @@ import importlib
 import json
 
 import click
+import pytest
 from click.testing import CliRunner
 
-from kcidev.subcommands.maestro.validate.helper import validation_rows_to_json
+from kcidev.subcommands.maestro.validate.helper import (
+    find_extra_dashboard_items,
+    find_missing_items,
+    validation_report_to_text,
+    validation_rows_to_json,
+)
 
 COMMIT = "a" * 40
 
@@ -13,12 +19,17 @@ def _stdout(result):
     return getattr(result, "stdout", result.output)
 
 
+def _stderr(result):
+    return getattr(result, "stderr", "")
+
+
 def _build_row(
     maestro_count=1,
     dashboard_count=1,
     summary_flag="✅",
     missing_ids=None,
     status_mismatch_ids=None,
+    extra_dashboard_ids=None,
 ):
     return [
         "mainline/master",
@@ -28,6 +39,7 @@ def _build_row(
         summary_flag,
         missing_ids or [],
         status_mismatch_ids or [],
+        extra_dashboard_ids or [],
     ]
 
 
@@ -76,7 +88,7 @@ def _patch_boots_command(monkeypatch, stats):
     monkeypatch.setattr(
         boots_module,
         "get_boot_stats",
-        lambda ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors=False: stats,
+        lambda ctx, giturl, branch, commit, tree_name, verbose, arch, raise_errors=False, boot_jobs=None: stats,
     )
     return boots_module.boots
 
@@ -176,6 +188,23 @@ def test_missing_ids_make_summary_not_ok():
     assert report["results"][0]["ok"] is False
 
 
+def test_extra_dashboard_ids_make_summary_not_ok():
+    report = validation_rows_to_json(
+        "boots",
+        [_build_row(1, 2, "❌", extra_dashboard_ids=["boot-extra"])],
+        False,
+        "maestro",
+        1,
+        None,
+    )
+
+    assert report["summary"]["ok"] is False
+    assert report["summary"]["failed"] == 1
+    assert report["summary"]["extra_in_dashboard"] == 1
+    assert report["results"][0]["extra_in_dashboard_ids"] == ["boot-extra"]
+    assert report["results"][0]["ok"] is False
+
+
 def test_status_mismatches_make_summary_not_ok():
     report = validation_rows_to_json(
         "boots",
@@ -216,6 +245,86 @@ def test_json_mismatches_still_exit_zero(monkeypatch):
 
     assert result.exit_code == 0
     assert json.loads(_stdout(result))["summary"]["ok"] is False
+
+
+def test_validation_report_to_text_decodes_summary():
+    report = validation_rows_to_json(
+        "boots",
+        [
+            _build_row(
+                116,
+                45,
+                "❌",
+                missing_ids=["boot-1"],
+                status_mismatch_ids=["boot-2"],
+            )
+        ],
+        False,
+        "maestro",
+        1,
+        None,
+    )
+
+    text = validation_report_to_text(report)
+
+    assert "Dashboard validation: boots (FAIL)" in text
+    assert (
+        "Summary: checked=1, failed=1, missing=1, extra_in_dashboard=0, "
+        "status_mismatches=1"
+    ) in text
+    assert "mainline/master @ aaaaaaaaaaaa: FAIL" in text
+    assert "Count delta: 71 more in Maestro" in text
+    assert "https://api.kernelci.org/viewer?node_id=boot-1" in text
+    assert "https://api.kernelci.org/viewer?node_id=boot-2" in text
+
+
+def test_validation_report_to_text_shows_extra_dashboard_ids():
+    report = validation_rows_to_json(
+        "boots",
+        [_build_row(1, 2, "❌", extra_dashboard_ids=["boot-extra"])],
+        False,
+        "maestro",
+        1,
+        None,
+    )
+
+    text = validation_report_to_text(report)
+
+    assert "Count delta: 1 more in dashboard" in text
+    assert "Extra dashboard boot IDs: 1" in text
+    assert "https://api.kernelci.org/viewer?node_id=boot-extra" in text
+
+
+def test_json_human_readable_keeps_stdout_json_and_writes_text_to_stderr(
+    monkeypatch,
+):
+    command = _patch_boots_command(
+        monkeypatch,
+        _build_row(2, 1, "❌", missing_ids=["boot-1"]),
+    )
+    args = _json_args() + ["--human-readable"]
+
+    result = CliRunner().invoke(command, args)
+
+    assert result.exit_code == 0
+    report = json.loads(_stdout(result))
+    assert report["summary"]["ok"] is False
+    assert "Dashboard validation: boots (FAIL)" in _stderr(result)
+    assert "node_id=boot-1" in _stderr(result)
+
+
+def test_human_readable_without_json_uses_decoded_text(monkeypatch):
+    command = _patch_builds_command(
+        monkeypatch,
+        _build_row(2, 1, "❌", missing_ids=["build-1"]),
+    )
+    args = _json_args()[:-1] + ["--human-readable"]
+
+    result = CliRunner().invoke(command, args)
+
+    assert result.exit_code == 0
+    assert "Dashboard validation: builds (FAIL)" in _stdout(result)
+    assert "node_id=build-1" in _stdout(result)
 
 
 def test_json_runtime_failures_exit_nonzero(monkeypatch):
@@ -351,3 +460,157 @@ def test_mismatch_without_fail_on_mismatch_still_exits_zero(monkeypatch):
     result = CliRunner().invoke(command, args)
 
     assert result.exit_code == 0
+
+
+def test_missing_items_only_reports_maestro_items_missing_from_dashboard():
+    maestro_data = [{"id": "boot-1", "result": "pass", "retry_counter": 0}]
+    dashboard_data = [
+        {"id": "maestro:boot-1", "status": "PASS"},
+        {"id": "maestro:dashboard-extra", "status": "PASS"},
+    ]
+
+    assert find_missing_items(maestro_data, dashboard_data, "boot", False) == []
+
+
+def test_extra_dashboard_items_report_dashboard_items_missing_from_maestro():
+    maestro_data = [{"id": "boot-1", "result": "pass", "retry_counter": 0}]
+    dashboard_data = [
+        {"id": "maestro:boot-1", "status": "PASS"},
+        {"id": "maestro:dashboard-extra", "status": "NULL"},
+    ]
+
+    assert find_extra_dashboard_items(maestro_data, dashboard_data, "boot", False) == [
+        "dashboard-extra"
+    ]
+
+
+def test_boot_stats_uses_retry_filtered_maestro_count_and_status(monkeypatch):
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    maestro_boots = [
+        {
+            "id": "boot-1",
+            "name": "baseline-x86",
+            "result": "pass",
+            "retry_counter": 0,
+            "data": {},
+        },
+        {
+            "id": "boot-retry",
+            "name": "baseline-x86",
+            "result": "fail",
+            "retry_counter": 1,
+            "data": {},
+        },
+    ]
+    dashboard_boots = [
+        {"id": "maestro:boot-1", "status": "PASS"},
+        {"id": "maestro:boot-retry", "status": "PASS"},
+    ]
+    monkeypatch.setattr(
+        helper_module,
+        "get_boots",
+        lambda ctx, giturl, branch, commit, arch, raise_errors=False, boot_jobs=None: (
+            maestro_boots,
+            dashboard_boots,
+        ),
+    )
+
+    stats = helper_module.get_boot_stats(
+        None,
+        "https://example.com/linux.git",
+        "master",
+        COMMIT,
+        "mainline",
+        False,
+        None,
+    )
+
+    assert stats[2] == 1
+    assert stats[3] == 2
+    assert stats[6] == []
+    assert stats[7] == ["boot-retry"]
+
+
+def test_boot_retry_filter_keeps_failed_cip_jobs():
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    maestro_boots = [
+        {
+            "id": "cip-fail",
+            "name": "job-gcc-14-x86-612-cip",
+            "result": "fail",
+            "retry_counter": 0,
+        },
+        {
+            "id": "cip-retry",
+            "name": "job-gcc-14-x86-612-cip",
+            "result": "incomplete",
+            "retry_counter": 0,
+        },
+        {
+            "id": "baseline-retry",
+            "name": "baseline-x86",
+            "result": "fail",
+            "retry_counter": 0,
+        },
+    ]
+
+    filtered = helper_module.filter_maestro_items_for_validation(maestro_boots, "boot")
+
+    assert [b["id"] for b in filtered] == ["cip-fail"]
+
+
+def test_load_boot_job_names_uses_kcidb_test_suite(tmp_path):
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    (tmp_path / "jobs.yaml").write_text(
+        """
+jobs:
+  baseline-x86:
+    kcidb_test_suite: boot
+  kbuild-gcc-14-x86:
+    kind: kbuild
+  kselftest-dt:
+    kcidb_test_suite: kselftest.dt
+"""
+    )
+    (tmp_path / "cip").mkdir()
+    (tmp_path / "cip" / "jobs-cip.yaml").write_text(
+        """
+_anchors:
+  boot-job: &boot-job
+    kind: job
+    kcidb_test_suite: boot.nfs
+jobs:
+  job-gcc-14-x86-612-cip: *boot-job
+"""
+    )
+
+    boot_jobs = helper_module.load_boot_job_names(str(tmp_path))
+
+    assert boot_jobs == ["baseline-x86", "job-gcc-14-x86-612-cip"]
+    assert helper_module.boot_name_filter(boot_jobs) == (
+        r"name__re=^(baseline\-x86|job\-gcc\-14\-x86\-612\-cip)$"
+    )
+
+
+def test_load_boot_job_names_rejects_config_without_boot_jobs(tmp_path):
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+    (tmp_path / "jobs.yaml").write_text("jobs:\n  kbuild-x86:\n    kind: kbuild\n")
+
+    with pytest.raises(click.UsageError):
+        helper_module.load_boot_job_names(str(tmp_path))
+
+
+def test_boot_name_filter_falls_back_to_name_regex():
+    helper_module = importlib.import_module(
+        "kcidev.subcommands.maestro.validate.helper"
+    )
+
+    assert helper_module.boot_name_filter() == "name__re=^(baseline|job-.*-cip)"

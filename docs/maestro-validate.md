@@ -89,7 +89,7 @@ Invoking `kci-dev maestro validate` without a subcommand prints help and exits w
 
     * **MISS** if error_code ∈ {`Bug`, `Configuration`, `invalid_job_params`, `Job`, `job_generation_error`, `ObjectNotPersisted`, `RequestBodyTooLarge`, `submit_error`, `Unexisting permission codename.`, `kbuild_internal_error`}
     * **ERROR** if error_code ∈ {`Canceled`, `Infrastructure`, `LAVATimeout`, `MultinodeTimeout`, `Test`}
-* Boot retries excluded unless `retry_counter == 3`.
+* Boot retries excluded unless `retry_counter == 3`: `incomplete` boots, and `fail` boots of `baseline*` jobs (the only failed jobs Maestro retries).
 * A **status mismatch** is reported when the mapped result disagrees with the dashboard.
 
 ---
@@ -187,6 +187,9 @@ kci-dev maestro validate boots [OPTIONS]
 | `--arch`          | str  |           | Architecture filter.                                                                                                     |
 | `--verbose`       | flag |   `false` | Print detailed lists of missing items (JSON).                                                                            |
 | `--table-output`  | flag |   `false` | Show a table (otherwise prints a simple list).                                                                           |
+| `--pipeline-config` | path |         | kernelci-pipeline config directory or file. Boot jobs are the jobs whose `kcidb_test_suite` starts with `boot`. |
+
+Without `--pipeline-config`, Maestro boot jobs are matched by name: `baseline*` and `job-*-cip`.
 
 ### Output (Boots)
 
@@ -244,6 +247,10 @@ kci-dev maestro validate boots \
   --branch master \
   --commit <sha> \
   --arch x86_64
+
+# All boots for all trees, selecting boot jobs from the pipeline config
+kci-dev maestro validate boots --all-checkouts \
+  --pipeline-config <kernelci-pipeline>/config
 
 # Build history for a stable branch over the last 14 days
 kci-dev maestro validate builds --history \

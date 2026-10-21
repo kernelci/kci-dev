@@ -7,8 +7,10 @@ from kcidev.subcommands.results import trees
 
 from .helper import (
     get_boot_stats,
+    load_boot_job_names,
     print_simple_list,
     print_table_stats,
+    print_validation_human,
     print_validation_json,
     validation_rows_to_json,
 )
@@ -31,6 +33,7 @@ checkout from the git folder specified.
 Examples:
     kci-dev maestro validate boots --all-checkouts --days <number-of-days>
     kci-dev maestro validate boots -commit <git-commit> --giturl <git-url> --branch <git-branch>
+    kci-dev maestro validate boots --all-checkouts --pipeline-config <kernelci-pipeline>/config
     """,
 )
 @click.option(
@@ -91,6 +94,17 @@ Examples:
     help="Print validation results as JSON",
 )
 @click.option(
+    "--human-readable",
+    is_flag=True,
+    default=False,
+    help="Print a human-readable validation summary. With --json, text is written to stderr.",
+)
+@click.option(
+    "--pipeline-config",
+    type=click.Path(exists=True),
+    help="kernelci-pipeline config directory or file used to select boot jobs by kcidb_test_suite. Without it, boot jobs are matched by name.",
+)
+@click.option(
     "--fail-on-mismatch",
     is_flag=True,
     default=False,
@@ -111,9 +125,12 @@ def boots(
     verbose,
     table_output,
     use_json,
+    human_readable,
+    pipeline_config,
     fail_on_mismatch,
 ):
     final_stats = []
+    boot_jobs = load_boot_job_names(pipeline_config) if pipeline_config else None
     raise_errors = use_json or fail_on_mismatch
     stdout = sys.stdout
     if use_json:
@@ -141,6 +158,7 @@ def boots(
                     verbose,
                     arch,
                     raise_errors,
+                    boot_jobs=boot_jobs,
                 )
                 if stats:
                     final_stats.append(stats)
@@ -158,6 +176,7 @@ def boots(
                 verbose,
                 arch,
                 raise_errors,
+                boot_jobs=boot_jobs,
             )
             if stats:
                 final_stats.append(stats)
@@ -165,6 +184,8 @@ def boots(
         sys.stdout = stdout
     if use_json:
         report = print_validation_json("boots", final_stats, False, origin, days, arch)
+        if human_readable:
+            print_validation_human(report, err=True)
         if fail_on_mismatch and not report["summary"]["ok"]:
             ctx.exit(1)
         return
@@ -177,11 +198,17 @@ def boots(
             "Boot count\ncomparison",
             "Missing boot IDs",
             "Boots with\nstatus mismatch",
+            "Extra dashboard\nboot IDs",
         ]
-        max_col_width = [None, 40, 3, 3, 2, 30, 30]
+        max_col_width = [None, 40, 3, 3, 2, 30, 30, 30]
         table_fmt = "simple_grid"
         if table_output:
             print_table_stats(final_stats, headers, max_col_width, table_fmt)
+        elif human_readable:
+            report = validation_rows_to_json(
+                "boots", final_stats, False, origin, days, arch
+            )
+            print_validation_human(report)
         else:
             print_simple_list(final_stats, "boots", False)
     if fail_on_mismatch:
