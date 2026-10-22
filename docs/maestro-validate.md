@@ -130,7 +130,9 @@ kci-dev maestro validate builds [OPTIONS]
   * `✅` counts match
   * `❌` counts differ
 * **Missing IDs**: Item IDs present on one side but not the other.
-  Missing dashboard items are printed as viewer links:
+  Missing dashboard items are printed as viewer links using the selected
+  instance's `api` URL from `kci-dev.toml`. For example, with
+  `api = "https://api.kernelci.org/"`:
 
   ```
   https://api.kernelci.org/viewer?node_id=<id>
@@ -262,7 +264,7 @@ kci-dev maestro validate builds --git-folder /path/to/linux --latest
 
 * **Mutual exclusion**: `--all-checkouts` cannot be combined with any of `--giturl/--branch/--commit`.
 * **Retries**: To avoid double-counting, build/boot retries are excluded unless `retry_counter == 3`.
-* **Viewer links**: Missing items are printed with `https://api.kernelci.org/viewer?node_id=<id>` for quick inspection.
+* **Viewer links**: Missing and status-mismatched items link to `<api>/viewer?node_id=<id>`, using the `api` URL for `--instance` or the configured `default_instance`. Staging/custom addresses, ports, and URL path prefixes are preserved; a trailing slash is optional.
 * **Verbose JSON**: Use `--verbose` to print the full JSON of missing items for debugging.
 * **Formats**: The table view uses `tabulate`’s `simple_grid` format with reasonable column width caps.
 

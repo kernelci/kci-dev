@@ -7,6 +7,7 @@ import click
 from tabulate import tabulate
 
 from kcidev.libs.common import kci_msg, kci_msg_bold, kci_msg_json, kci_msg_red
+from kcidev.libs.maestro_common import _api_url
 from kcidev.subcommands.maestro.results import results
 from kcidev.subcommands.results import boots, builds
 
@@ -175,8 +176,9 @@ def extract_validation_data(row: list):
         raise ValueError()
 
 
-def print_simple_list(data, item_type, history=False):
+def print_simple_list(data, item_type, history=False, *, api_url):
     """Print a simple list format showing tree/branch with status and missing IDs"""
+    viewer_url = _api_url(api_url, "viewer")
 
     if history:
         # For history mode, group by tree/branch and show overall status
@@ -212,13 +214,13 @@ def print_simple_list(data, item_type, history=False):
                     if commit["missing_ids"]:
                         kci_msg(f"  Missing {item_type}: {len(commit['missing_ids'])}")
                         for id in commit["missing_ids"]:
-                            kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                            kci_msg(f"  - {viewer_url}?node_id={id}")
                     if commit["mismatched_ids"]:
                         kci_msg(
                             f"  Status mismatched {item_type}: {len(commit['mismatched_ids'])}"
                         )
                         for id in commit["mismatched_ids"]:
-                            kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                            kci_msg(f"  - {viewer_url}?node_id={id}")
                 elif commit["status"] == "✅":
                     kci_msg(f"  Commit {commit['commit'][:12]}: ✅")
 
@@ -242,11 +244,11 @@ def print_simple_list(data, item_type, history=False):
             if comparison == "❌" and missing_ids:
                 kci_msg(f"  Missing {item_type}: {len(missing_ids)}")
                 for id in missing_ids:
-                    kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                    kci_msg(f"  - {viewer_url}?node_id={id}")
             if comparison == "❌" and mismatched_ids:
                 kci_msg(f"  Status mismatched {item_type}: {len(mismatched_ids)}")
                 for id in mismatched_ids:
-                    kci_msg(f"  - https://api.kernelci.org/viewer?node_id={id}")
+                    kci_msg(f"  - {viewer_url}?node_id={id}")
             kci_msg("")
 
 

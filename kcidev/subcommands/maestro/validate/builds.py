@@ -243,7 +243,8 @@ def builds(
         if table_output:
             print_table_stats(final_stats, headers, max_col_width, table_fmt)
         else:
-            print_simple_list(final_stats, "builds", history)
+            api_url = ctx.obj["CFG"][ctx.obj["INSTANCE"]]["api"]
+            print_simple_list(final_stats, "builds", history, api_url=api_url)
     if fail_on_mismatch:
         report = validation_rows_to_json(
             "builds", final_stats, history, origin, days, arch
