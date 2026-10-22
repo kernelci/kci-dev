@@ -13,6 +13,13 @@ def _stdout(result):
     return getattr(result, "stdout", result.output)
 
 
+def _maestro_context():
+    return {
+        "CFG": {"test": {"api": "https://api.kernelci.org/"}},
+        "INSTANCE": "test",
+    }
+
+
 def _build_row(
     maestro_count=1,
     dashboard_count=1,
@@ -251,7 +258,7 @@ def test_fail_on_mismatch_no_mismatches_exits_zero(monkeypatch):
     command = _patch_builds_command(monkeypatch, _build_row())
     args = _json_args()[:-1] + ["--fail-on-mismatch"]
 
-    result = CliRunner().invoke(command, args)
+    result = CliRunner().invoke(command, args, obj=_maestro_context())
 
     assert result.exit_code == 0
 
@@ -294,7 +301,7 @@ def test_fail_on_mismatch_missing_ids_exit_one(monkeypatch):
     )
     args = _json_args()[:-1] + ["--fail-on-mismatch"]
 
-    result = CliRunner().invoke(command, args)
+    result = CliRunner().invoke(command, args, obj=_maestro_context())
 
     assert result.exit_code == 1
 
@@ -305,7 +312,7 @@ def test_fail_on_mismatch_status_mismatches_exit_one(monkeypatch):
     )
     args = _json_args()[:-1] + ["--fail-on-mismatch"]
 
-    result = CliRunner().invoke(command, args)
+    result = CliRunner().invoke(command, args, obj=_maestro_context())
 
     assert result.exit_code == 1
 
@@ -337,7 +344,7 @@ def test_fail_on_mismatch_build_history_count_mismatch_exit_one(monkeypatch):
         "--fail-on-mismatch",
     ]
 
-    result = CliRunner().invoke(builds_module.builds, args)
+    result = CliRunner().invoke(builds_module.builds, args, obj=_maestro_context())
 
     assert result.exit_code == 1
 
@@ -348,6 +355,6 @@ def test_mismatch_without_fail_on_mismatch_still_exits_zero(monkeypatch):
     )
     args = _json_args()[:-1]
 
-    result = CliRunner().invoke(command, args)
+    result = CliRunner().invoke(command, args, obj=_maestro_context())
 
     assert result.exit_code == 0
