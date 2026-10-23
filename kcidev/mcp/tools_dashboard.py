@@ -400,12 +400,12 @@ def list_issues(origin: str = "maestro", days: int = 7):
 
 
 @tool_errors
-def get_issue(issue_id: str):
+def get_issue(issue_id: str, version: int | None = None):
     """Get details for a single known issue by issue id.
 
-    Issue ids look like 'maestro:<hex>'.
+    Issue ids look like 'maestro:<hex>'. Omit version to fetch the latest.
     """
-    return _current_client().get_issue(issue_id)
+    return _current_client().get_issue(issue_id, version=version)
 
 
 @tool_errors
@@ -416,6 +416,7 @@ def get_issue_builds(
     limit: int = 20,
     offset: int = 0,
     fields: list[str] | None = None,
+    version: int | None = None,
 ):
     """List builds affected by a known issue.
 
@@ -424,10 +425,11 @@ def get_issue_builds(
     both the same way; confirm the id with get_issue if it matters.
     Optional status filter ('pass', 'fail', 'inconclusive' or 'all') and
     limit/offset pagination; the response carries 'total' and 'matched'
-    counts; fields projects each entry to only those keys.
+    counts; fields projects each entry to only those keys. Pass version to
+    select a specific issue version instead of the latest with incidents.
     """
     check_page_args(status, limit, offset)
-    data = _current_client().get_issue_builds(issue_id, origin)
+    data = _current_client().get_issue_builds(issue_id, origin, version=version)
     return _page(data, "builds", status, limit, offset, fields)
 
 
@@ -439,6 +441,7 @@ def get_issue_tests(
     limit: int = 20,
     offset: int = 0,
     fields: list[str] | None = None,
+    version: int | None = None,
 ):
     """List tests affected by a known issue.
 
@@ -447,10 +450,11 @@ def get_issue_tests(
     both the same way; confirm the id with get_issue if it matters.
     Optional status filter ('pass', 'fail', 'inconclusive' or 'all') and
     limit/offset pagination; the response carries 'total' and 'matched'
-    counts; fields projects each entry to only those keys.
+    counts; fields projects each entry to only those keys. Pass version to
+    select a specific issue version instead of the latest with incidents.
     """
     check_page_args(status, limit, offset)
-    data = _current_client().get_issue_tests(issue_id, origin)
+    data = _current_client().get_issue_tests(issue_id, origin, version=version)
     return _page(data, "tests", status, limit, offset, fields)
 
 

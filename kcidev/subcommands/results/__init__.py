@@ -614,44 +614,63 @@ def print_stats(data, headers, max_col_width, table_fmt):
     )
 
 
-def get_new_issues(origin, tree_name, giturl, branch, commit, arch, use_json=False):
-    """Get new KCIDB issue for a checkout"""
-    try:
-        kci_msg_green(f"{tree_name}/{branch}:{commit}")
-        data = dashboard_fetch_summary(origin, giturl, branch, commit, arch, True)
-        tree_summary = data["summary"]
-        items = ["builds", "boots", "tests"]
-        new_issues = []
-        issue_id_version = []
-        for item in items:
-            for i in tree_summary[item]["issues"]:
-                issue_id_version.append([i["id"], i["version"]])
-        if not issue_id_version:
-            kci_msg("No issues found")
-            return
-        issue_extras = dashboard_fetch_issues_extra(issue_id_version, True)["issues"]
-        for issue_id, extras in issue_extras.items():
-            first_incident = extras.get("first_incident")
-            if first_incident:
-                if all(
-                    [
-                        first_incident["git_commit_hash"] == commit,
-                        first_incident["git_repository_url"] == giturl,
-                        first_incident["git_repository_branch"] == branch,
-                        first_incident["tree_name"] == tree_name,
-                    ]
-                ):
-                    new_issues.append(dashboard_fetch_issue(issue_id, False))
-        if not new_issues:
-            kci_msg("No new issues found")
+def _fetch_checkout_issues(
+    origin, tree_name, giturl, branch, commit, arch, new_only=False
+):
+    """Fetch distinct issue versions reported by a checkout."""
+    summary = dashboard_fetch_summary(origin, giturl, branch, commit, arch, True)[
+        "summary"
+    ]
+    keys = dict.fromkeys(
+        (issue["id"], issue["version"])
+        for kind in ("builds", "boots", "tests")
+        for issue in summary[kind]["issues"]
+    )
+    if not keys:
+        return [], set()
+    extras = dashboard_fetch_issues_extra([list(key) for key in keys], True)["issues"]
+    new_keys = set()
+    for issue_id, version in keys:
+        extra = extras.get(issue_id) or {}
+        incident = extra.get("first_incident") or {}
+        version_info = (extra.get("versions") or {}).get(str(version))
+        # First-incident data belongs to the issue ID; it may describe another
+        # version. Missing versions and versions without incidents are not new.
+        if (
+            version_info
+            and version_info.get("trees")
+            and incident.get("issue_version") == version
+            and incident.get("git_commit_hash") == commit
+            and incident.get("git_repository_url") == giturl
+            and incident.get("git_repository_branch") == branch
+            and incident.get("tree_name") == tree_name
+        ):
+            new_keys.add((issue_id, version))
+    data = [
+        dashboard_fetch_issue(issue_id, True, version=version)
+        for issue_id, version in keys
+        if not new_only or (issue_id, version) in new_keys
+    ]
+    return data, new_keys
+
+
+def get_new_issues(
+    origin, tree_name, giturl, branch, commit, arch, use_json=False, *, display=True
+):
+    """Get issue versions first observed on this checkout."""
+    data, _ = _fetch_checkout_issues(
+        origin, tree_name, giturl, branch, commit, arch, new_only=True
+    )
+    if display:
+        if use_json:
+            kci_msg_json(data)
         else:
-            if use_json:
-                kci_msg_json(new_issues)
-            else:
-                for i in new_issues:
-                    print_issue(i)
-    except click.ClickException as e:
-        print("Exception:", e.message)
+            kci_msg_green(f"{tree_name}/{branch}:{commit}")
+            if not data:
+                kci_msg("No new issues found")
+            for item in data:
+                print_issue(item)
+    return data
 
 
 @click.command(
@@ -882,46 +901,22 @@ def get_missing_issue_items(
         return []
 
 
-def get_filtered_issues(origin, tree_name, giturl, branch, commit, arch):
-    """Get KCIDB issues for a checkout"""
-    try:
+def get_filtered_issues(
+    origin, tree_name, giturl, branch, commit, arch, use_json=False
+):
+    """Get the exact KCIDB issue versions reported by a checkout."""
+    data, new_keys = _fetch_checkout_issues(
+        origin, tree_name, giturl, branch, commit, arch
+    )
+    if use_json:
+        kci_msg_json(data)
+    else:
         kci_msg_green(f"{tree_name}/{branch}:{commit}")
-        data = dashboard_fetch_summary(origin, giturl, branch, commit, arch, True)
-        tree_summary = data["summary"]
-        items = ["builds", "boots", "tests"]
-        all_issues = []
-        new_issues = []
-        issue_id_version = []
-        for item in items:
-            for i in tree_summary[item]["issues"]:
-                issue_item = dashboard_fetch_issue(i["id"], False)
-                all_issues.append(issue_item)
-                issue_id_version.append([i["id"], i["version"]])
-        if not all_issues:
+        if not data:
             kci_msg("No issues found")
-            return
-        issue_extras = dashboard_fetch_issues_extra(issue_id_version, True)["issues"]
-        for issue_id, extras in issue_extras.items():
-            first_incident = extras.get("first_incident")
-            if first_incident:
-                if all(
-                    [
-                        first_incident["git_commit_hash"] == commit,
-                        first_incident["git_repository_url"] == giturl,
-                        first_incident["git_repository_branch"] == branch,
-                        first_incident["tree_name"] == tree_name,
-                    ]
-                ):
-                    new_issues.append(issue_id)
-
-        for i in all_issues:
-            if i["id"] in new_issues:
-                print_issue(i, True)
-            else:
-                print_issue(i)
-
-    except click.ClickException as e:
-        print("Exception:", e.message)
+        for item in data:
+            print_issue(item, (item["id"], item["version"]) in new_keys)
+    return data
 
 
 @results.command(
@@ -1069,21 +1064,34 @@ def issues(
         if not tree:
             tree = get_tree_name(origin, giturl, branch)
         giturl, branch, commit = set_giturl_branch_commit(
-            origin, giturl, branch, commit, latest, git_folder
+            origin, giturl, branch, commit, latest, git_folder, quiet=use_json
         )
-        get_filtered_issues(origin, tree, giturl, branch, commit, arch)
+        get_filtered_issues(origin, tree, giturl, branch, commit, arch, use_json)
     if new:
         if not any([giturl, branch, commit]):
-            kci_msg("Fetching new issues for all checkouts...")
+            if not use_json:
+                kci_msg("Fetching new issues for all checkouts...")
             trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            new_issues = {}
             for t in trees_list:
                 giturl = t["git_repository_url"]
                 branch = t["git_repository_branch"]
                 commit = t["git_commit_hash"]
                 tree_name = t["tree_name"]
-                get_new_issues(
-                    origin, tree_name, giturl, branch, commit, arch, use_json
+                data = get_new_issues(
+                    origin,
+                    tree_name,
+                    giturl,
+                    branch,
+                    commit,
+                    arch,
+                    use_json,
+                    display=not use_json,
                 )
+                for item in data:
+                    new_issues[(item["id"], item["version"])] = item
+            if use_json:
+                kci_msg_json(list(new_issues.values()))
             return
         if not all([giturl, branch, commit]):
             raise click.UsageError(
@@ -1091,9 +1099,10 @@ def issues(
                 "a checkout or else omit all these options to fetch new issues for all the "
                 "checkouts"
             )
-        kci_msg("Fetching new issues for the checkout...")
+        if not use_json:
+            kci_msg("Fetching new issues for the checkout...")
         giturl, branch, commit = set_giturl_branch_commit(
-            origin, giturl, branch, commit, latest, git_folder
+            origin, giturl, branch, commit, latest, git_folder, quiet=use_json
         )
         if not tree:
             tree = get_tree_name(origin, giturl, branch)
@@ -1162,33 +1171,38 @@ Examples:
     "--origin",
     help="Select KCIDB origin",
 )
+@click.option(
+    "--version", type=click.IntRange(min=0), help="Issue version (default: latest)"
+)
 @results_display_options
-def issue(issue_id, origin, use_json):
-    """Get issue matching ID command handler"""
-    # Get issue information
-    data = dashboard_fetch_issue(issue_id, use_json)
+def issue(issue_id, origin, version, use_json):
+    """Get an issue and its associated builds/tests at the same version."""
+    data = dashboard_fetch_issue(issue_id, use_json, version=version)
+    related = {}
+    for item_type, fetch in (
+        ("builds", dashboard_fetch_issue_builds),
+        ("tests", dashboard_fetch_issue_tests),
+    ):
+        try:
+            related[item_type] = fetch(
+                origin, issue_id, use_json, error_verbose=False, version=data["version"]
+            )
+        except click.ClickException as exc:
+            if exc.message != f"No {item_type} found for this issue":
+                raise
+            related[item_type] = []
+    if use_json:
+        kci_msg_json({"issue": data, **related})
+        return
     kci_msg_green("Issue information:")
     print_issue(data)
-
-    # Get associated builds and tests
-    item_types = ["builds", "tests"]
-    for item_type in item_types:
-        if item_type == "builds":
-            dashboard_func = dashboard_fetch_issue_builds
-        else:
-            dashboard_func = dashboard_fetch_issue_tests
-
-        try:
-            kci_msg_green(f"Associated {item_type}:")
-            data = dashboard_func(origin, issue_id, use_json, error_verbose=False)
-            item_ids = [item["id"] for item in data]
-            for item_id in item_ids:
-                kci_msg(f"- {item_id}")
-            kci_msg("")
-        except click.ClickException as e:
-            if f"No {item_type}" in e.message:
-                kci_msg(f"No associated {item_type} found")
-                kci_msg("")
+    for item_type, items in related.items():
+        kci_msg_green(f"Associated {item_type}:")
+        if not items:
+            kci_msg(f"No associated {item_type} found")
+        for item in items:
+            kci_msg(f"- {item['id']}")
+        kci_msg("")
 
 
 @results.command(

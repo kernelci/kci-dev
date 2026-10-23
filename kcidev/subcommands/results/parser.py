@@ -997,9 +997,12 @@ def print_issues(data, use_json=False):
     """Print a list of issues with formatting
     data (dict): provide dictionary with 'issues' and 'extras' keys"""
 
-    if not data.get("issues") or not data.get("extras"):
-        kci_err("Please provide dictionary with 'issues' and 'extras' keys")
-        return
+    if (
+        not isinstance(data, dict)
+        or not isinstance(data.get("issues"), list)
+        or not isinstance(data.get("extras"), dict)
+    ):
+        raise click.ClickException("Expected an issue list and an extras dictionary")
 
     if use_json:
         # Build JSON output with issues and their extras merged
@@ -1017,6 +1020,9 @@ def print_issues(data, use_json=False):
 
     issues = data["issues"]
     extras = data["extras"]
+    if not issues:
+        kci_msg("No issues found")
+        return
     for issue in issues:
         print_issue_information(issue, get_dashboard_url())
 

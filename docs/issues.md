@@ -34,6 +34,26 @@ kci-dev results issues [--builds | --boots | --new]
 
 ## Common Workflows
 
+### Inspect a specific issue version
+
+```bash
+kci-dev results issue --id 'maestro:<issue-id>' --version 0
+kci-dev results issue --id 'maestro:<issue-id>' --version 0 --json
+```
+
+Omit `--version` to select the latest issue version. Associated builds and tests
+are queried for the same version as the issue details. JSON output is one object
+with `issue`, `builds`, and `tests` fields; absent related results are empty lists.
+
+Checkout issue queries preserve each reported `(id, version)` pair and show it
+once, even when it appears in builds, boots, and tests. `--new` selects the
+version identified by the issue's first incident on that checkout. Missing
+incident metadata does not establish that an issue is new.
+
+The ordinary issue listing and checkout queries support `--json`, returning
+one array, including `[]` when no issues match. `--new --json` also returns a
+single array when scanning all checkouts. API failures exit unsuccessfully.
+
 ### List issues within an exact date range
 
 ```bash

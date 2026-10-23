@@ -838,12 +838,17 @@ class KernelCIClient:
             end_date,
         )
 
-    def get_issue(self, issue_id):
+    def get_issue(self, issue_id, version=None):
+        """Get an issue version, defaulting to the latest version."""
         return self._dashboard_request(
-            "Dashboard issue request failed", dashboard_fetch_issue, issue_id, True
+            "Dashboard issue request failed",
+            dashboard_fetch_issue,
+            issue_id,
+            True,
+            version,
         )
 
-    def get_issue_builds(self, issue_id, origin=None):
+    def get_issue_builds(self, issue_id, origin=None, *, version=None):
         return self._related_or_empty(
             "Dashboard issue builds request failed",
             dashboard_fetch_issue_builds,
@@ -851,9 +856,10 @@ class KernelCIClient:
             issue_id,
             True,
             False,
+            version,
         )
 
-    def get_issue_tests(self, issue_id, origin=None):
+    def get_issue_tests(self, issue_id, origin=None, *, version=None):
         return self._related_or_empty(
             "Dashboard issue tests request failed",
             dashboard_fetch_issue_tests,
@@ -861,6 +867,7 @@ class KernelCIClient:
             issue_id,
             True,
             False,
+            version,
         )
 
     def get_issues_extra(self, issues):
