@@ -169,6 +169,20 @@ window, or both `start_date` and `end_date` for exact boundaries, without
 The CLI equivalent is `kci-dev results issues --start-date ... --end-date ...`,
 with optional `--origin` and `--json` (see [issue commands](docs/issues.md)).
 
+To query a specific issue version, pass `version` to `get_issue()`,
+`get_issue_builds()`, or `get_issue_tests()`:
+
+```python
+issue = client.get_issue("maestro:<issue-id>", version=0)
+builds = client.get_issue_builds(issue["id"], version=issue["version"])
+tests = client.get_issue_tests(issue["id"], version=issue["version"])
+```
+
+Without `version`, issue details select the latest version; related-result
+queries select the latest version with incidents. Pass the returned detail
+version to keep all three queries consistent. Empty issue listings return
+`{"issues": [], "extras": {}}`, and unavailable extras return `{"issues": {}}`.
+
 ### Run kci-dev subcommands from Python
 
 For existing integrations that still need full CLI behavior, the public API can

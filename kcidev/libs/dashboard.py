@@ -447,7 +447,12 @@ def dashboard_fetch_issue_list(origin, days, use_json, start_date=None, end_date
     if origin:
         params["filter_origin"] = origin
     logging.info(f"Fetching issue list for origin: {origin}")
-    return dashboard_api_fetch("issue/", params, use_json)
+    try:
+        return dashboard_api_fetch("issue/", params, use_json, error_verbose=False)
+    except click.ClickException as exc:
+        if exc.message == "No issues found":
+            return {"issues": [], "extras": {}}
+        raise
 
 
 def _require_issue_id(issue_id):
@@ -455,25 +460,34 @@ def _require_issue_id(issue_id):
         raise click.ClickException("Issue id is required")
 
 
-def dashboard_fetch_issue(issue_id, use_json):
+def dashboard_fetch_issue(issue_id, use_json, version=None):
     _require_issue_id(issue_id)
     logging.info(f"Fetching issue details for issue ID: {issue_id}")
-    return dashboard_api_fetch(f"issue/{issue_id}", {}, use_json)
+    params = {"version": version} if version is not None else {}
+    return dashboard_api_fetch(f"issue/{issue_id}", params, use_json)
 
 
-def dashboard_fetch_issue_builds(origin, issue_id, use_json, error_verbose=True):
+def dashboard_fetch_issue_builds(
+    origin, issue_id, use_json, error_verbose=True, version=None
+):
     _require_issue_id(issue_id)
     logging.info(f"Fetching builds for issue ID: {issue_id}")
     params = {"filter_origin": origin} if origin else {}
+    if version is not None:
+        params["version"] = version
     return dashboard_api_fetch(
         f"issue/{issue_id}/builds", params, use_json, error_verbose=error_verbose
     )
 
 
-def dashboard_fetch_issue_tests(origin, issue_id, use_json, error_verbose=True):
+def dashboard_fetch_issue_tests(
+    origin, issue_id, use_json, error_verbose=True, version=None
+):
     _require_issue_id(issue_id)
     logging.info(f"Fetching tests for issue ID: {issue_id}")
     params = {"filter_origin": origin} if origin else {}
+    if version is not None:
+        params["version"] = version
     return dashboard_api_fetch(
         f"issue/{issue_id}/tests", params, use_json, error_verbose=error_verbose
     )
@@ -489,8 +503,20 @@ def dashboard_fetch_issues_extra(issues, use_json):
             ['maestro:2779a206c30e0ec91f19f1df949c1b9d65fe1238',1]
         ]
     """
+    if not issues:
+        return {"issues": {}}
     body = {"issues": issues}
-    return dashboard_api_post("issue/extras/", {}, use_json, body)
+    try:
+        return dashboard_api_post(
+            "issue/extras/", {}, use_json, body, error_verbose=False
+        )
+    except click.ClickException as exc:
+        if exc.message in (
+            "No extra details found",
+            "No extra details found. Issue id has no incident or doesn't exist.",
+        ):
+            return {"issues": {}}
+        raise
 
 
 def dashboard_fetch_tree_report(

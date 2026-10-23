@@ -371,7 +371,9 @@ def resolve_git_reference(git_folder, reference, giturl=None):
     return None
 
 
-def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder):
+def set_giturl_branch_commit(
+    origin, giturl, branch, commit, latest, git_folder, *, quiet=False
+):
     logging.info("Setting git URL, branch, and commit parameters")
     # Fill in any missing parameters from local git repository
     if not giturl:
@@ -421,7 +423,8 @@ def set_giturl_branch_commit(origin, giturl, branch, commit, latest, git_folder)
             resolved_commit = resolve_git_reference(git_folder, commit, giturl)
             if resolved_commit:
                 logging.info(f"Resolved {commit} to {resolved_commit}")
-                kci_msg(f"resolved to: {resolved_commit}")
+                if not quiet:
+                    kci_msg(f"resolved to: {resolved_commit}")
                 commit = resolved_commit
             else:
                 logging.warning(f"Could not resolve {commit}, will try API as-is")

@@ -60,6 +60,15 @@ paginate (default `limit` of 20) and accept a `fields` list to return
 only the named keys per entry. Prefer `status`/`arch` filters, small
 limits and field projection when exploring large trees.
 
+## Querying issue versions
+
+`get_issue`, `get_issue_builds`, and `get_issue_tests` accept an optional
+`version`, including version `0`. To inspect the same version throughout,
+pass the version returned by `get_issue` to the related build/test tools.
+Without a version, details use the latest issue version, while build/test
+queries use the latest version with incidents. `list_issues` returns an empty
+issue list when no issues match; other API failures remain tool errors.
+
 ## Querying a single lab
 
 To look at one lab (test runtime) rather than a whole tree, start from
