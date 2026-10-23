@@ -1239,13 +1239,28 @@ Examples:
 @click.option(
     "--min-age", default=0, help="Minimum age of the queried checkout in hours."
 )
+@click.option(
+    "--no-emoji",
+    is_flag=True,
+    help="Use ASCII labels instead of emoji in status histories. JSON is unchanged.",
+)
 @results_display_options
-def tree_report(origin, giturl, branch, path, history_size, max_age, min_age, use_json):
+def tree_report(
+    origin,
+    giturl,
+    branch,
+    path,
+    history_size,
+    max_age,
+    min_age,
+    use_json,
+    no_emoji=False,
+):
     """Fetch tree report"""
     data = dashboard_fetch_tree_report(
         origin, branch, giturl, use_json, path, history_size, max_age, min_age
     )
-    cmd_tree_report(data, use_json)
+    cmd_tree_report(data, use_json, no_emoji=no_emoji)
 
 
 if __name__ == "__main__":

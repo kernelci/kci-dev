@@ -188,6 +188,32 @@ Summary comparison:
 +--------+----------------------+------------------------+
 ```
 
+### tree-report
+
+Show build, boot, and test summaries, including status histories for possible
+regressions, fixed regressions, and unstable tests:
+
+```sh
+kci-dev results tree-report --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master
+```
+
+Use `--no-emoji` to display ASCII status labels when emoji or other Unicode
+symbols are unavailable in your terminal:
+
+```sh
+kci-dev results tree-report --giturl 'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git' --branch master --no-emoji
+```
+
+| Status | Default | With `--no-emoji` |
+| --- | --- | --- |
+| PASS | ✅ | PASS |
+| FAIL | ❌ | FAIL |
+| ERROR, SKIP, MISS, DONE, NULL, or `null` | ⚠️ | OTHER |
+
+For example, a history can be displayed as `PASS > OTHER > FAIL`. History order and
+status data are unchanged. The option applies only to `tree-report`'s text
+output; `--json` still returns the raw response, even with `--no-emoji`.
+
 ### hardware
 
 Displays hardware related information

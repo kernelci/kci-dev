@@ -1085,16 +1085,16 @@ def get_tree_report_summary(command_data):
     return inconclusive_cmd, pass_cmd, fail_cmd
 
 
-def status_mapping(status):
+def status_mapping(status, no_emoji=False):
     if status == "PASS":
-        return "✅"
+        return "PASS" if no_emoji else "✅"
     if status == "FAIL":
-        return "❌"
+        return "FAIL" if no_emoji else "❌"
     if status in ["ERROR", "SKIP", "MISS", "DONE", "NULL", None]:
-        return "⚠️"
+        return "OTHER" if no_emoji else "⚠️"
 
 
-def cmd_tree_report(data, use_json):
+def cmd_tree_report(data, use_json, no_emoji=False):
     """Parse tree report and print information"""
     if use_json:
         kci_msg_json(data)
@@ -1151,7 +1151,7 @@ def cmd_tree_report(data, use_json):
                         )
                         history = []
                         for test in tests:
-                            status = status_mapping(test["status"])
+                            status = status_mapping(test["status"], no_emoji=no_emoji)
                             history.append(status)
                         kci_msg("   history:" + " > ".join(history[::-1]))
                         kci_msg("")
