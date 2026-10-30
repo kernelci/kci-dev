@@ -46,18 +46,17 @@ def cli(ctx, settings, instance, debug):
     ctx.obj["SETTINGS"] = settings
     cfg = ctx.obj["CFG"] or {}
     configure_dashboard_api(cfg, instance or cfg.get("default_instance"))
-    if subcommand not in ("results", "config"):
-        if instance:
-            ctx.obj["INSTANCE"] = instance
-        elif subcommand not in ("submit", "storage", "mcp"):
-            ctx.obj["INSTANCE"] = ctx.obj["CFG"].get("default_instance")
-            fconfig = config_path(settings)
-            if not ctx.obj["INSTANCE"]:
-                kci_err(f"No instance defined in settings or as argument in {fconfig}")
-                raise click.Abort()
-            if ctx.obj["INSTANCE"] not in ctx.obj["CFG"]:
-                kci_err(f"Instance {ctx.obj['INSTANCE']} not found in {fconfig}")
-                raise click.Abort()
+    if instance:
+        ctx.obj["INSTANCE"] = instance
+    elif subcommand not in ("results", "config", "submit", "storage", "mcp"):
+        ctx.obj["INSTANCE"] = ctx.obj["CFG"].get("default_instance")
+        fconfig = config_path(settings)
+        if not ctx.obj["INSTANCE"]:
+            kci_err(f"No instance defined in settings or as argument in {fconfig}")
+            raise click.Abort()
+        if ctx.obj["INSTANCE"] not in ctx.obj["CFG"]:
+            kci_err(f"Instance {ctx.obj['INSTANCE']} not found in {fconfig}")
+            raise click.Abort()
 
 
 def register_commands(command_group=None):
