@@ -414,8 +414,17 @@ def _resolve_latest_two(client, origin, giturl, branch):
     is_flag=True,
     help="Look up known issues (one request per regression/persistent failure)",
 )
+@click.pass_context
 def compare(
-    origin, giturl, branch, latest, commits, output_format, use_json, include_issues
+    ctx,
+    origin,
+    giturl,
+    branch,
+    latest,
+    commits,
+    output_format,
+    use_json,
+    include_issues,
 ):
     """Compare test results between commits with summary and regressions.
 
@@ -444,7 +453,10 @@ def compare(
     if len(commits) not in (0, 2):
         raise click.UsageError("provide either zero commits or exactly BASE and HEAD")
     try:
-        client = KernelCIClient()
+        options = ctx.obj or {}
+        client = KernelCIClient(
+            cfg=options.get("CFG"), instance=options.get("INSTANCE")
+        )
         if commits:
             base, head = commits
         else:
@@ -494,7 +506,8 @@ def compare(
 @click.option(
     "--format", "output_format", type=click.Choice(["human", "json"]), default="human"
 )
-def gate(origin, giturl, branch, base, head, fail_on, output_format):
+@click.pass_context
+def gate(ctx, origin, giturl, branch, base, head, fail_on, output_format):
     """Gate a checkout using the regression comparison policy."""
     from kcidev.api import KciDevError, KernelCIClient
 
@@ -505,7 +518,10 @@ def gate(origin, giturl, branch, base, head, fail_on, output_format):
         raise click.UsageError(f"unknown --fail-on categories: {unknown}")
 
     try:
-        client = KernelCIClient()
+        options = ctx.obj or {}
+        client = KernelCIClient(
+            cfg=options.get("CFG"), instance=options.get("INSTANCE")
+        )
         if bool(base) != bool(head):
             raise click.UsageError("provide both --base and --head, or neither")
         if not base:

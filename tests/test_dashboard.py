@@ -1,4 +1,6 @@
+import json
 from unittest.mock import Mock
+from urllib.parse import urlsplit
 
 import click
 import pytest
@@ -118,6 +120,120 @@ def test_cli_sets_dashboard_api_from_settings(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     assert dashboard.get_dashboard_api() == "https://internal.example.com/api/"
+
+
+@pytest.mark.parametrize("command", ["compare", "gate"])
+@pytest.mark.parametrize("latest", [False, True], ids=["explicit", "latest"])
+@pytest.mark.parametrize(
+    "settings_text, instance, expected_api",
+    [
+        pytest.param(
+            'dashboard_api="https://top-level.example.com/api"\n',
+            None,
+            "https://top-level.example.com/api/",
+            id="top-level",
+        ),
+        pytest.param(
+            'default_instance="internal"\n'
+            'dashboard_api="https://top-level.example.com/api/"\n'
+            "[internal]\n"
+            'dashboard_api="https://internal.example.com/api"\n',
+            None,
+            "https://internal.example.com/api/",
+            id="default-instance",
+        ),
+        pytest.param(
+            'default_instance="internal"\n'
+            'dashboard_api="https://top-level.example.com/api/"\n'
+            "[internal]\n"
+            'dashboard_api="https://internal.example.com/api/"\n'
+            "[staging]\n"
+            'dashboard_api="https://staging.example.com/api"\n',
+            "staging",
+            "https://staging.example.com/api/",
+            id="explicit-instance",
+        ),
+        pytest.param(
+            "[staging]\n" 'dashboard_api="https://staging.example.com/api/"\n',
+            "staging",
+            "https://staging.example.com/api/",
+            id="explicit-instance-without-default",
+        ),
+        pytest.param(
+            'default_instance="internal"\n'
+            'dashboard_api="https://top-level.example.com/api/"\n'
+            "[internal]\n"
+            'dashboard_api="https://internal.example.com/api/"\n'
+            "[staging]\n"
+            'api="https://maestro.example.com/"\n',
+            "staging",
+            "https://top-level.example.com/api/",
+            id="instance-falls-back-to-top-level",
+        ),
+        pytest.param("", None, dashboard.DASHBOARD_API_DEFAULT, id="production"),
+    ],
+)
+def test_compare_and_gate_use_dashboard_settings(
+    tmp_path, monkeypatch, command, latest, settings_text, instance, expected_api
+):
+    from kcidev.main import get_cli
+
+    monkeypatch.setattr(dashboard, "_dashboard_api", dashboard.DASHBOARD_API_DEFAULT)
+    settings = tmp_path / "kci-dev.toml"
+    settings.write_text(settings_text)
+    giturl = "https://git.example.com/linux.git"
+    responses = {
+        "/api/tree": [
+            {
+                "git_repository_url": giturl,
+                "git_repository_branch": "main",
+                "git_commit_hash": "head",
+            }
+        ],
+        "/api/tree/head/commits": [
+            {"git_commit_hash": "head"},
+            {"git_commit_hash": "base"},
+        ],
+        "/api/tree-report": {},
+    }
+    for commit, status in [("base", "PASS"), ("head", "FAIL")]:
+        responses[f"/api/tree/{commit}/builds"] = {
+            "builds": [{"id": f"build-{commit}", "status": status}]
+        }
+        for kind in ("boots", "tests"):
+            responses[f"/api/tree/{commit}/{kind}"] = {kind: []}
+
+    def fetch(url, **kwargs):
+        response = Mock(status_code=200)
+        response.json.return_value = responses[urlsplit(url).path]
+        return response
+
+    get = Mock(side_effect=fetch)
+    monkeypatch.setattr(dashboard.kcidev_session, "get", get)
+    args = ["--settings", str(settings)]
+    if instance:
+        args.extend(["--instance", instance])
+    args.extend(
+        ["results", command, "--giturl", giturl, "--branch", "main", "--format", "json"]
+    )
+    if not latest:
+        args.extend(
+            ["base", "head"]
+            if command == "compare"
+            else ["--base", "base", "--head", "head"]
+        )
+
+    result = CliRunner().invoke(get_cli(), args)
+
+    assert result.exit_code == 1, result.output
+    report = json.loads(result.stdout)
+    assert report["base"] == "base"
+    assert report["head"] == "head"
+    assert report["counts"]["regression"] == 1
+    assert report["incomplete"] is False
+    urls = [call.args[0] for call in get.call_args_list]
+    assert len(urls) == (9 if latest else 7)
+    assert all(url.startswith(expected_api) for url in urls), urls
 
 
 def test_kernelci_client_sets_dashboard_api_from_config(monkeypatch):
