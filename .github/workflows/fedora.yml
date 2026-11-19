@@ -61,7 +61,7 @@ jobs:
         run: rpmbuild -ba packaging/fedora/kci-dev.spec
 
       - name: Verify built package digests
-        run: rpm --checksig "${HOME}"/rpmbuild/RPMS/noarch/*.rpm "${HOME}"/rpmbuild/SRPMS/*.rpm
+        run: rpm --checksig --nosignature "${HOME}"/rpmbuild/RPMS/noarch/*.rpm "${HOME}"/rpmbuild/SRPMS/*.rpm
 
       - name: Report rpmlint findings for built packages
         run: rpmlint -r packaging/fedora/kci-dev.rpmlintrc "${HOME}"/rpmbuild/RPMS/noarch/*.rpm "${HOME}"/rpmbuild/SRPMS/*.rpm
