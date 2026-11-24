@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import contextlib
-import logging
 import sys
 
 import click
@@ -41,10 +40,16 @@ Examples:
 )
 @click.option("--host", default="127.0.0.1", help="Bind address for http transport")
 @click.option("--port", default=8000, type=int, help="Port for http transport")
+@click.option(
+    "--log-file",
+    type=click.Path(dir_okay=False),
+    help="Append JSON analytics to this file (default: stderr)",
+)
 @click.pass_context
-def mcp(ctx, transport, host, port):
+def mcp(ctx, transport, host, port, log_file):
     try:
         from kcidev.mcp import create_server
+        from kcidev.mcp.analytics import analytics_logging, log_event
     except ImportError:
         kci_err("MCP support is not installed, install with: pip install kci-dev[mcp]")
         raise click.Abort()
@@ -55,17 +60,22 @@ def mcp(ctx, transport, host, port):
         kci_err(f"Instance {instance} not found in config")
         raise click.Abort()
     server = create_server(cfg, instance, host=host, port=port)
-    logging.info(
-        "Starting MCP server %s",
-        "via stdio" if transport == "stdio" else f"on {host}:{port}",
-    )
     import anyio
 
-    if transport == "stdio":
-        anyio.run(_run_stdio, server)
-    else:
-        with contextlib.redirect_stdout(sys.stderr):
-            server.run(transport="streamable-http")
+    with contextlib.ExitStack() as stack:
+        try:
+            stack.enter_context(analytics_logging(log_file))
+        except OSError as exc:
+            raise click.ClickException(f"Cannot open analytics log: {exc}") from exc
+        log_event("server_start", transport=transport, instance=instance)
+        try:
+            if transport == "stdio":
+                anyio.run(_run_stdio, server)
+            else:
+                with contextlib.redirect_stdout(sys.stderr):
+                    server.run(transport="streamable-http")
+        finally:
+            log_event("server_stop", transport=transport, instance=instance)
 
 
 async def _run_stdio(server):

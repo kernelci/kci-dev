@@ -93,3 +93,38 @@ The dashboard has no server-side lab filter, so the `lab` option of the
 list tools is applied to the fetched page after the request. It shrinks
 the response, not the query: `total` counts entries before filtering and
 `matched` after.
+
+## Analytics logging
+
+The server writes newline-delimited JSON analytics to stderr by default,
+without requiring `--debug`. To collect analytics in a separate file:
+
+```sh
+kci-dev mcp --transport http --log-file /var/log/kci-dev-mcp.jsonl
+```
+
+The file is opened in append mode; its parent directory must exist and be
+writable. On Unix, external rotation may rename the file and create a replacement
+at the same path; the next event reopens that path. On Windows, stop the server
+before rotating the file, then restart it. Retention is managed externally.
+Other diagnostic messages continue to use stderr, and stdio protocol output
+stays on stdout.
+
+An invalid `--log-file` path fails at startup. Runtime analytics I/O failures
+are reported to stderr without including event contents or exception messages;
+they do not change tool responses or cancellation.
+
+Each `tool_call` event includes a UTC `timestamp`, a generated unique `call_id`,
+`tool`, configured `instance` (or null), `outcome` (`success`, `error`, or
+`cancelled`), and `duration_ms`. Duration covers validation and tool execution.
+Invalid arguments and unknown tools count as errors. These records support
+tool usage counts, error rates, and latency percentiles. Calls are logged when
+they finish; a process killed abruptly cannot log its unfinished calls.
+Cancellation of a blocking tool is recorded after its worker finishes, with
+`outcome` set to `cancelled` and duration including the wait for the worker.
+
+`server_start` and `server_stop` events include the transport and instance.
+Analytics records omit arguments, results, credentials, and exception messages.
+This does not change the contents of existing diagnostic logs. When embedding
+`create_server()` in Python, configure the `kcidev.mcp.analytics` logger at INFO
+to collect the tool events through your application's logging setup.
