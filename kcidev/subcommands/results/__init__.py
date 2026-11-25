@@ -24,6 +24,7 @@ from kcidev.libs.dashboard import (
     dashboard_fetch_test,
     dashboard_fetch_tests,
     dashboard_fetch_tree_report,
+    get_dashboard_url,
 )
 from kcidev.libs.git_repo import get_tree_name, set_giturl_branch_commit
 from kcidev.libs.regression import CATEGORIES
@@ -864,57 +865,55 @@ def detect(
             print_stats(stats, headers, max_col_width, table_fmt)
 
 
-def get_missing_issue_items(
-    ctx, origin, item_type, giturl, branch, commit, tree_name, arch
-):
-    """Get information of failed or inconclusive builds/boots for which KCIDB
-    issues don't exist"""
-    try:
-        if item_type == "builds":
-            results_cmd = builds
-            dashboard_func = dashboard_fetch_build_issues
-        elif item_type == "boots":
-            results_cmd = boots
-            dashboard_func = dashboard_fetch_boot_issues
-        else:
-            kci_msg_red("Please specify 'builds' or 'boots' as items type")
-            return []
-
-        dashboard_items = ctx.invoke(
-            results_cmd,
-            origin=origin,
-            giturl=giturl,
-            branch=branch,
-            commit=commit,
-            status="all",
-            count=True,
-            verbose=False,
-            arch=arch,
-            error_verbose=False,
+def get_missing_issue_items(origin, item_type, giturl, branch, commit, tree_name, arch):
+    """Find non-passing results with no known issue, propagating lookup failures."""
+    if item_type == "builds":
+        fetch_results = dashboard_fetch_builds
+        fetch_issues = dashboard_fetch_build_issues
+        no_issues = (
+            "No issues found for this build",
+            "No issues were found for this build",
         )
+        extra_options = {}
+    elif item_type == "boots":
+        fetch_results = dashboard_fetch_boots
+        fetch_issues = dashboard_fetch_boot_issues
+        no_issues = ("No issues were found for this test",)
+        extra_options = {"boot_origin": None}
+    else:
+        raise click.UsageError("Please specify 'builds' or 'boots' as items type")
 
-        missing_ids = []
-        for item in dashboard_items:
-            # Exclude passed builds/boots
-            if item["status"] == "PASS":
-                continue
-            item_id = item["id"]
-            try:
-                _ = dashboard_func(item_id, False, error_verbose=False)
-            except click.ClickException as e:
-                if "No issues" in e.message:
-                    missing_ids.append({item_id: item["status"]})
-        if missing_ids:
-            return [f"{tree_name}/{branch}", commit, missing_ids]
-        return []
-    except click.Abort:
-        kci_msg_red(
-            f"{tree_name}/{branch}: Aborted while fetching dashboard builds/boots"
-        )
-        return []
-    except click.ClickException as e:
-        kci_msg_red(f"{tree_name}/{branch}: {e.message}")
-        return []
+    data = fetch_results(
+        origin=origin,
+        giturl=giturl,
+        branch=branch,
+        commit=commit,
+        arch=arch,
+        tree=tree_name,
+        start_date=None,
+        end_date=None,
+        use_json=False,
+        error_verbose=False,
+        **extra_options,
+    )
+    missing_ids = []
+    for item in data[item_type]:
+        if item["status"] == "PASS":
+            continue
+        item_id = item["id"]
+        try:
+            issues = fetch_issues(item_id, False, error_verbose=False)
+        except click.ClickException as exc:
+            if exc.message not in no_issues:
+                raise
+            issues = []
+        if not isinstance(issues, list):
+            raise click.ClickException(f"Expected an issue list for {item_id}")
+        if not issues:
+            missing_ids.append({item_id: item["status"]})
+    if missing_ids:
+        return [f"{tree_name}/{branch}", commit, missing_ids]
+    return []
 
 
 def get_filtered_issues(
@@ -1066,6 +1065,10 @@ def issues(
         )
     if not has_date_range and days is None:
         days = 5
+    if missing and new:
+        raise click.UsageError("Cannot combine --missing with --new")
+    if missing and builds and boots:
+        raise click.UsageError("Specify only one of --builds and --boots")
     if not new and not missing:
         if not any([giturl, branch, commit]):
             data = dashboard_fetch_issue_list(
@@ -1131,39 +1134,68 @@ def issues(
         else:
             item_types = ["builds", "boots"]
 
-        if all([giturl, branch, commit]):
+        if any([giturl, branch, commit, git_folder, latest]):
+            if not git_folder and not (giturl and branch and (commit or latest)):
+                raise click.UsageError(
+                    "Provide --giturl, --branch and --commit (or --latest), "
+                    "or use --git-folder to select a checkout"
+                )
+            giturl, branch, commit = set_giturl_branch_commit(
+                origin, giturl, branch, commit, latest, git_folder, quiet=use_json
+            )
             if not tree:
                 tree = get_tree_name(origin, giturl, branch)
-            for item_type in item_types:
-                final_stats = []
-                kci_msg("")
-                kci_msg_green(f"Fetching data for {item_type}...")
-                stats = get_missing_issue_items(
-                    ctx, origin, item_type, giturl, branch, commit, tree, arch
-                )
-                if stats:
-                    final_stats.append(stats)
-                if final_stats:
-                    print_missing_data(item_type, final_stats)
-
+            checkouts = [
+                {
+                    "git_repository_url": giturl,
+                    "git_repository_branch": branch,
+                    "git_commit_hash": commit,
+                    "tree_name": tree,
+                }
+            ]
         else:
-            trees_list = ctx.invoke(trees, origin=origin, days=days, verbose=False)
-            for item_type in item_types:
-                kci_msg("")
-                kci_msg_green(f"Fetching data for {item_type}...")
-                final_stats = []
-                for tree in trees_list:
-                    giturl = tree["git_repository_url"]
-                    branch = tree["git_repository_branch"]
-                    commit = tree["git_commit_hash"]
-                    tree_name = tree["tree_name"]
-                    stats = get_missing_issue_items(
-                        ctx, origin, item_type, giturl, branch, commit, tree_name, arch
-                    )
-                    if stats:
-                        final_stats.append(stats)
-                if final_stats:
-                    print_missing_data(item_type, final_stats)
+            checkouts = ctx.invoke(trees, origin=origin, days=days, verbose=False)
+            if tree:
+                checkouts = [item for item in checkouts if item["tree_name"] == tree]
+
+        missing_data = {item_type: [] for item_type in item_types}
+        json_data = []
+        for item_type in item_types:
+            endpoint = "build" if item_type == "builds" else "test"
+            for checkout in checkouts:
+                giturl = checkout["git_repository_url"]
+                branch = checkout["git_repository_branch"]
+                commit = checkout["git_commit_hash"]
+                tree_name = checkout["tree_name"]
+                stats = get_missing_issue_items(
+                    origin, item_type, giturl, branch, commit, tree_name, arch
+                )
+                if not stats:
+                    continue
+                missing_data[item_type].append(stats)
+                for item in stats[2]:
+                    for item_id, status in item.items():
+                        json_data.append(
+                            {
+                                "type": "build" if item_type == "builds" else "boot",
+                                "tree": tree_name,
+                                "giturl": giturl,
+                                "branch": branch,
+                                "commit": commit,
+                                "id": item_id,
+                                "status": status,
+                                "dashboard": f"{get_dashboard_url()}/{endpoint}/{item_id}",
+                            }
+                        )
+        if use_json:
+            kci_msg_json(json_data)
+        else:
+            for item_type, data in missing_data.items():
+                kci_msg_green(f"{item_type.capitalize()} without known issues:")
+                if data:
+                    print_missing_data(item_type, data)
+                else:
+                    kci_msg("No results without known issues found")
 
 
 @results.command(

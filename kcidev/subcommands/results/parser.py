@@ -1060,13 +1060,12 @@ def print_missing_data(item_type, data):
         kci_msg_bold(f"{tree_branch}: ")
         for commit in commits:
             kci_msg(f"  - Commit:{commit['commit']}")
-            for item in missing_ids:
+            for item in commit["missing_ids"]:
                 for item_id, status in item.items():
                     kci_msg_nonl(
                         f"  {get_dashboard_url()}/{endpoint}/{item_id}  status: "
                     )
                     kci_msg_red(f"{status}")
-        kci_msg(data)
 
 
 def sum_tree_report_inconclusive_results(results):
