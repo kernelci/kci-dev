@@ -13,14 +13,15 @@ Fetch KernelCI Database (KCIDB) issues associated with **builds** and **boots**,
 ## Synopsis
 
 ```bash
-kci-dev results issues [--builds | --boots | --new]
+kci-dev results issues [--new | --missing [--builds | --boots]]
                        [--days <N> | --start-date <DATE> --end-date <DATE>]
                        [--arch <ARCH>] [--origin <ORIGIN>] [--latest]
                        [--giturl <URL> --branch <BRANCH> --commit <COMMIT>]
-                       [--git-folder <PATH>]
+                       [--git-folder <PATH>] [--json]
 ```
 
-> Use one operating mode at a time: `--builds`, `--boots`, or `--new`.
+Use `--new` or `--missing` separately. With `--missing`, select `--builds` or
+`--boots`, or omit both to include builds and boots.
 
 ---
 
@@ -76,23 +77,43 @@ Explicit ranges apply to the issue listing, with optional `--origin` and
 selection, or the build/boot, architecture and tree options. Unsupported
 combinations produce a usage error rather than silently ignoring the range.
 
-### Detect build issues
+### Find builds without known issues
 
 ```bash
-kci-dev results issues --builds
+kci-dev results issues --missing --builds
 ```
 
-### Detect build issues across all checkouts (recent window)
+### Find builds without known issues across recent checkouts
 
 ```bash
-kci-dev results issues --builds --days 7 --origin maestro
+kci-dev results issues --missing --builds --days 7 --origin maestro
 ```
 
-### Detect failed/incomplete boot without any issue associated to them
+### Find failed or inconclusive boots without known issues
 
 ```bash
 kci-dev results issues --missing --boots
 ```
+
+`--missing` skips passing results and reports failed or inconclusive results
+only when their issue lookup confirms that no issues are associated with them.
+API and connection failures exit unsuccessfully without printing a partial
+report. The text report keeps each result under its own checkout.
+
+Use `--json` for one array of results, including `[]` when none match. Each
+entry contains `type` (`build` or `boot`), `tree`, `giturl`, `branch`, `commit`,
+`id`, the original `status`, and a `dashboard` link for the configured instance.
+
+```bash
+kci-dev results issues --missing --json
+kci-dev results issues --missing --git-folder /path/to/linux --json
+kci-dev results issues --missing --tree mainline --arch arm64 --json
+```
+
+Without checkout arguments, the command scans recent checkouts, optionally
+restricted by `--tree`. Select one checkout with `--giturl`, `--branch`, and
+`--commit` (or `--latest`), or use `--git-folder` to infer its Git coordinates.
+Incomplete explicit checkout arguments produce a usage error.
 
 ### Detect **new** issues for a checkout (dashboard scan)
 
@@ -113,7 +134,9 @@ kci-dev results issues --new \
 ### Filter to a specific architecture and pick the latest available results
 
 ```bash
-kci-dev results issues --builds --arch arm64 --days 3 --latest
+kci-dev results issues --missing --builds --arch arm64 \
+  --giturl https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git \
+  --branch master --latest
 ```
 
 > The examples above mirror the CLI help and show the intended combinations.
@@ -125,9 +148,11 @@ kci-dev results issues --builds --arch arm64 --days 3 --latest
 ### Mode & Targets
 
 * `--builds`
-  Fetch KCIDB issues for **builds**.
+  With `--missing`, include only **builds**.
 * `--boots`
-  Fetch KCIDB issues for **boots**.
+  With `--missing`, include only **boots**.
+* `--missing`
+  Find failed or inconclusive builds and boots without known issues.
 * `--new`
   Detect **new** KCIDB issues (first‑time observations) for a checkout.
 
